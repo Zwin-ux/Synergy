@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ScriptLens Workspace</title>
+    <link rel="stylesheet" href="sidepanel.css">
+  </head>
+  <body>
+    <main class="workspace-shell">
+      <header class="workspace-card hero-card">
+        <div class="hero-top">
+          <img src="icons/wordmark.svg" alt="ScriptLens" class="brand-wordmark">
+          <span class="hero-pill">Workspace</span>
+        </div>
+        <div class="hero-copy">
+          <strong id="pageTitle">Loading current tab...</strong>
+          <span id="pageSummary">
+            ScriptLens keeps source selection, history, and report interpretation in one place.
+          </span>
+        </div>
+        <div id="pageBadges" class="badge-row"></div>
+      </header>
+
+      <section id="statusBanner" class="status-banner hidden" role="status"></section>
+
+      <section id="onboardingSection" class="workspace-card hidden">
+        <div class="section-head">
+          <div>
+            <h2>Guidance</h2>
+            <p class="section-copy">Small cues that make the workspace easier to read.</p>
+          </div>
+        </div>
+        <div id="onboardingList" class="hint-list"></div>
+      </section>
+
+      <section class="workspace-card">
+        <div class="section-head">
+          <div>
+            <h2>Recommended Action</h2>
+            <p class="section-copy">Start with the cleanest available source, then adjust if needed.</p>
+          </div>
+        </div>
+        <div class="recommend-box">
+          <div class="recommend-copy">
+            <strong id="recommendedActionTitle">Choose a source</strong>
+            <span id="recommendedActionCopy">ScriptLens will surface the strongest next move for this tab.</span>
+          </div>
+          <button id="recommendedActionButton" class="button button-primary">
+            Analyze
+          </button>
+        </div>
+      </section>
+
+      <section class="workspace-card">
+        <div class="section-head">
+          <div>
+            <h2>Source Controls</h2>
+            <p class="section-copy">Switch sources without leaving the workspace.</p>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <span class="group-label">Page sources</span>
+          <div class="quick-grid">
+            <button id="analyzeSelectionButton" class="quick-button">Analyze Selection</button>
+            <button id="analyzePageButton" class="quick-button">Analyze Page</button>
+            <button id="openWorkspaceButton" class="quick-button">Refresh Context</button>
+          </div>
+        </div>
+
+        <div id="youtubeControls" class="control-group hidden">
+          <span class="group-label">YouTube source mix</span>
+          <div id="videoSourceChips" class="chip-row"></div>
+          <label id="trackField" class="field hidden">
+            <span>Transcript track</span>
+            <select id="trackSelect"></select>
+          </label>
+        </div>
+
+        <div class="control-group">
+          <span class="group-label">Manual input</span>
+          <textarea
+            id="manualInput"
+            class="manual-input"
+            placeholder="Paste a script, transcript, essay, or prompt sample here."
+          ></textarea>
+          <div class="inline-actions">
+            <button id="analyzeManualButton" class="button button-primary">Analyze Pasted Text</button>
+            <button id="clearManualButton" class="button button-secondary">Clear</button>
+            <span id="manualMeta" class="meta-copy">0 words</span>
+          </div>
+        </div>
+
+        <div class="control-group settings-row">
+          <label class="field">
+            <span>Sensitivity</span>
+            <select id="sensitivitySelect">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Max text length</span>
+            <input id="maxTextLengthInput" type="number" min="4000" max="50000" step="1000">
+          </label>
+          <button id="saveSettingsButton" class="button button-secondary button-save">Save Settings</button>
+        </div>
+      </section>
+
+      <section id="resultPanel" class="workspace-card result-card empty-state">
+        <div id="resultEmpty" class="result-empty">
+          <h2>Ready for analysis</h2>
+          <p>
+            Choose a source above to generate a full report with source quality,
+            signal profile, reasons, flagged sentences, and trust guidance.
+          </p>
+        </div>
+
+        <div id="resultContent" class="hidden">
+          <div class="result-overview">
+            <div id="scoreBadge" class="score-badge">
+              <span id="scoreValue">0</span>
+              <small>/100</small>
+            </div>
+            <div class="result-summary">
+              <div class="badge-line">
+                <span id="verdictBadge" class="verdict-badge"></span>
+                <span id="qualityBadge" class="quality-badge"></span>
+              </div>
+              <p id="reportExplanation" class="report-explanation"></p>
+              <div class="report-meta">
+                <span id="reportSource"></span>
+                <span id="reportCounts"></span>
+                <span id="reportMeta"></span>
+              </div>
+            </div>
+          </div>
+
+          <section class="trust-card">
+            <div class="trust-head">
+              <div>
+                <h3>Interpretation</h3>
+                <p id="qualitySummary" class="section-copy"></p>
+              </div>
+            </div>
+            <div class="trust-body">
+              <p id="trustMeans"></p>
+              <p id="trustNotMeans"></p>
+              <div class="trust-grid">
+                <div>
+                  <strong>Common false positives</strong>
+                  <ul id="falsePositiveList" class="bullet-list"></ul>
+                </div>
+                <div>
+                  <strong>Trust this more when</strong>
+                  <ul id="trustMoreList" class="bullet-list"></ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="result-grid">
+            <section class="result-section">
+              <div class="section-head compact">
+                <div>
+                  <h3>Signal Profile</h3>
+                  <p class="section-copy">Weighted category scores.</p>
+                </div>
+              </div>
+              <div id="categoryGrid" class="signal-list"></div>
+            </section>
+
+            <section class="result-section">
+              <div class="section-head compact">
+                <div>
+                  <h3>Top Reasons</h3>
+                  <p class="section-copy">Why the final score moved.</p>
+                </div>
+              </div>
+              <ul id="topReasonsList" class="reason-list"></ul>
+            </section>
+          </div>
+
+          <section class="result-section">
+            <div class="section-head compact">
+              <div>
+                <h3>Flagged Sentences</h3>
+                <p class="section-copy">The strongest local sentence-level triggers.</p>
+              </div>
+              <span id="flaggedCount" class="hero-pill"></span>
+            </div>
+            <ul id="flaggedSentencesList" class="flag-list"></ul>
+          </section>
+        </div>
+      </section>
+
+      <section class="workspace-card">
+        <div class="section-head">
+          <div>
+            <h2>Recent Reports</h2>
+            <p class="section-copy">Stored locally as summaries so you can resume quickly.</p>
+          </div>
+        </div>
+        <ul id="recentReportsList" class="recent-list"></ul>
+      </section>
+    </main>
+
+    <script src="sidepanel.js"></script>
+  </body>
+  </html>

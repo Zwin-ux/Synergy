@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ScriptLens</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="launcher-shell">
+      <header class="launcher-card brand-card">
+        <img src="icons/wordmark.svg" alt="ScriptLens" class="brand-wordmark">
+        <p class="brand-copy">
+          Open the workspace, inspect the cleanest source, and keep deeper
+          analysis in one place.
+        </p>
+      </header>
+
+      <section class="launcher-card">
+        <div class="card-head">
+          <div>
+            <h1>Current Page</h1>
+            <p class="card-copy">ScriptLens checks the active tab before it recommends the next move.</p>
+          </div>
+          <span class="pill">Launcher</span>
+        </div>
+        <div class="context-box">
+          <strong id="pageContextTitle">Checking current page...</strong>
+          <span id="pageContextSummary">Gathering page and video context.</span>
+          <div id="pageContextBadges" class="badge-row"></div>
+        </div>
+      </section>
+
+      <section class="launcher-card">
+        <div class="card-head">
+          <div>
+            <h2>Recommended</h2>
+            <p class="card-copy">Lead with the cleanest source available, then continue in the workspace.</p>
+          </div>
+        </div>
+        <div class="recommend-box">
+          <div class="recommend-copy">
+            <strong id="recommendedActionTitle">Open the workspace</strong>
+            <span id="recommendedActionCopy">ScriptLens will keep detailed analysis in the side panel.</span>
+          </div>
+          <div class="action-stack">
+            <button id="recommendedActionButton" class="button button-primary">
+              Open Workspace
+            </button>
+            <button id="openWorkspaceButton" class="button button-secondary">
+              Open Empty Workspace
+            </button>
+          </div>
+        </div>
+        <div class="quick-grid">
+          <button id="quickSelectionButton" class="quick-button">Selection</button>
+          <button id="quickPageButton" class="quick-button">Page</button>
+          <button id="quickTranscriptButton" class="quick-button">Transcript</button>
+        </div>
+        <p id="statusBanner" class="status-banner hidden" role="status"></p>
+      </section>
+
+      <section class="launcher-card">
+        <div class="card-head">
+          <div>
+            <h2>Latest Snapshot</h2>
+            <p class="card-copy">The full report lives in the side panel. This is the handoff point.</p>
+          </div>
+        </div>
+        <div id="lastReportEmpty" class="snapshot-empty">
+          Run an analysis from the workspace to keep a recent score here.
+        </div>
+        <div id="lastReportCard" class="snapshot-box hidden">
+          <div class="snapshot-score">
+            <span id="lastScoreValue">0</span>
+            <small>/100</small>
+          </div>
+          <div class="snapshot-copy">
+            <span id="lastVerdict" class="snapshot-verdict"></span>
+            <strong id="lastSource">No report yet</strong>
+            <span id="lastQuality"></span>
+            <p id="lastPreview"></p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+  </html>
