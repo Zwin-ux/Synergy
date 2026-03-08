@@ -18,7 +18,8 @@
     busy: false,
     activeTabId: null,
     lastHandledLaunchAt: 0,
-    refreshTimer: 0
+    refreshTimer: 0,
+    targetContext: readTargetContext()
   };
 
   const elements = {};
@@ -149,7 +150,10 @@
   }
 
   async function refreshWorkspace(preserveReport) {
-    const response = await sendMessage({ type: "panel:init" });
+    const response = await sendMessage({
+      type: "panel:init",
+      ...getTargetContextPayload()
+    });
     if (!response.ok) {
       showStatus(response.error || "Could not load the workspace.", "error");
       return;
@@ -589,6 +593,7 @@
 
     const response = await sendMessage({
       type: "settings:update",
+      ...getTargetContextPayload(),
       settings: {
         sensitivity: elements.sensitivitySelect.value,
         maxTextLength: Number(elements.maxTextLengthInput.value)
@@ -618,6 +623,7 @@
 
     const response = await sendMessage({
       type: "panel:analyze",
+      ...getTargetContextPayload(),
       request
     });
 
@@ -837,5 +843,25 @@
         error: error?.message || "Extension messaging failed."
       };
     }
+  }
+
+  function readTargetContext() {
+    const params = new URLSearchParams(window.location.search);
+    const tabId = Number(params.get("targetTabId"));
+    const windowId = Number(params.get("targetWindowId"));
+
+    return {
+      tabId: Number.isFinite(tabId) ? tabId : null,
+      windowId: Number.isFinite(windowId) ? windowId : null
+    };
+  }
+
+  function getTargetContextPayload() {
+    return state.targetContext?.tabId
+      ? {
+          tabId: state.targetContext.tabId,
+          windowId: state.targetContext.windowId
+        }
+      : {};
   }
 })();

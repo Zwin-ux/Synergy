@@ -49,6 +49,7 @@
       App.heuristics.analyzeUniformity(context),
       App.heuristics.analyzeGenericity(context),
       App.heuristics.analyzeScriptTemplates(context),
+      App.heuristics.analyzeTitlePackaging(context),
       App.heuristics.analyzeSpecificityDeficit(context),
       App.heuristics.analyzeBurstiness(context)
     ];

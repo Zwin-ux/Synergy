@@ -8,6 +8,8 @@
   const App = globalThis.AIScriptDetector || {};
   const Text = App.text;
   const Dom = App.dom;
+  const VISIBLE_TRANSCRIPT_TRACK_ID = "visible-transcript";
+  const DESCRIPTION_TRANSCRIPT_TRACK_ID = "description-transcript";
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     handleMessage(message)
@@ -165,9 +167,12 @@
     }
 
     const includeSources = normalizeSourceList(request.includeSources);
+    const description = getYouTubeDescriptionText();
+    const title = getDisplayTitle();
     const pieces = [];
     const usedSources = [];
     let transcriptMeta = null;
+    let fallbackApplied = false;
 
     if (includeSources.includes("transcript")) {
       const transcriptResult = await getTranscriptResult(request);
@@ -179,26 +184,46 @@
     }
 
     if (includeSources.includes("description")) {
-      const description = getYouTubeDescriptionText();
-      if (description) {
+      if (description && transcriptMeta?.sourceOrigin !== "description") {
         pieces.push(description);
         usedSources.push("description");
       }
     }
 
     if (includeSources.includes("title")) {
-      const title = getDisplayTitle();
       if (title) {
         pieces.push(title);
         usedSources.push("title");
       }
     }
 
+    if (
+      includeSources.includes("transcript") &&
+      !usedSources.includes("transcript")
+    ) {
+      if (description && transcriptMeta?.sourceOrigin !== "description" && !usedSources.includes("description")) {
+        pieces.push(description);
+        usedSources.push("description");
+        fallbackApplied = true;
+      }
+      if (title && !usedSources.includes("title")) {
+        pieces.push(title);
+        usedSources.push("title");
+        fallbackApplied = true;
+      }
+    }
+
     const text = Text.sanitizeInput(pieces.join("\n\n"));
     if (!text) {
+      const transcriptRequested = includeSources.includes("transcript");
+      const fallbackHint =
+        transcriptRequested && (getYouTubeDescriptionText() || getDisplayTitle())
+          ? " Try enabling Description or Title as a fallback source."
+          : "";
+
       return {
         ok: false,
-        error: "No usable video text could be extracted from the selected YouTube sources."
+        error: `No usable video text could be extracted from the selected YouTube sources.${fallbackHint}`
       };
     }
 
@@ -211,7 +236,12 @@
         includedSources: usedSources,
         transcriptSource: transcriptMeta?.trackLabel || "",
         transcriptSegmentCount: transcriptMeta?.segmentCount || 0,
-        selectedTrack: transcriptMeta?.selectedTrack || null
+        selectedTrack: transcriptMeta?.selectedTrack || null,
+        fallbackApplied,
+        fallbackReason:
+          fallbackApplied && includeSources.includes("transcript")
+            ? "Transcript text was unavailable, so ScriptLens used the best local video context instead."
+            : ""
       }
     };
   }
@@ -219,28 +249,65 @@
   async function getYouTubeVideoContext() {
     const title = getDisplayTitle();
     const description = getYouTubeDescriptionText();
+    const descriptionTranscript = getDescriptionTranscriptText(description);
     const visibleLines = getVisibleTranscriptLines();
     const tracks = await getYouTubeCaptionTracks();
     const preferredTrack = selectPreferredTrack(tracks, {});
+    const transcriptTracks = [];
+
+    if (visibleLines.length >= 4) {
+      transcriptTracks.push({
+        id: VISIBLE_TRANSCRIPT_TRACK_ID,
+        label: "Visible transcript",
+        languageCode: "",
+        kind: "visible",
+        baseUrl: VISIBLE_TRANSCRIPT_TRACK_ID
+      });
+    }
+
+    if (descriptionTranscript) {
+      transcriptTracks.push({
+        id: DESCRIPTION_TRANSCRIPT_TRACK_ID,
+        label: "Description transcript",
+        languageCode: "",
+        kind: "description-transcript",
+        baseUrl: DESCRIPTION_TRANSCRIPT_TRACK_ID
+      });
+    }
+
+    transcriptTracks.push(
+      ...tracks.map((track) => ({
+        id: track.baseUrl,
+        label: getTrackLabel(track),
+        languageCode: track.languageCode || "",
+        kind: track.kind || "manual",
+        baseUrl: track.baseUrl
+      }))
+    );
 
     return {
       title,
       description,
       descriptionAvailable: Boolean(description),
       descriptionLength: description.length,
-      transcriptAvailable: visibleLines.length >= 4 || tracks.length > 0,
-      transcriptTracks: tracks.map((track) => ({
-        id: track.baseUrl,
-        label: getTrackLabel(track),
-        languageCode: track.languageCode || "",
-        kind: track.kind || "manual",
-        baseUrl: track.baseUrl
-      })),
-      defaultTrackBaseUrl: preferredTrack?.baseUrl || "",
+      transcriptAvailable: visibleLines.length >= 4 || Boolean(descriptionTranscript) || tracks.length > 0,
+      transcriptTracks,
+      defaultTrackBaseUrl:
+        visibleLines.length >= 4
+          ? VISIBLE_TRANSCRIPT_TRACK_ID
+          : descriptionTranscript
+            ? DESCRIPTION_TRANSCRIPT_TRACK_ID
+            : preferredTrack?.baseUrl || "",
       defaultTrackLabel:
-        visibleLines.length >= 4 ? "Visible transcript" : preferredTrack ? getTrackLabel(preferredTrack) : "",
+        visibleLines.length >= 4
+          ? "Visible transcript"
+          : descriptionTranscript
+            ? "Description transcript"
+            : preferredTrack
+              ? getTrackLabel(preferredTrack)
+              : "",
       availableSources: {
-        transcript: visibleLines.length >= 4 || tracks.length > 0,
+        transcript: visibleLines.length >= 4 || Boolean(descriptionTranscript) || tracks.length > 0,
         description: Boolean(description),
         title: Boolean(title)
       }
@@ -249,23 +316,62 @@
 
   async function getTranscriptResult(request) {
     const visibleLines = getVisibleTranscriptLines();
-    if (!request.trackBaseUrl && visibleLines.length >= 4) {
+    const descriptionTranscript = getDescriptionTranscriptText();
+    if (
+      visibleLines.length >= 4 &&
+      (!request.trackBaseUrl || request.trackBaseUrl === VISIBLE_TRANSCRIPT_TRACK_ID)
+    ) {
       return {
         text: Text.sanitizeInput(visibleLines.join("\n")),
         segmentCount: visibleLines.length,
         trackLabel: "Visible transcript",
         selectedTrack: {
-          id: "visible-transcript",
+          id: VISIBLE_TRANSCRIPT_TRACK_ID,
           label: "Visible transcript",
           languageCode: "",
           kind: "visible",
-          baseUrl: ""
+          baseUrl: VISIBLE_TRANSCRIPT_TRACK_ID
+        }
+      };
+    }
+
+    if (
+      descriptionTranscript &&
+      (!request.trackBaseUrl || request.trackBaseUrl === DESCRIPTION_TRANSCRIPT_TRACK_ID)
+    ) {
+      return {
+        text: descriptionTranscript,
+        segmentCount: Math.max(Text.splitParagraphs(descriptionTranscript).length, 1),
+        trackLabel: "Description transcript",
+        sourceOrigin: "description",
+        selectedTrack: {
+          id: DESCRIPTION_TRANSCRIPT_TRACK_ID,
+          label: "Description transcript",
+          languageCode: "",
+          kind: "description-transcript",
+          baseUrl: DESCRIPTION_TRANSCRIPT_TRACK_ID
         }
       };
     }
 
     const tracks = await getYouTubeCaptionTracks();
     if (!tracks.length) {
+      if (descriptionTranscript) {
+        return {
+          text: descriptionTranscript,
+          segmentCount: Math.max(Text.splitParagraphs(descriptionTranscript).length, 1),
+          trackLabel: "Description transcript",
+          sourceOrigin: "description",
+          selectedTrack: {
+            id: DESCRIPTION_TRANSCRIPT_TRACK_ID,
+            label: "Description transcript",
+            languageCode: "",
+            kind: "description-transcript",
+            baseUrl: DESCRIPTION_TRANSCRIPT_TRACK_ID
+          }
+        };
+      }
+
       return {
         text: "",
         segmentCount: 0,
@@ -285,6 +391,37 @@
     }
 
     const transcript = await fetchCaptionTrack(track.baseUrl);
+    if (!transcript.text && visibleLines.length >= 4) {
+      return {
+        text: Text.sanitizeInput(visibleLines.join("\n")),
+        segmentCount: visibleLines.length,
+        trackLabel: "Visible transcript",
+        selectedTrack: {
+          id: VISIBLE_TRANSCRIPT_TRACK_ID,
+          label: "Visible transcript",
+          languageCode: "",
+          kind: "visible",
+          baseUrl: VISIBLE_TRANSCRIPT_TRACK_ID
+        }
+      };
+    }
+
+    if (!transcript.text && descriptionTranscript) {
+      return {
+        text: descriptionTranscript,
+        segmentCount: Math.max(Text.splitParagraphs(descriptionTranscript).length, 1),
+        trackLabel: "Description transcript",
+        sourceOrigin: "description",
+        selectedTrack: {
+          id: DESCRIPTION_TRANSCRIPT_TRACK_ID,
+          label: "Description transcript",
+          languageCode: "",
+          kind: "description-transcript",
+          baseUrl: DESCRIPTION_TRANSCRIPT_TRACK_ID
+        }
+      };
+    }
+
     return {
       text: transcript.text,
       segmentCount: transcript.segmentCount,
@@ -317,7 +454,7 @@
   }
 
   async function getYouTubeCaptionTracks() {
-    const snapshot = await readYouTubeCaptionSnapshot();
+    const snapshot = await requestYouTubeCaptionSnapshot();
     return Array.isArray(snapshot?.captionTracks) ? snapshot.captionTracks : [];
   }
 
@@ -332,6 +469,22 @@
       if (directMatch) {
         return directMatch;
       }
+    }
+
+    const visibleTrack = normalized.find(
+      (track) => track.kind === "visible" || track.baseUrl === VISIBLE_TRANSCRIPT_TRACK_ID
+    );
+    if (visibleTrack) {
+      return visibleTrack;
+    }
+
+    const descriptionTrack = normalized.find(
+      (track) =>
+        track.kind === "description-transcript" ||
+        track.baseUrl === DESCRIPTION_TRANSCRIPT_TRACK_ID
+    );
+    if (descriptionTrack) {
+      return descriptionTrack;
     }
 
     const preference = request.transcriptBias || "manual-en";
@@ -360,18 +513,113 @@
   }
 
   async function fetchCaptionTrack(baseUrl) {
-    const response = await fetch(baseUrl, {
-      credentials: "include"
-    });
-    if (!response.ok) {
-      throw new Error("Caption fetch failed.");
+    const attemptUrls = buildCaptionAttemptUrls(baseUrl);
+
+    for (const attemptUrl of attemptUrls) {
+      try {
+        const response = await fetch(attemptUrl, {
+          credentials: "include"
+        });
+        if (!response.ok) {
+          continue;
+        }
+
+        const payloadText = await response.text();
+        const parsedTranscript = parseCaptionPayload(payloadText);
+        if (parsedTranscript.text) {
+          return parsedTranscript;
+        }
+      } catch (error) {
+        continue;
+      }
     }
 
-    const xmlText = await response.text();
+    return {
+      text: "",
+      segmentCount: 0
+    };
+  }
+
+  function buildCaptionAttemptUrls(baseUrl) {
+    const values = [];
+    const seen = new Set();
+
+    const pushUrl = (value) => {
+      if (!value || seen.has(value)) {
+        return;
+      }
+      seen.add(value);
+      values.push(value);
+    };
+
+    pushUrl(baseUrl);
+
+    try {
+      const url = new URL(baseUrl);
+      ["json3", "srv3", "vtt"].forEach((format) => {
+        const nextUrl = new URL(url.toString());
+        nextUrl.searchParams.set("fmt", format);
+        pushUrl(nextUrl.toString());
+      });
+    } catch (error) {
+      return values;
+    }
+
+    return values;
+  }
+
+  function parseCaptionPayload(payloadText) {
+    const source = String(payloadText || "").trim();
+    if (!source) {
+      return {
+        text: "",
+        segmentCount: 0
+      };
+    }
+
+    if (source.startsWith("{")) {
+      return parseJsonCaptionPayload(source);
+    }
+
+    if (source.startsWith("WEBVTT")) {
+      return parseVttCaptionPayload(source);
+    }
+
+    return parseXmlCaptionPayload(source);
+  }
+
+  function parseJsonCaptionPayload(source) {
+    try {
+      const parsed = JSON.parse(source);
+      const segments = (parsed?.events || [])
+        .map((event) => {
+          const text = (event?.segs || [])
+            .map((segment) => decodeCaptionText(segment?.utf8 || ""))
+            .join("")
+            .replace(/\s+/g, " ")
+            .trim();
+          return Text.sanitizeInput(text);
+        })
+        .filter(Boolean);
+
+      return {
+        text: Text.sanitizeInput(segments.join("\n")),
+        segmentCount: segments.length
+      };
+    } catch (error) {
+      return {
+        text: "",
+        segmentCount: 0
+      };
+    }
+  }
+
+  function parseXmlCaptionPayload(source) {
     const parser = new DOMParser();
-    const xml = parser.parseFromString(xmlText, "text/xml");
-    const segments = Array.from(xml.querySelectorAll("text"))
-      .map((node) => Text.sanitizeInput(node.textContent || ""))
+    const xml = parser.parseFromString(source, "text/xml");
+    const candidateNodes = xml.querySelectorAll("text, p");
+    const segments = Array.from(candidateNodes)
+      .map((node) => Text.sanitizeInput(decodeCaptionText(node.textContent || "")))
       .filter(Boolean);
 
     return {
@@ -380,62 +628,88 @@
     };
   }
 
-  async function readYouTubeCaptionSnapshot() {
-    const attributeName = `data-scriptlens-captions-${Date.now()}-${Math.random()
-      .toString(16)
-      .slice(2)}`;
-    const eventName = `scriptlens-captions-${Date.now()}-${Math.random()
-      .toString(16)
-      .slice(2)}`;
+  function parseVttCaptionPayload(source) {
+    const lines = source
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => {
+        if (!line) {
+          return false;
+        }
+
+        if (
+          line === "WEBVTT" ||
+          /^\d+$/.test(line) ||
+          /^(?:\d{2}:)?\d{2}:\d{2}\.\d{3}\s+-->\s+(?:\d{2}:)?\d{2}:\d{2}\.\d{3}/.test(line) ||
+          /^(NOTE|STYLE|REGION)\b/.test(line)
+        ) {
+          return false;
+        }
+
+        return true;
+      })
+      .map((line) => Text.sanitizeInput(decodeCaptionText(line)));
+
+    return {
+      text: Text.sanitizeInput(lines.join("\n")),
+      segmentCount: lines.length
+    };
+  }
+
+  function decodeCaptionText(value) {
+    const element = document.createElement("textarea");
+    element.innerHTML = String(value || "");
+    return element.value.replace(/\u00a0/g, " ");
+  }
+
+  async function requestYouTubeCaptionSnapshot() {
+    const attributeName = "data-scriptlens-caption-snapshot";
+    const requestEvent = "scriptlens:request-caption-snapshot";
+    const readyEvent = "scriptlens:caption-snapshot-ready";
 
     return new Promise((resolve) => {
-      let finished = false;
+      let completed = false;
 
-      const complete = () => {
-        if (finished) {
+      const finish = () => {
+        if (completed) {
           return;
         }
 
-        finished = true;
-        window.removeEventListener(eventName, complete);
-        const rawValue = document.documentElement.getAttribute(attributeName);
-        document.documentElement.removeAttribute(attributeName);
-
-        if (!rawValue) {
-          resolve(null);
-          return;
-        }
-
-        try {
-          resolve(JSON.parse(rawValue));
-        } catch (error) {
-          resolve(null);
-        }
+        completed = true;
+        window.removeEventListener(readyEvent, finish);
+        resolve(readCaptionSnapshotAttribute(attributeName));
       };
 
-      window.addEventListener(eventName, complete, { once: true });
-
-      const script = document.createElement("script");
-      script.textContent = `
-        (() => {
-          const captionTracks =
-            window.ytInitialPlayerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks || null;
-          document.documentElement.setAttribute(
-            ${JSON.stringify(attributeName)},
-            JSON.stringify({ captionTracks })
-          );
-          window.dispatchEvent(new Event(${JSON.stringify(eventName)}));
-        })();
-      `;
-
-      (document.documentElement || document.head || document.body).appendChild(script);
-      script.remove();
-
-      setTimeout(complete, 350);
+      window.addEventListener(readyEvent, finish, { once: true });
+      document.dispatchEvent(new CustomEvent(requestEvent));
+      window.setTimeout(finish, 180);
     });
   }
 
+  function readCaptionSnapshotAttribute(attributeName) {
+    const rawValue = document.documentElement?.getAttribute(attributeName) || "";
+    if (!rawValue) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(rawValue);
+    } catch (error) {
+      return null;
+    }
+  }
+
   function getTrackLabel(track) {
+    if (track?.kind === "visible" || track?.baseUrl === VISIBLE_TRANSCRIPT_TRACK_ID) {
+      return "Visible transcript";
+    }
+    if (
+      track?.kind === "description-transcript" ||
+      track?.baseUrl === DESCRIPTION_TRANSCRIPT_TRACK_ID
+    ) {
+      return "Description transcript";
+    }
+
     const name =
       track?.name?.simpleText ||
       (Array.isArray(track?.name?.runs)
@@ -475,6 +749,21 @@
     }
 
     return "";
+  }
+
+  function getDescriptionTranscriptText(descriptionText) {
+    const source = Text.sanitizeInput(descriptionText || getYouTubeDescriptionText());
+    if (!source) {
+      return "";
+    }
+
+    const match = source.match(/(?:^|\n)(?:full\s+)?transcript\s*:?\s*\n+/i);
+    if (!match || typeof match.index !== "number") {
+      return "";
+    }
+
+    const candidate = Text.sanitizeInput(source.slice(match.index + match[0].length));
+    return Text.countWords(candidate) >= 80 ? candidate : "";
   }
 
   function getDisplayTitle() {

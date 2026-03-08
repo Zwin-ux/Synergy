@@ -34,9 +34,18 @@
   }
 
   function splitSentences(value) {
-    const matches = sanitizeInput(value).match(/[^.!?]+(?:[.!?]+(?=\s|$)|$)/g) || [];
-    return matches
-      .map((sentence) => normalizeWhitespace(sentence))
+    const segments = splitParagraphs(value).flatMap((paragraph) =>
+      paragraph
+        .split(/\n+/)
+        .map((line) => normalizeWhitespace(line))
+        .filter(Boolean)
+    );
+
+    return segments
+      .flatMap((segment) => {
+        const matches = segment.match(/[^.!?]+(?:[.!?]+(?=\s|$)|$)/g) || [segment];
+        return matches.map((sentence) => normalizeWhitespace(sentence));
+      })
       .filter((sentence) => sentence.length >= 20 || countWords(sentence) >= 4);
   }
 

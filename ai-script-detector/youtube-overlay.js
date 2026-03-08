@@ -101,7 +101,9 @@
         }
       });
     } catch (error) {
-      console.error("ScriptLens failed to open the workspace.", error);
+      if (!/Extension context invalidated/i.test(String(error?.message || ""))) {
+        console.warn("ScriptLens could not open the workspace.", error);
+      }
     } finally {
       scheduleRender();
     }

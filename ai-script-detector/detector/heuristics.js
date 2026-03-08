@@ -30,6 +30,7 @@
     analyzeUniformity,
     analyzeGenericity,
     analyzeScriptTemplates,
+    analyzeTitlePackaging,
     analyzeSpecificityDeficit,
     analyzeBurstiness
   };
@@ -38,6 +39,10 @@
     const normalizedText = Text.sanitizeInput(text);
     const sentences = Text.splitSentences(normalizedText);
     const paragraphs = Text.splitParagraphs(normalizedText);
+    const lines = normalizedText
+      .split(/\n+/)
+      .map((line) => Text.sanitizeInput(line))
+      .filter(Boolean);
     const lowerText = normalizedText.toLowerCase();
     const tokens = Text.tokenize(normalizedText);
     const sentenceRecords = sentences.map((sentence, index) => {
@@ -53,15 +58,22 @@
         punctuationEnd: (sentence.match(/[.!?]+$/) || [""])[0]
       };
     });
+    const titleCandidate = pickTitleCandidate(lines, sentenceRecords);
+    const titleSentenceIndex = sentenceRecords.findIndex((record) => {
+      return record.sentence === titleCandidate || record.sentence.startsWith(titleCandidate);
+    });
 
     return {
       text: normalizedText,
       lowerText,
       tokens,
+      lines,
       paragraphs,
       sentenceRecords,
       sentenceLengths: sentenceRecords.map((record) => record.wordCount),
       paragraphLengths: paragraphs.map((paragraph) => Text.countWords(paragraph)),
+      titleCandidate,
+      titleSentenceIndex,
       wordCount: tokens.length,
       sentenceCount: sentenceRecords.length,
       paragraphCount: paragraphs.length
@@ -378,6 +390,120 @@
     );
 
     return createCategoryResult("script_template", rawScore, reasons, triggers, flags);
+  }
+
+  function analyzeTitlePackaging(context) {
+    const titleText = context.titleCandidate || context.sentenceRecords[0]?.sentence || "";
+    const titleLower = titleText.toLowerCase();
+    const titleSentenceIndex = context.titleSentenceIndex >= 0 ? context.titleSentenceIndex : 0;
+    const titlePhraseHits = findPhraseHits(titleLower, Patterns.youtubePackagingPhrases);
+    const sentencePhraseHits = collectSentencePhraseHits(
+      context.sentenceRecords,
+      Patterns.youtubePackagingPhrases
+    );
+    const titleRegexHits = findRegexHits(titleText, Patterns.titleHookRegexes);
+    const sentenceRegexHits = collectRegexSentenceHits(
+      context.sentenceRecords,
+      Patterns.titleHookRegexes
+    );
+    const titleCapsCount = countAllCapsEmphasisWords(titleText);
+    const titleStakesCount = countSetHits(Text.tokenize(titleText), Patterns.highStakesTerms);
+    const fullTextStakesDensity = context.wordCount
+      ? countSetHits(context.tokens, Patterns.highStakesTerms) / context.wordCount
+      : 0;
+    const synopsisPhraseHits = sentencePhraseHits.filter(
+      (hit) => hit.sentenceIndex !== titleSentenceIndex
+    );
+    const synopsisRegexHits = sentenceRegexHits.filter(
+      (hit) => hit.sentenceIndex !== titleSentenceIndex
+    );
+
+    const reasons = [];
+    const triggers = [];
+    const flags = [];
+
+    if (
+      titleText &&
+      (titlePhraseHits.length || titleRegexHits.length || titleCapsCount >= 2 || titleStakesCount >= 2)
+    ) {
+      reasons.push("The title is packaged like a high-stakes recap hook rather than a natural headline.");
+      triggers.push({
+        category: "title_packaging",
+        label: "High-stakes title packaging",
+        evidence: buildTitlePackagingEvidence(
+          titlePhraseHits,
+          titleRegexHits,
+          titleCapsCount,
+          titleStakesCount
+        ),
+        count: titlePhraseHits.length + titleRegexHits.length + titleCapsCount,
+        weight: 24,
+        examples: titlePhraseHits.slice(0, 3).map((entry) => entry.value)
+      });
+      flags.push({
+        sentenceIndex: Math.max(0, titleSentenceIndex),
+        reason: "Uses a suspense-heavy recap title structure.",
+        weight: 20
+      });
+    }
+
+    if (synopsisPhraseHits.length || synopsisRegexHits.length || fullTextStakesDensity >= 0.07) {
+      const examples = dedupeList(
+        synopsisPhraseHits.slice(0, 3).map((hit) => hit.phrase)
+      ).join(", ");
+      reasons.push(
+        examples
+          ? `The synopsis leans on recap-style suspense phrasing, including ${examples}.`
+          : "The synopsis leans on suspense-heavy recap phrasing instead of specific reporting."
+      );
+
+      synopsisPhraseHits.forEach((hit) => {
+        flags.push({
+          sentenceIndex: hit.sentenceIndex,
+          reason: `Uses recap-style suspense phrasing: "${hit.phrase}".`,
+          weight: 12
+        });
+      });
+
+      synopsisRegexHits.forEach((hit) => {
+        flags.push({
+          sentenceIndex: hit.sentenceIndex,
+          reason: "Matches a formulaic recap synopsis pattern.",
+          weight: 12
+        });
+      });
+
+      triggers.push({
+        category: "title_packaging",
+        label: "Recap synopsis framing",
+        evidence:
+          examples ||
+          `High-stakes terms appear densely across ${context.wordCount} words.`,
+        count: synopsisPhraseHits.length + synopsisRegexHits.length,
+        weight: 18,
+        examples: synopsisPhraseHits.slice(0, 3).map((hit) => hit.phrase)
+      });
+    }
+
+    const titleSignal = Stats.clamp(
+      titleRegexHits.length * 22 +
+        titlePhraseHits.reduce((sum, entry) => sum + Math.min(2, entry.count) * 8, 0) +
+        Math.max(0, titleCapsCount - 1) * 8 +
+        Stats.normalizeRange(titleStakesCount, 1, 5) * 18,
+      0,
+      100
+    );
+    const synopsisSignal = Stats.clamp(
+      synopsisPhraseHits.length * 10 +
+        synopsisRegexHits.length * 14 +
+        Stats.normalizeRange(fullTextStakesDensity, 0.025, 0.11) * 16,
+      0,
+      100
+    );
+    const comboBoost = titleSignal >= 30 && synopsisSignal >= 18 ? 12 : 0;
+    const rawScore = Stats.clamp(titleSignal + synopsisSignal + comboBoost, 0, 100);
+
+    return createCategoryResult("title_packaging", rawScore, reasons, triggers, flags);
   }
 
   function analyzeSpecificityDeficit(context) {
@@ -718,8 +844,42 @@
   }
 
   function countNamedEntityHints(text) {
-    const matches = text.match(/\b(?:[A-Z][a-z]{2,}|[A-Z]{2,})\b/g) || [];
-    return matches.filter((word) => !COMMON_CAPITALIZED_WORDS.has(word.toLowerCase())).length;
+    const lines = String(text || "")
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    let count = 0;
+
+    lines.forEach((line) => {
+      const titleCaseRatio = calculateTitleCaseRatio(line);
+      const sequenceMatches =
+        line.match(/\b[A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})+\b/g) || [];
+
+      count += sequenceMatches.length;
+
+      const acronymMatches = line.match(/\b[A-Z]{2,4}\b/g) || [];
+      count += acronymMatches.filter((word) => !COMMON_CAPITALIZED_WORDS.has(word.toLowerCase())).length;
+
+      const singleMatches = line.match(/\b[A-Z][a-z]{2,}\b/g) || [];
+      singleMatches.forEach((word, index) => {
+        if (COMMON_CAPITALIZED_WORDS.has(word.toLowerCase())) {
+          return;
+        }
+
+        if (titleCaseRatio > 0.6) {
+          return;
+        }
+
+        if (index === 0) {
+          return;
+        }
+
+        count += 1;
+      });
+    });
+
+    return count;
   }
 
   function matchCount(text, regex) {
@@ -810,5 +970,87 @@
     }
 
     return bestRun;
+  }
+
+  function pickTitleCandidate(lines, sentenceRecords) {
+    const shortLine = lines.find((line) => {
+      const wordCount = Text.countWords(line);
+      return wordCount >= 4 && wordCount <= 22;
+    });
+
+    if (shortLine) {
+      return shortLine;
+    }
+
+    return sentenceRecords[0]?.sentence || "";
+  }
+
+  function findRegexHits(text, patterns) {
+    return (patterns || []).filter((pattern) => pattern.test(text));
+  }
+
+  function collectRegexSentenceHits(records, patterns) {
+    const hits = [];
+
+    records.forEach((record) => {
+      (patterns || []).forEach((pattern) => {
+        if (pattern.test(record.sentence)) {
+          hits.push({
+            sentenceIndex: record.index,
+            pattern: pattern.toString()
+          });
+        }
+      });
+    });
+
+    return hits;
+  }
+
+  function countAllCapsEmphasisWords(text) {
+    const matches = String(text || "").match(/\b[A-Z]{3,}\b/g) || [];
+    return matches.filter((word) => word.length >= 3 && word.length <= 8).length;
+  }
+
+  function buildTitlePackagingEvidence(titlePhraseHits, titleRegexHits, titleCapsCount, titleStakesCount) {
+    const parts = [];
+    if (titlePhraseHits.length) {
+      parts.push(
+        `Title uses phrases like ${titlePhraseHits
+          .slice(0, 2)
+          .map((entry) => `"${entry.value}"`)
+          .join(", ")}.`
+      );
+    }
+    if (titleRegexHits.length) {
+      parts.push("Title matches a suspense-recapped headline pattern.");
+    }
+    if (titleCapsCount >= 2) {
+      parts.push(`${titleCapsCount} all-caps emphasis words appear in the title.`);
+    }
+    if (titleStakesCount >= 2) {
+      parts.push(`${titleStakesCount} high-stakes terms appear in the title.`);
+    }
+    return parts.join(" ");
+  }
+
+  function calculateTitleCaseRatio(text) {
+    const tokens = String(text || "").match(/\b[A-Za-z]{2,}\b/g) || [];
+    if (!tokens.length) {
+      return 0;
+    }
+
+    const titleCaseCount = tokens.filter((token) => /^[A-Z][a-z]+$/.test(token)).length;
+    return titleCaseCount / tokens.length;
+  }
+
+  function dedupeList(values) {
+    const seen = new Set();
+    return values.filter((value) => {
+      if (!value || seen.has(value)) {
+        return false;
+      }
+      seen.add(value);
+      return true;
+    });
   }
 })(globalThis);

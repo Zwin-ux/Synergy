@@ -32,6 +32,9 @@ const DEFAULT_UI_HINTS = {
   lowQualityHintDismissed: false
 };
 
+const VISIBLE_TRANSCRIPT_TRACK_ID = "visible-transcript";
+const DESCRIPTION_TRANSCRIPT_TRACK_ID = "description-transcript";
+
 chrome.runtime.onInstalled.addListener(async () => {
   const localValues = await localGet([
     STORAGE_KEYS.settings,
@@ -77,13 +80,13 @@ async function handleMessage(message, sender) {
     case "popup:init":
       return buildPopupInitResponse();
     case "panel:init":
-      return buildPanelInitResponse();
+      return buildPanelInitResponse(message || {});
     case "panel:open":
-      return openWorkspace(message.request || null, sender);
+      return openWorkspace(message || {}, sender);
     case "panel:analyze":
-      return handlePanelAnalyze(message.request || {});
+      return handlePanelAnalyze(message || {});
     case "video:sources":
-      return getVideoSources();
+      return getVideoSources(message || {});
     case "sitePreferences:get":
       return {
         ok: true,
@@ -103,12 +106,15 @@ async function handleMessage(message, sender) {
         uiHints: await updateUiHints(message.updates || {})
       };
     case "settings:update":
-      return {
-        ok: true,
-        settings: await saveSettings(message.settings || {}),
-        recentReports: await loadRecentReports(),
-        pageContext: await getHydratedPageContext()
-      };
+      {
+        const targetTab = await resolveContextTab(message || {});
+        return {
+          ok: true,
+          settings: await saveSettings(message.settings || {}),
+          recentReports: await loadRecentReports(),
+          pageContext: await getHydratedPageContext(targetTab)
+        };
+      }
     default:
       return {
         ok: false,
@@ -130,8 +136,9 @@ async function buildPopupInitResponse() {
   };
 }
 
-async function buildPanelInitResponse() {
-  const pageContext = await getHydratedPageContext();
+async function buildPanelInitResponse(message) {
+  const targetTab = await resolveContextTab(message);
+  const pageContext = await getHydratedPageContext(targetTab);
   return {
     ok: true,
     settings: await loadSettings(),
@@ -143,8 +150,24 @@ async function buildPanelInitResponse() {
   };
 }
 
-async function openWorkspace(request, sender) {
-  const tab = await resolveTabFromSender(sender);
+async function openWorkspace(message, sender) {
+  const request = message?.request || null;
+  const shouldOpenPanel = !message?.skipOpen;
+  const gestureTab = sender?.tab?.id ? sender.tab : null;
+
+  if (shouldOpenPanel) {
+    const windowId = gestureTab?.windowId ?? Number(message?.windowId);
+    if (!Number.isFinite(windowId)) {
+      return {
+        ok: false,
+        error: "A user-driven browser tab is required to open the workspace."
+      };
+    }
+
+    await openSidePanel(windowId);
+  }
+
+  const tab = await resolveTabForLaunch(message, sender);
   if (!tab?.id) {
     return {
       ok: false,
@@ -167,8 +190,6 @@ async function openWorkspace(request, sender) {
     await clearLaunchRequest();
   }
 
-  await openSidePanel(tab.windowId);
-
   return {
     ok: true,
     pageContext,
@@ -176,8 +197,9 @@ async function openWorkspace(request, sender) {
   };
 }
 
-async function handlePanelAnalyze(request) {
-  const tab = await getActiveTab();
+async function handlePanelAnalyze(message) {
+  const request = message.request || {};
+  const tab = await resolveContextTab(message);
   if (!tab?.id) {
     return {
       ok: false,
@@ -222,8 +244,9 @@ async function handlePanelAnalyze(request) {
   };
 }
 
-async function getVideoSources() {
-  const pageContext = await getHydratedPageContext();
+async function getVideoSources(message) {
+  const targetTab = await resolveContextTab(message);
+  const pageContext = await getHydratedPageContext(targetTab);
   return {
     ok: true,
     pageContext,
@@ -458,7 +481,8 @@ function buildSourceLabel(meta) {
       }
     }
 
-    return `YouTube video${titleSuffix}${parts.length ? ` - ${parts.join(" + ")}` : ""}`;
+    const fallbackSuffix = meta.fallbackApplied ? " (transcript fallback)" : "";
+    return `YouTube video${titleSuffix}${parts.length ? ` - ${parts.join(" + ")}` : ""}${fallbackSuffix}`;
   }
 
   return meta?.title ? `Local analysis - ${meta.title}` : "Local analysis";
@@ -717,6 +741,23 @@ function pickPreferredTrack(tracks, transcriptBias) {
     ...track,
     languageCode: String(track.languageCode || "").toLowerCase()
   }));
+  const visibleTrack = normalized.find(
+    (track) => track.kind === "visible" || track.baseUrl === VISIBLE_TRANSCRIPT_TRACK_ID
+  );
+
+  if (visibleTrack) {
+    return visibleTrack.baseUrl || "";
+  }
+
+  const descriptionTrack = normalized.find(
+    (track) =>
+      track.kind === "description-transcript" ||
+      track.baseUrl === DESCRIPTION_TRANSCRIPT_TRACK_ID
+  );
+
+  if (descriptionTrack) {
+    return descriptionTrack.baseUrl || "";
+  }
 
   const manualEnglish =
     normalized.find((track) => track.languageCode === "en" && track.kind !== "asr") ||
@@ -890,10 +931,33 @@ async function getCurrentHost() {
   return pageContext?.hostname || "";
 }
 
-async function resolveTabFromSender(sender) {
+async function resolveContextTab(message) {
+  const explicitTabId = Number(message?.tabId);
+  if (Number.isFinite(explicitTabId)) {
+    return getTabById(explicitTabId).catch(() => ({
+      id: explicitTabId,
+      windowId: Number(message?.windowId) || null,
+      url: ""
+    }));
+  }
+
+  return getActiveTab();
+}
+
+async function resolveTabForLaunch(message, sender) {
   if (sender?.tab?.id) {
     return sender.tab;
   }
+
+  const explicitTabId = Number(message?.tabId);
+  if (Number.isFinite(explicitTabId)) {
+    return getTabById(explicitTabId).catch(() => ({
+      id: explicitTabId,
+      windowId: Number(message?.windowId) || null,
+      url: ""
+    }));
+  }
+
   return getActiveTab();
 }
 
@@ -924,6 +988,18 @@ function getActiveTab() {
         return;
       }
       resolve(tabs[0] || null);
+    });
+  });
+}
+
+function getTabById(tabId) {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.get(tabId, (tab) => {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError);
+        return;
+      }
+      resolve(tab || null);
     });
   });
 }

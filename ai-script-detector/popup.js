@@ -79,9 +79,26 @@
     setBusy(true);
     showStatus("Opening workspace...", "info");
 
+    const windowId = Number(state.pageContext?.windowId);
+    if (!Number.isFinite(windowId)) {
+      setBusy(false);
+      showStatus("No active browser window is available.", "error");
+      return;
+    }
+
+    const openResult = await openSidePanelDirect(windowId);
+    if (!openResult.ok) {
+      setBusy(false);
+      showStatus(openResult.error || "Could not open the workspace.", "error");
+      return;
+    }
+
     const response = await sendMessage({
       type: "panel:open",
-      request
+      request,
+      skipOpen: true,
+      tabId: state.pageContext?.tabId || null,
+      windowId
     });
 
     setBusy(false);
@@ -278,5 +295,21 @@
         error: error?.message || "Extension messaging failed."
       };
     }
+  }
+
+  function openSidePanelDirect(windowId) {
+    return new Promise((resolve) => {
+      chrome.sidePanel.open({ windowId }, () => {
+        if (chrome.runtime.lastError) {
+          resolve({
+            ok: false,
+            error: chrome.runtime.lastError.message
+          });
+          return;
+        }
+
+        resolve({ ok: true });
+      });
+    });
   }
 })();

@@ -43,6 +43,17 @@
         "https://m.youtube.com/*"
       ],
       "js": [
+        "youtube-main.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://m.youtube.com/*"
+      ],
+      "js": [
         "utils/text.js",
         "utils/stats.js",
         "utils/dom.js",

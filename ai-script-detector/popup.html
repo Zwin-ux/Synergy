@@ -9,7 +9,13 @@
   <body>
     <main class="launcher-shell">
       <header class="launcher-card brand-card">
-        <img src="icons/wordmark.svg" alt="ScriptLens" class="brand-wordmark">
+        <div class="brand-row">
+          <img src="icons/icon.svg" alt="ScriptLens" class="brand-mark">
+          <div class="brand-stack">
+            <span class="brand-eyebrow">ScriptLens</span>
+            <strong class="brand-title">AI writing pattern workspace</strong>
+          </div>
+        </div>
         <p class="brand-copy">
           Open the workspace, inspect the cleanest source, and keep deeper
           analysis in one place.
@@ -25,6 +31,7 @@
           <span class="pill">Launcher</span>
         </div>
         <div class="context-box">
+          <span class="section-label">Live context</span>
           <strong id="pageContextTitle">Checking current page...</strong>
           <span id="pageContextSummary">Gathering page and video context.</span>
           <div id="pageContextBadges" class="badge-row"></div>
@@ -40,6 +47,7 @@
         </div>
         <div class="recommend-box">
           <div class="recommend-copy">
+            <span class="section-label">Recommended next move</span>
             <strong id="recommendedActionTitle">Open the workspace</strong>
             <span id="recommendedActionCopy">ScriptLens will keep detailed analysis in the side panel.</span>
           </div>

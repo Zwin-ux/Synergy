@@ -3,12 +3,13 @@
   const Stats = App.stats;
 
   const WEIGHTS = {
-    repetition: 0.2,
-    uniformity: 0.18,
-    genericity: 0.22,
-    script_template: 0.16,
-    specificity_deficit: 0.14,
-    burstiness: 0.1
+    repetition: 0.16,
+    uniformity: 0.14,
+    genericity: 0.18,
+    script_template: 0.14,
+    title_packaging: 0.24,
+    specificity_deficit: 0.08,
+    burstiness: 0.06
   };
 
   const SENSITIVITY = {
@@ -73,9 +74,24 @@
     const moderateCategories = Object.values(categoryScores).filter((score) => score >= 40).length;
     const crossSignalBoost =
       Math.max(0, strongCategories - 1) * 4 + Math.max(0, moderateCategories - 2) * 2;
+    const dominantCategory = Math.max(...Object.values(categoryScores), 0);
+    const strongTriggerCount = triggeredPatterns.filter((pattern) => (pattern.weight || 0) >= 14).length;
+    const concentratedPatternBoost =
+      context.wordCount <= 160
+        ? Math.min(
+            18,
+            Math.max(0, dominantCategory - 65) * 0.18 + Math.max(0, strongTriggerCount - 1) * 2.5
+          )
+        : Math.min(8, Math.max(0, strongTriggerCount - 3) * 1.5);
 
     const finalScore = Stats.round(
-      Stats.clamp(weightedScore * sensitivityProfile.multiplier + crossSignalBoost, 0, 100)
+      Stats.clamp(
+        weightedScore * sensitivityProfile.multiplier +
+          crossSignalBoost +
+          concentratedPatternBoost,
+        0,
+        100
+      )
     );
 
     const orderedReasons = reasons

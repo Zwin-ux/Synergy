@@ -31,7 +31,11 @@ ai-script-detector/
   sidepanel.js
   service-worker.js
   content.js
+  youtube-main.js
   youtube-overlay.js
+  package.json
+  playwright.config.js
+  tests/
   detector/
     analyze.js
     heuristics.js
@@ -75,6 +79,21 @@ Non-YouTube tabs still rely on `activeTab` instead of broad site access.
 3. Click **Load unpacked**.
 4. Select the `ai-script-detector` folder.
 
+## E2E testing
+
+ScriptLens now includes a Playwright harness for MV3 extension testing.
+
+1. Install dependencies:
+   - `npm.cmd install`
+2. Install the bundled Chromium browser:
+   - `npx.cmd playwright install chromium`
+3. Run the YouTube smoke test against the default sample video:
+   - `npm.cmd run test:e2e:youtube`
+4. Run the full E2E suite:
+   - `npm.cmd run test:e2e`
+
+The Playwright harness uses a persistent Chromium context and loads the unpacked extension directly, which matches the official Playwright extension-testing model.
+
 ## Recommended usage
 
 1. Click the ScriptLens toolbar icon.
@@ -87,3 +106,4 @@ Non-YouTube tabs still rely on `activeTab` instead of broad site access.
 - Recent reports store summaries only, not full source text.
 - The score reflects AI-like writing patterns, not proof of authorship.
 - On YouTube, transcript availability depends on the page state and caption data exposed by the video.
+- YouTube caption metadata is read through a static main-world bridge script so it works with stricter page CSP rules.
