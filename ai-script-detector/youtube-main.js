@@ -4,15 +4,26 @@
   }
 
   root.__scriptLensYouTubeMainLoaded = true;
+  const Debug = root.ScriptLensDebug || {};
+  const logger = Debug.createLogger
+    ? Debug.createLogger("youtube-main")
+    : console;
+  if (Debug.installGlobalErrorHandlers) {
+    Debug.installGlobalErrorHandlers("youtube-main");
+  }
 
   const SNAPSHOT_ATTRIBUTE = "data-scriptlens-youtube-bootstrap";
   const REQUEST_EVENT = "scriptlens:request-youtube-bootstrap";
   const READY_EVENT = "scriptlens:youtube-bootstrap-ready";
   let refreshTimer = 0;
+  let lastSnapshotSignature = "";
 
   init();
 
   function init() {
+    logger.info("init", {
+      href: root.location?.href || ""
+    });
     installTranscriptRequestObserver();
     writeSnapshot();
     scheduleRefreshBurst();
@@ -39,10 +50,30 @@
       return;
     }
 
+    const snapshot = readBootstrapSnapshot();
     try {
-      target.setAttribute(SNAPSHOT_ATTRIBUTE, JSON.stringify(readBootstrapSnapshot()));
+      target.setAttribute(SNAPSHOT_ATTRIBUTE, JSON.stringify(snapshot));
     } catch (error) {
       target.removeAttribute(SNAPSHOT_ATTRIBUTE);
+    }
+
+    const signature = [
+      snapshot.videoId || "",
+      Array.isArray(snapshot.captionTracks) ? snapshot.captionTracks.length : 0,
+      Boolean(snapshot.transcriptParams),
+      Boolean(snapshot.observedTranscriptRequest?.params)
+    ].join("|");
+    if (signature !== lastSnapshotSignature) {
+      lastSnapshotSignature = signature;
+      logger.info("snapshot updated", {
+        href: root.location?.href || "",
+        videoId: snapshot.videoId || "",
+        captionTracks: Array.isArray(snapshot.captionTracks)
+          ? snapshot.captionTracks.length
+          : 0,
+        transcriptParams: Boolean(snapshot.transcriptParams),
+        observedTranscriptRequest: Boolean(snapshot.observedTranscriptRequest?.params)
+      });
     }
 
     root.dispatchEvent(new CustomEvent(READY_EVENT));
@@ -193,8 +224,26 @@
     const originalFetch = root.fetch;
     if (typeof originalFetch === "function") {
       root.fetch = function patchedFetch(input, init) {
-        captureTranscriptRequest(input, init);
-        return originalFetch.apply(this, arguments);
+        const observedRequest = captureTranscriptRequest(input, init);
+        const responsePromise = originalFetch.apply(this, arguments);
+
+        if (observedRequest && responsePromise && typeof responsePromise.then === "function") {
+          Promise.resolve(responsePromise)
+            .then((response) => {
+              captureTranscriptResponse(response, observedRequest);
+            })
+            .catch((error) => {
+              logger.warn("transcript request promise failed", {
+                url: observedRequest.url || "",
+                error: {
+                  message: error?.message || "",
+                  stack: error?.stack || ""
+                }
+              });
+            });
+        }
+
+        return responsePromise;
       };
     }
   }
@@ -202,27 +251,53 @@
   function captureTranscriptRequest(input, init) {
     const requestUrl = readRequestUrl(input);
     if (!/\/youtubei\/v1\/get_transcript\b/i.test(requestUrl)) {
-      return;
+      return null;
     }
 
     const headers = normalizeHeaders(
       init?.headers || (typeof Request !== "undefined" && input instanceof Request ? input.headers : null)
     );
-    const payload = parseRequestBody(init?.body);
-
-    root.__scriptLensObservedTranscriptRequest = {
+    const observedRequest = {
       url: requestUrl,
-      params: payload?.params || null,
+      params: null,
       clientName:
         headers["x-youtube-client-name"] ||
-        payload?.context?.client?.clientName ||
         null,
       clientVersion:
         headers["x-youtube-client-version"] ||
-        payload?.context?.client?.clientVersion ||
         null,
+      responseStatus: null,
       observedAt: Date.now()
     };
+    updateObservedTranscriptRequest(observedRequest);
+    logger.info("captured transcript request", {
+      url: requestUrl,
+      params: observedRequest.params,
+      clientName: observedRequest.clientName,
+      clientVersion: observedRequest.clientVersion
+    });
+
+    readRequestPayload(input, init).then((payload) => {
+      if (!payload) {
+        return;
+      }
+
+      observedRequest.params = payload?.params || observedRequest.params || null;
+      observedRequest.clientName =
+        observedRequest.clientName || payload?.context?.client?.clientName || null;
+      observedRequest.clientVersion =
+        observedRequest.clientVersion || payload?.context?.client?.clientVersion || null;
+      observedRequest.observedAt = Date.now();
+      updateObservedTranscriptRequest(observedRequest);
+      logger.info("captured transcript request body", {
+        url: requestUrl,
+        params: observedRequest.params,
+        clientName: observedRequest.clientName,
+        clientVersion: observedRequest.clientVersion
+      });
+    });
+
+    return observedRequest;
   }
 
   function readRequestUrl(input) {
@@ -254,16 +329,88 @@
     return output;
   }
 
+  async function readRequestPayload(input, init) {
+    const initPayload = parseRequestBody(init?.body);
+    if (initPayload) {
+      return initPayload;
+    }
+
+    if (typeof Request !== "undefined" && input instanceof Request) {
+      try {
+        const text = await input.clone().text();
+        return parseRequestBody(text);
+      } catch (error) {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
   function parseRequestBody(body) {
-    if (!body || typeof body !== "string") {
+    if (!body) {
       return null;
     }
 
-    try {
-      return JSON.parse(body);
-    } catch (error) {
+    if (typeof body === "string") {
+      try {
+        return JSON.parse(body);
+      } catch (error) {
+        return null;
+      }
+    }
+
+    if (typeof URLSearchParams !== "undefined" && body instanceof URLSearchParams) {
+      return Object.fromEntries(body.entries());
+    }
+
+    if (
+      typeof body === "object" &&
+      !(typeof ArrayBuffer !== "undefined" && body instanceof ArrayBuffer) &&
+      !ArrayBuffer.isView?.(body) &&
+      typeof body.text !== "function"
+    ) {
+      return body;
+    }
+
+    return null;
+  }
+
+  async function captureTranscriptResponse(response, observedRequest) {
+    if (!response) {
       return null;
     }
+
+    observedRequest.responseStatus = response.status || 0;
+    observedRequest.observedAt = Date.now();
+    updateObservedTranscriptRequest(observedRequest);
+
+    let bodySnippet = "";
+    if (!response.ok && typeof response.clone === "function") {
+      try {
+        bodySnippet = (await response.clone().text()).slice(0, 240);
+      } catch (error) {
+        bodySnippet = "";
+      }
+    }
+
+    logger.info("captured transcript response", {
+      url: observedRequest.url || "",
+      status: response.status || 0,
+      ok: Boolean(response.ok),
+      bodySnippet
+    });
+  }
+
+  function updateObservedTranscriptRequest(observedRequest) {
+    root.__scriptLensObservedTranscriptRequest = {
+      url: observedRequest.url || "",
+      params: observedRequest.params || null,
+      clientName: observedRequest.clientName || null,
+      clientVersion: observedRequest.clientVersion || null,
+      responseStatus: observedRequest.responseStatus || null,
+      observedAt: observedRequest.observedAt || Date.now()
+    };
   }
 
   function toFiniteNumber(value) {

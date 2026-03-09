@@ -2,6 +2,10 @@
   const ScriptLens = (root.ScriptLens = root.ScriptLens || {});
   const Transcript = (ScriptLens.transcript = ScriptLens.transcript || {});
   const Providers = (Transcript.providers = Transcript.providers || {});
+  const Debug = root.ScriptLensDebug || {};
+  const logger = Debug.createLogger
+    ? Debug.createLogger("backend-resolver")
+    : console;
 
   const DEFAULT_TIMEOUT_MS = 7000;
 
@@ -11,7 +15,16 @@
 
   async function resolve(context) {
     const endpoint = String(context?.backendEndpoint || "").trim();
+    logger.info("resolve:start", {
+      traceId: context?.traceId || "",
+      endpoint,
+      videoId: context?.adapter?.videoId || "",
+      requestedLanguageCode: context?.requestedLanguageCode || null
+    });
     if (!endpoint) {
+      logger.warn("resolve:missingEndpoint", {
+        traceId: context?.traceId || ""
+      });
       return buildFailure(
         "backend_endpoint_missing",
         "Backend transcript fallback is enabled, but no endpoint is configured.",
@@ -52,6 +65,11 @@
         () => abortController.abort()
       );
       cleanupParentAbort();
+      logger.info("resolve:httpResponse", {
+        traceId: context?.traceId || "",
+        status: response.status || 0,
+        ok: Boolean(response.ok)
+      });
 
       if (!response.ok) {
         return buildFailure(
@@ -64,6 +82,15 @@
       }
 
       const payload = await response.json();
+      logger.info("resolve:payload", {
+        traceId: context?.traceId || "",
+        ok: Boolean(payload?.ok),
+        strategy: payload?.strategy || "",
+        sourceLabel: payload?.sourceLabel || "",
+        warnings: Array.isArray(payload?.warnings) ? payload.warnings.slice(0, 6) : [],
+        textLength: String(payload?.text || "").length,
+        segmentCount: Array.isArray(payload?.segments) ? payload.segments.length : 0
+      });
       if (!payload?.ok || !payload?.text) {
         return buildFailure(
           payload?.errorCode || "backend_empty",
@@ -119,10 +146,22 @@
         }
       );
 
+      logger.info("resolve:success", {
+        traceId: context?.traceId || "",
+        candidate: summarizeCandidate(candidate)
+      });
       return candidate;
     } catch (error) {
       cleanupParentAbort();
       const code = context?.signal?.aborted ? "navigation_changed" : classifyError(error);
+      logger.warn("resolve:failed", {
+        traceId: context?.traceId || "",
+        code,
+        error: {
+          message: error?.message || "",
+          stack: error?.stack || ""
+        }
+      });
       return buildFailure(
         code,
         code === "backend_timeout"
@@ -229,6 +268,24 @@
     parentSignal.addEventListener("abort", handleAbort, { once: true });
     return () => {
       parentSignal.removeEventListener("abort", handleAbort);
+    };
+  }
+
+  function summarizeCandidate(candidate) {
+    if (!candidate) {
+      return null;
+    }
+
+    return {
+      ok: Boolean(candidate.ok),
+      strategy: candidate.strategy || "",
+      quality: candidate.quality || null,
+      sourceConfidence: candidate.sourceConfidence || null,
+      warnings: Array.isArray(candidate.warnings) ? candidate.warnings.slice(0, 6) : [],
+      segmentCount: candidate.segmentCount || 0,
+      coverageRatio:
+        typeof candidate.coverageRatio === "number" ? candidate.coverageRatio : null,
+      textLength: String(candidate.text || "").length
     };
   }
 })(globalThis);

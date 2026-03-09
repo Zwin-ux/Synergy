@@ -3,6 +3,10 @@
   const Transcript = (ScriptLens.transcript = ScriptLens.transcript || {});
   const Strategies = (Transcript.strategies = Transcript.strategies || {});
   const Text = (root.AIScriptDetector || {}).text;
+  const Debug = root.ScriptLensDebug || {};
+  const logger = Debug.createLogger
+    ? Debug.createLogger("caption-track")
+    : console;
 
   Strategies.captionTrack = {
     run,
@@ -14,6 +18,10 @@
     const bootstrap = adapter.bootstrapSnapshot || {};
     const tracks = Array.isArray(bootstrap.captionTracks) ? bootstrap.captionTracks : [];
     if (!tracks.length) {
+      logger.info("run:noTracks", {
+        traceId: context?.traceId || "",
+        videoId: adapter.videoId || bootstrap.videoId || ""
+      });
       return {
         ok: false,
         warningCodes: ["caption_tracks_missing"],
@@ -23,6 +31,14 @@
     }
 
     const track = pickPreferredTrack(tracks, {
+      requestedLanguageCode: context?.requestedLanguageCode || null,
+      preferredTrackBaseUrl: context?.preferredTrackBaseUrl || "",
+      preferredBias: context?.transcriptBias || "manual-en"
+    });
+    logger.info("run:selectedTrack", {
+      traceId: context?.traceId || "",
+      videoId: adapter.videoId || bootstrap.videoId || "",
+      track: summarizeTrack(track),
       requestedLanguageCode: context?.requestedLanguageCode || null,
       preferredTrackBaseUrl: context?.preferredTrackBaseUrl || "",
       preferredBias: context?.transcriptBias || "manual-en"
@@ -40,9 +56,20 @@
     const attemptUrls = buildAttemptUrls(track.baseUrl);
     for (const attemptUrl of attemptUrls) {
       try {
+        logger.info("run:fetchAttempt", {
+          traceId: context?.traceId || "",
+          attemptUrl
+        });
         const response = await fetch(attemptUrl, {
           credentials: "include",
           signal: context?.signal
+        });
+        logger.info("run:fetchResponse", {
+          traceId: context?.traceId || "",
+          attemptUrl,
+          status: response.status || 0,
+          ok: Boolean(response.ok),
+          contentType: response.headers?.get?.("content-type") || ""
         });
         if (!response.ok) {
           continue;
@@ -50,6 +77,13 @@
 
         const payloadText = await response.text();
         const parsed = parseCaptionPayload(payloadText);
+        logger.info("run:parsedPayload", {
+          traceId: context?.traceId || "",
+          attemptUrl,
+          payloadLength: String(payloadText || "").length,
+          textLength: String(parsed.text || "").length,
+          segmentCount: Array.isArray(parsed.segments) ? parsed.segments.length : 0
+        });
         if (parsed.text) {
           return {
             ok: true,
@@ -69,10 +103,23 @@
           };
         }
       } catch (error) {
+        logger.warn("run:fetchFailed", {
+          traceId: context?.traceId || "",
+          attemptUrl,
+          error: {
+            message: error?.message || "",
+            stack: error?.stack || ""
+          }
+        });
         continue;
       }
     }
 
+    logger.warn("run:failed", {
+      traceId: context?.traceId || "",
+      videoId: adapter.videoId || bootstrap.videoId || "",
+      track: summarizeTrack(track)
+    });
     return {
       ok: false,
       warningCodes: ["caption_fetch_failed"],
@@ -392,5 +439,18 @@
   function toFiniteNumber(value) {
     const nextValue = Number(value);
     return Number.isFinite(nextValue) ? nextValue : null;
+  }
+
+  function summarizeTrack(track) {
+    if (!track) {
+      return null;
+    }
+
+    return {
+      baseUrl: track.baseUrl || "",
+      languageCode: track.languageCode || "",
+      kind: track.kind || "",
+      label: getTrackLabel(track)
+    };
   }
 })(globalThis);

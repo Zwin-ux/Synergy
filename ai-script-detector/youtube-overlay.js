@@ -6,6 +6,13 @@
   globalThis.__scriptLensYouTubeOverlayLoaded = true;
 
   const Surface = globalThis.ScriptLensSurface || {};
+  const Debug = globalThis.ScriptLensDebug || {};
+  const logger = Debug.createLogger
+    ? Debug.createLogger("youtube-overlay")
+    : console;
+  if (Debug.installGlobalErrorHandlers) {
+    Debug.installGlobalErrorHandlers("youtube-overlay");
+  }
   const ROOT_ID = "scriptlens-youtube-cta-root";
   const DEFAULT_SELECTION = {
     includeSources: ["transcript"],
@@ -29,18 +36,41 @@
   init();
 
   function init() {
+    logger.info("init", {
+      href: location.href,
+      videoId: getCurrentVideoId()
+    });
     scheduleContextRefresh(true);
-    window.addEventListener("yt-navigate-finish", () => scheduleContextRefresh(true));
-    window.addEventListener("yt-page-data-updated", () => scheduleContextRefresh(true));
+    window.addEventListener("yt-navigate-finish", () => {
+      logger.info("yt-navigate-finish", {
+        href: location.href,
+        videoId: getCurrentVideoId()
+      });
+      scheduleContextRefresh(true);
+    });
+    window.addEventListener("yt-page-data-updated", () => {
+      logger.info("yt-page-data-updated", {
+        href: location.href,
+        videoId: getCurrentVideoId()
+      });
+      scheduleContextRefresh(true);
+    });
 
     const observer = new MutationObserver(() => {
       if (!isWatchPage()) {
+        logger.info("observer removed root because page is unsupported", {
+          href: location.href
+        });
         resetState();
         removeRoot();
         return;
       }
 
       if (getCurrentVideoId() !== state.currentVideoId) {
+        logger.info("observer detected video id change", {
+          previousVideoId: state.currentVideoId,
+          nextVideoId: getCurrentVideoId()
+        });
         scheduleContextRefresh(true);
         return;
       }
@@ -56,10 +86,20 @@
 
   function scheduleContextRefresh(force) {
     clearTimeout(renderTimer);
+    logger.info("scheduleContextRefresh", {
+      force: Boolean(force),
+      currentVideoId: getCurrentVideoId(),
+      stateVideoId: state.currentVideoId
+    });
     renderTimer = window.setTimeout(() => {
       refreshContext(force).catch((error) => {
         state.loading = false;
         if (!state.report) {
+          logger.error("refreshContext crashed", {
+            error: summarizeError(error),
+            href: location.href,
+            videoId: getCurrentVideoId()
+          });
           state.error = error?.message || "ScriptLens could not load this video.";
           render();
         }
@@ -74,6 +114,9 @@
 
   async function refreshContext(force) {
     if (!isWatchPage()) {
+      logger.info("refreshContext skipped on unsupported page", {
+        href: location.href
+      });
       resetState();
       removeRoot();
       return;
@@ -81,13 +124,27 @@
 
     const currentVideoId = getCurrentVideoId();
     const sameVideo = Boolean(currentVideoId && currentVideoId === state.currentVideoId);
+    logger.info("refreshContext start", {
+      force: Boolean(force),
+      currentVideoId,
+      stateVideoId: state.currentVideoId,
+      sameVideo,
+      hasReport: Boolean(state.report)
+    });
 
     if (!force && state.context && sameVideo) {
+      logger.info("refreshContext reused existing context", {
+        currentVideoId
+      });
       render();
       return;
     }
 
     if (!sameVideo) {
+      logger.info("refreshContext resetting for new video", {
+        previousVideoId: state.currentVideoId,
+        nextVideoId: currentVideoId
+      });
       resetState();
       state.currentVideoId = currentVideoId;
       render();
@@ -97,10 +154,20 @@
     const response = await chrome.runtime.sendMessage({ type: "inline:init" });
 
     if (token !== state.initToken || getCurrentVideoId() !== currentVideoId) {
+      logger.warn("refreshContext dropped stale inline:init response", {
+        currentVideoId,
+        stateVideoId: state.currentVideoId,
+        token,
+        stateToken: state.initToken
+      });
       return;
     }
 
     if (!response?.ok) {
+      logger.warn("refreshContext received failure", {
+        currentVideoId,
+        error: response?.error || ""
+      });
       if (!sameVideo || !state.report) {
         state.error = response?.error || "ScriptLens could not load this video.";
         state.loading = false;
@@ -112,6 +179,11 @@
     state.context = response.pageContext || null;
     state.inlineSettings = response.inlineSettings || null;
     syncVideoSelection(sameVideo);
+    logger.info("refreshContext hydrated", {
+      currentVideoId,
+      context: summarizeContext(state.context),
+      inlineSettings: state.inlineSettings || {}
+    });
 
     if (!state.context?.supported && (!sameVideo || !state.report)) {
       state.error =
@@ -124,6 +196,11 @@
   }
 
   function resetState() {
+    logger.info("resetState", {
+      previousVideoId: state.currentVideoId,
+      hadReport: Boolean(state.report),
+      hadError: Boolean(state.error)
+    });
     state.loading = false;
     state.detailsOpen = false;
     state.collapsed = false;
@@ -247,7 +324,7 @@
           </div>
           <h2 class="sl-title">Analyzing transcript...</h2>
           <p class="sl-copy">
-            ScriptLens is checking the strongest transcript path for this video before scoring the writing.
+            ScriptLens is checking transcript sources for this video while keeping the watch page compact.
           </p>
           <div class="sl-loading-bar" aria-hidden="true"><span></span></div>
         </section>
@@ -453,9 +530,17 @@
 
   async function runAnalysis() {
     if (state.loading) {
+      logger.info("runAnalysis ignored while already loading", {
+        videoId: state.currentVideoId
+      });
       return;
     }
 
+    logger.info("runAnalysis start", {
+      href: location.href,
+      videoId: state.currentVideoId,
+      request: getCurrentVideoRequest()
+    });
     state.loading = true;
     state.error = "";
     state.collapsed = false;
@@ -468,6 +553,12 @@
       });
 
       if (!response?.ok) {
+        logger.warn("runAnalysis failed", {
+          videoId: state.currentVideoId,
+          error: response?.error || "",
+          acquisition: response?.acquisition || null
+        });
+        await dumpBackgroundHistory("inline-analyze-failed");
         state.error =
           response?.error ||
           "ScriptLens could not finish the transcript check for this video.";
@@ -482,10 +573,21 @@
       state.context = response.pageContext || state.context;
       state.inlineSettings = response.inlineSettings || state.inlineSettings;
       syncVideoSelection(true);
+      logger.info("runAnalysis success", {
+        videoId: state.currentVideoId,
+        score: response.report?.score || 0,
+        verdict: response.report?.verdict || "",
+        acquisition: response.report?.acquisition || null
+      });
       render();
     } catch (error) {
       state.loading = false;
       state.report = null;
+      logger.error("runAnalysis crashed", {
+        videoId: state.currentVideoId,
+        error: summarizeError(error)
+      });
+      await dumpBackgroundHistory("inline-analyze-crashed");
       state.error =
         error?.message || "ScriptLens could not finish the transcript check for this video.";
       render();
@@ -494,11 +596,19 @@
 
   async function openWorkspace() {
     try {
+      logger.info("openWorkspace", {
+        videoId: state.currentVideoId,
+        request: getCurrentVideoRequest()
+      });
       await chrome.runtime.sendMessage({
         type: "panel:open",
         request: getCurrentVideoRequest()
       });
     } catch (error) {
+      logger.error("openWorkspace failed", {
+        videoId: state.currentVideoId,
+        error: summarizeError(error)
+      });
       if (!/Extension context invalidated/i.test(String(error?.message || ""))) {
         console.warn("ScriptLens could not open the workspace.", error);
       }
@@ -522,6 +632,10 @@
     }
 
     state.videoSelection.includeSources = Array.from(current);
+    logger.info("toggleSource", {
+      source,
+      includeSources: state.videoSelection.includeSources.slice()
+    });
     render();
   }
 
@@ -621,6 +735,56 @@
 
   function escapeHtml(value) {
     return Surface.escapeHtml ? Surface.escapeHtml(value) : String(value || "");
+  }
+
+  function summarizeContext(context) {
+    if (!context) {
+      return null;
+    }
+
+    return {
+      supported: Boolean(context.supported),
+      isYouTubeVideo: Boolean(context.isYouTubeVideo),
+      transcriptAvailable: Boolean(context.transcriptAvailable),
+      video: context.video
+        ? {
+            title: context.video.title || "",
+            videoId: context.video.videoId || "",
+            availableSources: context.video.availableSources || {},
+            transcriptTrackCount: Array.isArray(context.video.transcriptTracks)
+              ? context.video.transcriptTracks.length
+              : 0
+          }
+        : null
+    };
+  }
+
+  function summarizeError(error) {
+    if (!error) {
+      return null;
+    }
+
+    return {
+      message: error.message || String(error),
+      stack: error.stack || ""
+    };
+  }
+
+  async function dumpBackgroundHistory(reason) {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: "debug:getHistory"
+      });
+      logger.warn("background history snapshot", {
+        reason,
+        history: Array.isArray(response?.history) ? response.history : []
+      });
+    } catch (error) {
+      logger.error("failed to fetch background history", {
+        reason,
+        error: summarizeError(error)
+      });
+    }
   }
 
   function buildStyles() {

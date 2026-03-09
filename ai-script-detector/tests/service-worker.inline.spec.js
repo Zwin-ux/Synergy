@@ -57,6 +57,120 @@ test.describe("ScriptLens inline runtime routing", () => {
     expect(tab.id).toBe(777);
     expect(tab.windowId).toBe(12);
   });
+
+  test("inline youtube acquisition stays silent and skips DOM transcript loading", async () => {
+    const { sandbox } = loadServiceWorkerSandbox();
+    let capturedContext = null;
+
+    sandbox.ScriptLens = {
+      transcript: {
+        acquire: {
+          resolveBestTranscript: async (context) => {
+            capturedContext = context;
+            return {
+              ok: true,
+              text: "Transcript sample",
+              sourceConfidence: "medium",
+              acquisitionState: "transcript-acquired"
+            };
+          }
+        },
+        normalize: {
+          buildUnavailableResult() {
+            throw new Error("buildUnavailableResult should not be called in this test");
+          }
+        }
+      }
+    };
+
+    const result = await sandbox.resolveYouTubeAcquisition(
+      {
+        title: "Sample video",
+        videoId: "video123",
+        videoDurationSeconds: 120
+      },
+      321,
+      {
+        includeSources: ["transcript"],
+        trackBaseUrl: "",
+        transcriptBias: "manual-en",
+        requireTranscript: true,
+        allowFallbackText: false
+      },
+      {
+        maxTextLength: 18000,
+        allowBackendTranscriptFallback: true,
+        backendTranscriptEndpoint: "http://127.0.0.1:4317/transcript/resolve"
+      },
+      new AbortController().signal,
+      "trace-inline",
+      {
+        surface: "inline",
+        allowDomTranscriptLoader: false
+      }
+    );
+
+    expect(result.ok).toBeTruthy();
+    expect(capturedContext).toBeTruthy();
+    expect(capturedContext.domTranscriptLoader).toBeNull();
+  });
+
+  test("workspace youtube acquisition keeps DOM transcript loading available", async () => {
+    const { sandbox } = loadServiceWorkerSandbox();
+    let capturedContext = null;
+
+    sandbox.ScriptLens = {
+      transcript: {
+        acquire: {
+          resolveBestTranscript: async (context) => {
+            capturedContext = context;
+            return {
+              ok: true,
+              text: "Transcript sample",
+              sourceConfidence: "medium",
+              acquisitionState: "transcript-acquired"
+            };
+          }
+        },
+        normalize: {
+          buildUnavailableResult() {
+            throw new Error("buildUnavailableResult should not be called in this test");
+          }
+        }
+      }
+    };
+
+    const result = await sandbox.resolveYouTubeAcquisition(
+      {
+        title: "Sample video",
+        videoId: "video123",
+        videoDurationSeconds: 120
+      },
+      321,
+      {
+        includeSources: ["transcript"],
+        trackBaseUrl: "",
+        transcriptBias: "manual-en",
+        requireTranscript: true,
+        allowFallbackText: false
+      },
+      {
+        maxTextLength: 18000,
+        allowBackendTranscriptFallback: true,
+        backendTranscriptEndpoint: "http://127.0.0.1:4317/transcript/resolve"
+      },
+      new AbortController().signal,
+      "trace-panel",
+      {
+        surface: "panel",
+        allowDomTranscriptLoader: true
+      }
+    );
+
+    expect(result.ok).toBeTruthy();
+    expect(capturedContext).toBeTruthy();
+    expect(typeof capturedContext.domTranscriptLoader).toBe("function");
+  });
 });
 
 function loadServiceWorkerSandbox() {

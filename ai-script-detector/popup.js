@@ -13,6 +13,13 @@
   const DEFAULT_DISCLAIMER =
     "This score reflects AI-like writing patterns, not proof of authorship.";
   const Surface = globalThis.ScriptLensSurface;
+  const Debug = globalThis.ScriptLensDebug || {};
+  const logger = Debug.createLogger
+    ? Debug.createLogger("popup")
+    : console;
+  if (Debug.installGlobalErrorHandlers) {
+    Debug.installGlobalErrorHandlers("popup");
+  }
 
   const state = {
     settings: { ...DEFAULT_SETTINGS },
@@ -29,6 +36,9 @@
   document.addEventListener("DOMContentLoaded", init);
 
   async function init() {
+    logger.info("init", {
+      targetContext: state.targetContext
+    });
     cacheElements();
     bindEvents();
     showStatus("Loading ScriptLens...", "info");
@@ -390,6 +400,9 @@
       return;
     }
 
+    logger.info("analyzeRequest:start", {
+      request
+    });
     setBusy(true);
     showStatus("Running analysis...", "info");
 
@@ -402,6 +415,11 @@
     setBusy(false);
 
     if (!response.ok) {
+      logger.warn("analyzeRequest:failed", {
+        request,
+        error: response.error || "",
+        acquisition: response.acquisition || null
+      });
       state.currentReport = response.acquisition
         ? buildUnavailableReport(response.acquisition, response.error)
         : null;
@@ -418,6 +436,10 @@
     hydrateState(response);
     syncVideoSelection(true);
     renderAll();
+    logger.info("analyzeRequest:success", {
+      score: response.report?.score || 0,
+      verdict: response.report?.verdict || ""
+    });
     showStatus("Analysis complete.", "success");
   }
 
@@ -596,6 +618,11 @@
     try {
       return await chrome.runtime.sendMessage(message);
     } catch (error) {
+      logger.error("sendMessage failed", {
+        type: message?.type || "",
+        message: error?.message || String(error),
+        stack: error?.stack || ""
+      });
       return {
         ok: false,
         error: error?.message || "Extension messaging failed."

@@ -46,7 +46,7 @@ test.describe("ScriptLens YouTube release flow", () => {
         await expect(overlay.getByRole("button", { name: "Details" })).toBeVisible();
         await expect(overlay).toContainText("/100");
 
-        await overlay.getByRole("button", { name: "Details" }).click();
+        await clickOverlayButtonWithRetry(overlay, "Details");
         await expect(overlay).toContainText("Transcript options");
         await expect(overlay).toContainText("Re-analyze");
         await expect(overlay.getByRole("button", { name: "Hide details" })).toBeVisible({
@@ -217,6 +217,26 @@ async function waitForInlineOutcome(page, overlay, timeoutMs) {
   }
 
   return "timeout";
+}
+
+async function clickOverlayButtonWithRetry(overlay, name, attempts = 5) {
+  let lastError = null;
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const button = overlay.getByRole("button", { name }).first();
+      await button.waitFor({ state: "visible", timeout: 10000 });
+      await button.click();
+      return;
+    } catch (error) {
+      lastError = error;
+      if (!/detached|not stable|closed/i.test(String(error?.message || ""))) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 async function gotoVideoWithRetry(page, url, attempts = 3) {

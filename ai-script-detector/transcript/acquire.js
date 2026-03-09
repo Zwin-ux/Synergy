@@ -1,6 +1,10 @@
 (function (root) {
   const ScriptLens = (root.ScriptLens = root.ScriptLens || {});
   const Transcript = (ScriptLens.transcript = ScriptLens.transcript || {});
+  const Debug = root.ScriptLensDebug || {};
+  const logger = Debug.createLogger
+    ? Debug.createLogger("transcript-acquire")
+    : console;
 
   const TOTAL_TIMEOUT_MS = 15000;
   const BACKEND_TIMEOUT_MS = 7000;
@@ -16,23 +20,49 @@
     const totalTimeoutMs = Number(context?.totalTimeoutMs) || TOTAL_TIMEOUT_MS;
     const traceId = context?.traceId || buildTraceId();
 
+    logger.info("resolveBestTranscript:start", {
+      traceId,
+      totalTimeoutMs,
+      allowBackendTranscriptFallback: Boolean(context?.allowBackendTranscriptFallback),
+      videoId: context?.adapter?.videoId || "",
+      backendEndpoint: String(context?.backendEndpoint || "").trim()
+    });
+
     const localResult = await youtubeResolver.resolve({
       ...context,
       traceId,
       totalTimeoutMs
     });
     const escalation = Transcript.normalize.shouldEscalateToBackend(localResult);
+    logger.info("resolveBestTranscript:localResult", {
+      traceId,
+      escalation,
+      localResult: summarizeCandidate(localResult)
+    });
 
     if (
       !context?.allowBackendTranscriptFallback ||
       escalation.reason === "navigation_changed" ||
       !backendResolver
     ) {
+      logger.info("resolveBestTranscript:returnLocal", {
+        traceId,
+        reason: !context?.allowBackendTranscriptFallback
+          ? "backend-disabled"
+          : escalation.reason === "navigation_changed"
+            ? "navigation-changed"
+            : "backend-missing"
+      });
       return Transcript.normalize.stripInternalFields(localResult);
     }
 
     const remainingEndToEndMs = Math.max(0, totalTimeoutMs - (Date.now() - startedAt));
     if (!escalation.shouldEscalate || remainingEndToEndMs <= 0) {
+      logger.info("resolveBestTranscript:skipBackend", {
+        traceId,
+        escalation,
+        remainingEndToEndMs
+      });
       return Transcript.normalize.stripInternalFields(localResult);
     }
 
@@ -42,8 +72,16 @@
       remainingEndToEndMs,
       backendTimeoutMs: Math.min(BACKEND_TIMEOUT_MS, remainingEndToEndMs)
     });
+    logger.info("resolveBestTranscript:backendResult", {
+      traceId,
+      backendResult: summarizeCandidate(backendResult)
+    });
 
     const winner = chooseWinner(localResult, backendResult);
+    logger.info("resolveBestTranscript:winner", {
+      traceId,
+      winner: summarizeCandidate(winner)
+    });
     return Transcript.normalize.stripInternalFields(winner);
   }
 
@@ -140,5 +178,28 @@
 
   function buildTraceId() {
     return `trace-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+  }
+
+  function summarizeCandidate(candidate) {
+    if (!candidate) {
+      return null;
+    }
+
+    return {
+      ok: Boolean(candidate.ok),
+      provider: candidate.provider || null,
+      providerClass: candidate.providerClass || null,
+      strategy: candidate.strategy || null,
+      quality: candidate.quality || null,
+      sourceConfidence: candidate.sourceConfidence || null,
+      failureReason: candidate.failureReason || null,
+      warnings: Array.isArray(candidate.warnings) ? candidate.warnings.slice(0, 8) : [],
+      errors: Array.isArray(candidate.errors)
+        ? candidate.errors.slice(0, 6).map((error) => ({
+            strategy: error?.strategy || "",
+            code: error?.code || ""
+          }))
+        : []
+    };
   }
 })(globalThis);

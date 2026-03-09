@@ -13,6 +13,13 @@
   const DEFAULT_DISCLAIMER =
     "This score reflects AI-like writing patterns, not proof of authorship.";
   const Surface = globalThis.ScriptLensSurface;
+  const Debug = globalThis.ScriptLensDebug || {};
+  const logger = Debug.createLogger
+    ? Debug.createLogger("sidepanel")
+    : console;
+  if (Debug.installGlobalErrorHandlers) {
+    Debug.installGlobalErrorHandlers("sidepanel");
+  }
 
   const state = {
     settings: { ...DEFAULT_SETTINGS },
@@ -24,6 +31,7 @@
     activeTabId: null,
     lastHandledLaunchAt: 0,
     refreshTimer: 0,
+    refreshToken: 0,
     targetContext: readTargetContext()
   };
 
@@ -32,6 +40,9 @@
   document.addEventListener("DOMContentLoaded", init);
 
   async function init() {
+    logger.info("init", {
+      targetContext: state.targetContext
+    });
     cacheElements();
     bindEvents();
     showStatus("Loading workspace...", "info");
@@ -121,40 +132,97 @@
   }
 
   function registerExtensionListeners() {
-    chrome.tabs.onActivated.addListener(() => {
-      scheduleRefresh();
+    chrome.tabs.onActivated.addListener((activeInfo) => {
+      logger.info("tabs.onActivated", {
+        activeTabId: state.activeTabId,
+        nextActiveTabId: activeInfo?.tabId || null,
+        targetTabId: state.targetContext?.tabId || null
+      });
+      if (state.targetContext?.tabId) {
+        logger.info("tabs.onActivated ignored for pinned target", {
+          targetTabId: state.targetContext.tabId
+        });
+        return;
+      }
+      scheduleRefresh("tabs.onActivated");
     });
 
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-      if (!tab.active) {
+      logger.info("tabs.onUpdated", {
+        tabId,
+        active: Boolean(tab?.active),
+        status: changeInfo?.status || "",
+        url: changeInfo?.url || "",
+        targetTabId: state.targetContext?.tabId || null
+      });
+      if (state.targetContext?.tabId && tabId !== state.targetContext.tabId) {
+        logger.info("tabs.onUpdated ignored for non-target tab", {
+          tabId,
+          targetTabId: state.targetContext.tabId
+        });
+        return;
+      }
+
+      if (!state.targetContext?.tabId && !tab.active) {
         return;
       }
 
       if (changeInfo.status === "complete" || changeInfo.url) {
-        scheduleRefresh();
+        scheduleRefresh("tabs.onUpdated");
       }
     });
 
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName === "session" && changes.panelLaunchRequest?.newValue) {
+        logger.info("storage.onChanged panelLaunchRequest", {
+          launchRequest: changes.panelLaunchRequest.newValue
+        });
         handleLaunchRequest(changes.panelLaunchRequest.newValue);
       }
     });
   }
 
-  function scheduleRefresh() {
+  function scheduleRefresh(reason) {
     clearTimeout(state.refreshTimer);
+    logger.info("scheduleRefresh", {
+      activeTabId: state.activeTabId,
+      targetTabId: state.targetContext?.tabId || null,
+      reason: reason || "unknown"
+    });
     state.refreshTimer = window.setTimeout(() => {
-      refreshWorkspace(false);
+      refreshWorkspace(false).catch((error) => {
+        logger.error("scheduled refresh failed", {
+          error: summarizeError(error)
+        });
+        showStatus(error?.message || "Workspace refresh failed.", "error");
+      });
     }, 200);
   }
 
   async function refreshWorkspace(preserveReport) {
+    const refreshToken = ++state.refreshToken;
+    logger.info("refreshWorkspace:start", {
+      refreshToken,
+      preserveReport: Boolean(preserveReport),
+      activeTabId: state.activeTabId,
+      targetContext: state.targetContext
+    });
     const response = await sendMessage({
       type: "panel:init",
       ...getTargetContextPayload()
     });
+    if (refreshToken !== state.refreshToken) {
+      logger.warn("refreshWorkspace:staleResponse", {
+        refreshToken,
+        currentRefreshToken: state.refreshToken
+      });
+      return;
+    }
     if (!response.ok) {
+      logger.warn("refreshWorkspace:failed", {
+        refreshToken,
+        error: response.error || ""
+      });
       showStatus(response.error || "Could not load the workspace.", "error");
       return;
     }
@@ -169,6 +237,12 @@
     state.recentReports = response.recentReports || [];
     state.pageContext = response.pageContext || null;
     state.activeTabId = nextTabId;
+    logger.info("refreshWorkspace:success", {
+      refreshToken,
+      activeTabId: state.activeTabId,
+      tabChanged,
+      pageContext: summarizePageContext(state.pageContext)
+    });
 
     if (tabChanged && !preserveReport) {
       state.currentReport = null;
@@ -518,6 +592,9 @@
       return;
     }
 
+    logger.info("analyzeRequest:start", {
+      request
+    });
     setBusy(true);
     showStatus("Running analysis...", "info");
 
@@ -530,6 +607,11 @@
     setBusy(false);
 
     if (!response.ok) {
+      logger.warn("analyzeRequest:failed", {
+        request,
+        error: response.error || "",
+        acquisition: response.acquisition || null
+      });
       state.currentReport = response.acquisition
         ? buildUnavailableReport(response.acquisition, response.error)
         : null;
@@ -562,6 +644,11 @@
     applySettings();
     syncVideoSelection(true);
     renderWorkspace();
+    logger.info("analyzeRequest:success", {
+      score: response.report?.score || 0,
+      verdict: response.report?.verdict || "",
+      activeTabId: state.activeTabId
+    });
     showStatus("Analysis complete.", "success");
   }
 
@@ -575,6 +662,9 @@
     }
 
     state.lastHandledLaunchAt = launchRequest.createdAt;
+    logger.info("handleLaunchRequest", {
+      launchRequest
+    });
     await analyzeRequest(launchRequest.request);
   }
 
@@ -670,6 +760,10 @@
     try {
       return await chrome.runtime.sendMessage(message);
     } catch (error) {
+      logger.error("sendMessage failed", {
+        type: message?.type || "",
+        error: summarizeError(error)
+      });
       return {
         ok: false,
         error: error?.message || "Extension messaging failed."
@@ -695,5 +789,30 @@
           windowId: state.targetContext.windowId
         }
       : {};
+  }
+
+  function summarizePageContext(pageContext) {
+    if (!pageContext) {
+      return null;
+    }
+
+    return {
+      supported: Boolean(pageContext.supported),
+      tabId: pageContext.tabId || null,
+      url: pageContext.url || "",
+      isYouTubeVideo: Boolean(pageContext.isYouTubeVideo),
+      transcriptAvailable: Boolean(pageContext.transcriptAvailable)
+    };
+  }
+
+  function summarizeError(error) {
+    if (!error) {
+      return null;
+    }
+
+    return {
+      message: error.message || String(error),
+      stack: error.stack || ""
+    };
   }
 })();

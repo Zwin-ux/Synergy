@@ -1,5 +1,7 @@
 .tmp-yt-dlp/
+test-results/
 ai-script-detector/tmp-debug-user/
 ai-script-detector/tmp-debug-user-2/
 ai-script-detector/.tmp-youtube-bootstrap/
 ai-script-detector/.tmp-youtubei-fetch/
+ai-script-detector/.tmp-inline-*/

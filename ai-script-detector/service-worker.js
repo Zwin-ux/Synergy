@@ -1,4 +1,5 @@
 importScripts(
+  "utils/debug.js",
   "utils/text.js",
   "utils/stats.js",
   "detector/patterns.js",
@@ -17,6 +18,14 @@ importScripts(
   "transcript/providers/nativeHelper.js",
   "transcript/acquire.js"
 );
+
+const Debug = globalThis.ScriptLensDebug || {};
+const logger = Debug.createLogger
+  ? Debug.createLogger("service-worker")
+  : console;
+if (Debug.installGlobalErrorHandlers) {
+  Debug.installGlobalErrorHandlers("service-worker");
+}
 
 const STORAGE_KEYS = {
   settings: "settings",
@@ -53,6 +62,9 @@ const DISCLAIMER =
   "This score reflects AI-like writing patterns, not proof of authorship.";
 
 chrome.runtime.onInstalled.addListener(async () => {
+  logger.info("onInstalled", {
+    version: chrome.runtime.getManifest()?.version || "0.0.0"
+  });
   const localValues = await localGet([
     STORAGE_KEYS.settings,
     STORAGE_KEYS.recentReports,
@@ -84,14 +96,24 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  logger.info("runtime message", {
+    type: message?.type || "",
+    senderTabId: sender?.tab?.id || null,
+    senderUrl: sender?.tab?.url || "",
+    explicitTabId: Number(message?.tabId) || null
+  });
   handleMessage(message, sender)
     .then((response) => sendResponse(response))
-    .catch((error) =>
+    .catch((error) => {
+      logger.error("runtime message failed", {
+        type: message?.type || "",
+        error: serializeError(error)
+      });
       sendResponse({
         ok: false,
         error: error?.message || "Unexpected extension error."
-      })
-    );
+      });
+    });
 
   return true;
 });
@@ -101,19 +123,29 @@ async function handleMessage(message, sender) {
     case "popup:init":
       return buildSurfaceInitResponse(message || {}, false, sender);
     case "popup:analyze":
-      return handleAnalyze(message || {}, { sender });
+      return handleAnalyze(message || {}, {
+        sender,
+        surface: "popup",
+        allowDomTranscriptLoader: true
+      });
     case "panel:init":
       return buildSurfaceInitResponse(message || {}, true, sender);
     case "panel:open":
       return openWorkspace(message || {}, sender);
     case "panel:analyze":
-      return handleAnalyze(message || {}, { sender });
+      return handleAnalyze(message || {}, {
+        sender,
+        surface: "panel",
+        allowDomTranscriptLoader: true
+      });
     case "inline:init":
       return buildInlineInitResponse(message || {}, sender);
     case "inline:analyze":
       return handleAnalyze(message || {}, {
         sender,
-        preferSenderTab: true
+        preferSenderTab: true,
+        surface: "inline",
+        allowDomTranscriptLoader: false
       });
     case "video:sources":
       {
@@ -144,6 +176,11 @@ async function handleMessage(message, sender) {
         ok: true,
         uiHints: await updateUiHints(message.updates || {})
       };
+    case "debug:getHistory":
+      return {
+        ok: true,
+        history: Debug.getHistory ? Debug.getHistory() : []
+      };
     case "settings:update":
       return handleSettingsUpdate(message || {}, sender);
     default:
@@ -170,6 +207,12 @@ async function buildInlineInitResponse(message, sender) {
   const targetTab = await resolveContextTab(message, sender, true);
   const pageContext = await getHydratedPageContext(targetTab);
   const settings = await loadSettings();
+  logger.info("inline init resolved", {
+    targetTabId: targetTab?.id || null,
+    supported: Boolean(pageContext?.supported),
+    videoId: pageContext?.video?.videoId || null,
+    transcriptAvailable: Boolean(pageContext?.transcriptAvailable)
+  });
   return {
     ok: true,
     inlineSettings: {
@@ -202,6 +245,9 @@ async function openWorkspace(message, sender) {
     }
 
     await openSidePanel(windowId);
+    logger.info("workspace opened", {
+      windowId
+    });
   }
 
   const tab = await resolveTabForLaunch(message, sender);
@@ -228,6 +274,11 @@ async function openWorkspace(message, sender) {
     await clearLaunchRequest();
   }
 
+  logger.info("workspace request prepared", {
+    tabId: tab.id,
+    request: summarizeRequest(normalizedRequest)
+  });
+
   return {
     ok: true,
     pageContext,
@@ -238,6 +289,10 @@ async function openWorkspace(message, sender) {
 async function handleAnalyze(message, options = {}) {
   const settings = await loadSettings();
   const request = message.request || {};
+  const traceId = Debug.createTraceId
+    ? Debug.createTraceId(message?.type || request?.mode || "analyze")
+    : `trace-${Date.now()}`;
+  const analysisOptions = normalizeAnalysisOptions(options);
   const targetTab = await resolveContextTab(
     message,
     options.sender,
@@ -247,11 +302,25 @@ async function handleAnalyze(message, options = {}) {
   const normalizedRequest = resolveRequestedAction(pageContext, request);
 
   if (!normalizedRequest) {
+    logger.warn("analyze request rejected", {
+      traceId,
+      request: summarizeRequest(request),
+      pageContext: summarizePageContext(pageContext)
+    });
     return {
       ok: false,
       error: "No suitable source is available for analysis."
     };
   }
+
+  logger.info("analyze request started", {
+    traceId,
+    surface: analysisOptions.surface,
+    allowDomTranscriptLoader: analysisOptions.allowDomTranscriptLoader,
+    request: summarizeRequest(normalizedRequest),
+    targetTabId: targetTab?.id || null,
+    pageContext: summarizePageContext(pageContext)
+  });
 
   let analysis;
   if (normalizedRequest.mode === "manual") {
@@ -265,7 +334,13 @@ async function handleAnalyze(message, options = {}) {
   } else if (normalizedRequest.mode === "page") {
     analysis = await analyzePage(targetTab, settings);
   } else if (normalizedRequest.mode === "youtube") {
-    analysis = await analyzeYouTube(targetTab, normalizedRequest, settings);
+    analysis = await analyzeYouTube(
+      targetTab,
+      normalizedRequest,
+      settings,
+      traceId,
+      analysisOptions
+    );
   } else {
     analysis = {
       ok: false,
@@ -274,6 +349,12 @@ async function handleAnalyze(message, options = {}) {
   }
 
   if (!analysis.ok) {
+    logger.warn("analyze request failed", {
+      traceId,
+      request: summarizeRequest(normalizedRequest),
+      error: analysis.error || "",
+      acquisition: summarizeAcquisition(analysis.acquisition)
+    });
     return {
       ok: false,
       error: analysis.error,
@@ -287,6 +368,12 @@ async function handleAnalyze(message, options = {}) {
   if (settings.debugMode) {
     await persistDebugReport(analysis.report);
   }
+
+  logger.info("analyze request succeeded", {
+    traceId,
+    request: summarizeRequest(normalizedRequest),
+    report: summarizeReportForLog(analysis.report)
+  });
 
   return {
     report: analysis.report,
@@ -386,9 +473,14 @@ async function analyzeDirectText(text, settings, sourceMeta) {
   };
 }
 
-async function analyzeYouTube(tab, request, settings) {
+async function analyzeYouTube(tab, request, settings, traceId, options = {}) {
   const adapterResponse = await requestTabExtraction(tab?.id, { type: "youtube:page-adapter" });
   if (!adapterResponse?.ok || !adapterResponse.adapter) {
+    logger.warn("youtube adapter unavailable", {
+      traceId,
+      tabId: tab?.id || null,
+      response: adapterResponse || null
+    });
     return {
       ok: false,
       error:
@@ -398,6 +490,13 @@ async function analyzeYouTube(tab, request, settings) {
   }
 
   const adapter = adapterResponse.adapter;
+  logger.info("youtube adapter resolved", {
+    traceId,
+    tabId: tab?.id || null,
+    surface: options.surface || "unknown",
+    adapter: summarizeAdapter(adapter),
+    request: summarizeRequest(request)
+  });
   const navigationGuard = createNavigationAbortController(tab.id, adapter.videoId);
   let acquisition;
   try {
@@ -406,13 +505,20 @@ async function analyzeYouTube(tab, request, settings) {
       tab.id,
       request,
       settings,
-      navigationGuard.signal
+      navigationGuard.signal,
+      traceId,
+      options
     );
   } finally {
     navigationGuard.stop();
   }
 
   if (navigationGuard.signal.aborted) {
+    logger.warn("youtube analysis aborted by navigation", {
+      traceId,
+      tabId: tab?.id || null,
+      adapterVideoId: adapter.videoId || ""
+    });
     return {
       ok: false,
       error: "The YouTube tab changed while ScriptLens was resolving sources. Try again on the current video."
@@ -421,6 +527,12 @@ async function analyzeYouTube(tab, request, settings) {
 
   const latestTab = await getTabById(tab.id).catch(() => null);
   if (latestTab?.url && extractVideoIdFromUrl(latestTab.url) !== adapter.videoId) {
+    logger.warn("youtube analysis video changed after acquisition", {
+      traceId,
+      tabId: tab?.id || null,
+      expectedVideoId: adapter.videoId || "",
+      actualVideoId: extractVideoIdFromUrl(latestTab.url) || ""
+    });
     return {
       ok: false,
       error: "The YouTube tab changed while ScriptLens was resolving sources. Try again on the current video."
@@ -428,6 +540,11 @@ async function analyzeYouTube(tab, request, settings) {
   }
 
   if (!acquisition.ok || !acquisition.text) {
+    logger.warn("youtube acquisition unavailable", {
+      traceId,
+      tabId: tab?.id || null,
+      acquisition: summarizeAcquisition(acquisition)
+    });
     return {
       ok: false,
       error: buildAcquisitionFailureMessage(acquisition),
@@ -443,12 +560,26 @@ async function analyzeYouTube(tab, request, settings) {
   });
 
   if (!detectionResult.ok) {
+    logger.warn("youtube detection failed", {
+      traceId,
+      tabId: tab?.id || null,
+      error: detectionResult.error || "",
+      acquisition: summarizeAcquisition(acquisition)
+    });
     return {
       ok: false,
       error: detectionResult.error,
       acquisition
     };
   }
+
+  logger.info("youtube analysis produced report", {
+    traceId,
+    tabId: tab?.id || null,
+    acquisition: summarizeAcquisition(acquisition),
+    score: detectionResult.detection?.aiScore || 0,
+    verdict: detectionResult.detection?.verdict || ""
+  });
 
   return {
     ok: true,
@@ -466,12 +597,32 @@ async function analyzeYouTube(tab, request, settings) {
   };
 }
 
-async function resolveYouTubeAcquisition(adapter, tabId, request, settings, signal) {
+async function resolveYouTubeAcquisition(
+  adapter,
+  tabId,
+  request,
+  settings,
+  signal,
+  traceId,
+  options = {}
+) {
   const includeSources = normalizeVideoSources(request.includeSources);
   const transcriptRequested = includeSources.includes("transcript");
   const requireTranscript = request.requireTranscript !== false;
   const allowFallbackText = Boolean(request.allowFallbackText) || !transcriptRequested;
+  const allowDomTranscriptLoader = options.allowDomTranscriptLoader !== false;
   let acquisition = null;
+
+  logger.info("youtube acquisition started", {
+    traceId,
+    tabId: tabId || null,
+    surface: options.surface || "unknown",
+    includeSources,
+    requireTranscript,
+    allowFallbackText,
+    allowDomTranscriptLoader,
+    adapter: summarizeAdapter(adapter)
+  });
 
   if (transcriptRequested) {
     acquisition = await globalThis.ScriptLens.transcript.acquire.resolveBestTranscript({
@@ -484,16 +635,25 @@ async function resolveYouTubeAcquisition(adapter, tabId, request, settings, sign
       allowBackendTranscriptFallback: Boolean(settings.allowBackendTranscriptFallback),
       backendEndpoint: settings.backendTranscriptEndpoint || "",
       extensionVersion: chrome.runtime.getManifest()?.version || "0.1.0",
+      traceId,
       refreshAdapter: async () => {
         const refreshed = await requestTabExtraction(tabId, { type: "youtube:page-adapter" });
         return refreshed?.ok ? refreshed.adapter : adapter;
       },
-      domTranscriptLoader: async () => {
-        const opened = await requestTabExtraction(tabId, {
-          type: "youtube:open-transcript-panel"
-        });
-        return opened?.ok ? opened.adapter : adapter;
-      }
+      domTranscriptLoader: allowDomTranscriptLoader
+        ? async () => {
+            const opened = await requestTabExtraction(tabId, {
+              type: "youtube:open-transcript-panel"
+            });
+            return opened?.ok ? opened.adapter : adapter;
+          }
+        : null
+    });
+
+    logger.info("youtube transcript resolution finished", {
+      traceId,
+      tabId: tabId || null,
+      acquisition: summarizeAcquisition(acquisition)
     });
 
     if (acquisition.ok && acquisition.text) {
@@ -521,6 +681,12 @@ async function resolveYouTubeAcquisition(adapter, tabId, request, settings, sign
 
   const fallbackSources = resolveFallbackSources(includeSources, adapter, allowFallbackText);
   const fallback = buildWeakFallbackAcquisition(adapter, fallbackSources, settings.maxTextLength);
+  logger.info("youtube fallback candidate built", {
+    traceId,
+    tabId: tabId || null,
+    fallbackSources,
+    acquisition: summarizeAcquisition(fallback)
+  });
   if (fallback.ok) {
     if (acquisition) {
       fallback.errors = []
@@ -962,6 +1128,9 @@ function createNavigationAbortController(tabId, expectedVideoId) {
 
 async function requestTabExtraction(tabId, message) {
   if (!Number.isFinite(Number(tabId))) {
+    logger.warn("tab extraction skipped without tab id", {
+      messageType: message?.type || ""
+    });
     return {
       ok: false,
       error: "Open a supported YouTube video and try again."
@@ -971,6 +1140,11 @@ async function requestTabExtraction(tabId, message) {
   try {
     return await sendTabMessage(tabId, message);
   } catch (error) {
+    logger.warn("tab extraction failed", {
+      tabId,
+      messageType: message?.type || "",
+      error: serializeError(error)
+    });
     return {
       ok: false,
       error: error?.message || "Could not communicate with the current page."
@@ -981,16 +1155,25 @@ async function requestTabExtraction(tabId, message) {
 async function getHydratedPageContext(tab) {
   const resolvedTab = tab || (await getActiveTab().catch(() => null));
   if (!resolvedTab?.id) {
+    logger.warn("page context unavailable without active tab");
     return buildUnsupportedPageContext(null);
   }
 
   if (!isSupportedYouTubeUrl(resolvedTab.url)) {
+    logger.info("page context unsupported", {
+      tabId: resolvedTab?.id || null,
+      url: resolvedTab?.url || ""
+    });
     return buildUnsupportedPageContext(resolvedTab);
   }
 
   try {
     const payload = await sendTabMessage(resolvedTab.id, { type: "page:context" });
     if (!payload?.ok) {
+      logger.warn("page context payload failed", {
+        tabId: resolvedTab.id,
+        error: payload?.error || ""
+      });
       return buildUnsupportedPageContext(
         resolvedTab,
         payload?.error || "Reload this YouTube tab and try again."
@@ -998,8 +1181,16 @@ async function getHydratedPageContext(tab) {
     }
 
     const rawContext = payload.context || { supported: true };
+    logger.info("page context hydrated", {
+      tabId: resolvedTab.id,
+      context: summarizePageContext(rawContext)
+    });
     return hydratePageContext(rawContext, resolvedTab);
   } catch (error) {
+    logger.warn("page context messaging failed", {
+      tabId: resolvedTab?.id || null,
+      error: serializeError(error)
+    });
     return buildUnsupportedPageContext(
       resolvedTab,
       "Reload this YouTube tab and try again."
@@ -1291,11 +1482,20 @@ async function getCurrentHost() {
 
 async function resolveContextTab(message, sender, preferSenderTab = false) {
   if (preferSenderTab && sender?.tab?.id) {
+    logger.info("resolved tab from sender", {
+      preferSenderTab,
+      tabId: sender.tab.id,
+      url: sender.tab.url || ""
+    });
     return sender.tab;
   }
 
   const explicitTabId = Number(message?.tabId);
   if (Number.isFinite(explicitTabId)) {
+    logger.info("resolved tab from explicit id", {
+      tabId: explicitTabId,
+      windowId: Number(message?.windowId) || null
+    });
     return getTabById(explicitTabId).catch(() => ({
       id: explicitTabId,
       windowId: Number(message?.windowId) || null,
@@ -1304,10 +1504,22 @@ async function resolveContextTab(message, sender, preferSenderTab = false) {
   }
 
   if (sender?.tab?.id) {
+    logger.info("resolved tab from sender fallback", {
+      tabId: sender.tab.id,
+      url: sender.tab.url || ""
+    });
     return sender.tab;
   }
 
+  logger.info("resolved tab from active browser tab");
   return getActiveTab();
+}
+
+function normalizeAnalysisOptions(options = {}) {
+  return {
+    surface: options.surface || "unknown",
+    allowDomTranscriptLoader: options.allowDomTranscriptLoader !== false
+  };
 }
 
 async function resolveTabForLaunch(message, sender) {
@@ -1513,4 +1725,130 @@ function extractVideoIdFromUrl(value) {
   } catch (error) {
     return "";
   }
+}
+
+function summarizeRequest(request) {
+  if (!request) {
+    return null;
+  }
+
+  return {
+    mode: request.mode || null,
+    includeSources: Array.isArray(request.includeSources)
+      ? request.includeSources.slice()
+      : [],
+    trackBaseUrl: request.trackBaseUrl || "",
+    requireTranscript:
+      typeof request.requireTranscript === "boolean" ? request.requireTranscript : null,
+    allowFallbackText: Boolean(request.allowFallbackText)
+  };
+}
+
+function summarizePageContext(pageContext) {
+  if (!pageContext) {
+    return null;
+  }
+
+  return {
+    supported: Boolean(pageContext.supported),
+    tabId: pageContext.tabId || null,
+    url: pageContext.url || "",
+    isYouTubeVideo: Boolean(pageContext.isYouTubeVideo),
+    transcriptAvailable: Boolean(pageContext.transcriptAvailable),
+    video: pageContext.video
+      ? {
+          title: pageContext.video.title || "",
+          videoId: pageContext.video.videoId || "",
+          availableSources: pageContext.video.availableSources || {},
+          transcriptTrackCount: Array.isArray(pageContext.video.transcriptTracks)
+            ? pageContext.video.transcriptTracks.length
+            : 0
+        }
+      : null
+  };
+}
+
+function summarizeAdapter(adapter) {
+  if (!adapter) {
+    return null;
+  }
+
+  return {
+    title: adapter.title || "",
+    videoId: adapter.videoId || "",
+    descriptionLength: String(adapter.description || "").length,
+    descriptionTranscriptLength: String(adapter.descriptionTranscriptText || "").length,
+    domTranscriptSegments: Array.isArray(adapter.domTranscriptSegments)
+      ? adapter.domTranscriptSegments.length
+      : 0,
+    bootstrap: {
+      captionTracks: Array.isArray(adapter.bootstrapSnapshot?.captionTracks)
+        ? adapter.bootstrapSnapshot.captionTracks.length
+        : 0,
+      transcriptParams: Boolean(adapter.bootstrapSnapshot?.transcriptParams),
+      observedTranscriptRequest: Boolean(
+        adapter.bootstrapSnapshot?.observedTranscriptRequest?.params
+      ),
+      hl: adapter.bootstrapSnapshot?.hl || ""
+    }
+  };
+}
+
+function summarizeAcquisition(acquisition) {
+  if (!acquisition) {
+    return null;
+  }
+
+  return {
+    ok: Boolean(acquisition.ok),
+    kind: acquisition.kind || null,
+    provider: acquisition.provider || null,
+    providerClass: acquisition.providerClass || null,
+    strategy: acquisition.strategy || null,
+    sourceLabel: acquisition.sourceLabel || null,
+    sourceConfidence: acquisition.sourceConfidence || null,
+    quality: acquisition.quality || null,
+    acquisitionState: acquisition.acquisitionState || null,
+    warnings: Array.isArray(acquisition.warnings) ? acquisition.warnings.slice(0, 8) : [],
+    failureReason: acquisition.failureReason || null,
+    resolverPath: Array.isArray(acquisition.resolverPath)
+      ? acquisition.resolverPath.slice(0, 8)
+      : [],
+    errors: Array.isArray(acquisition.errors)
+      ? acquisition.errors.slice(0, 6).map((error) => ({
+          strategy: error?.strategy || "",
+          code: error?.code || "",
+          message: error?.message || ""
+        }))
+      : [],
+    segmentCount: acquisition.segmentCount || 0,
+    coverageRatio:
+      typeof acquisition.coverageRatio === "number" ? acquisition.coverageRatio : null,
+    textLength: String(acquisition.text || "").length
+  };
+}
+
+function summarizeReportForLog(report) {
+  if (!report) {
+    return null;
+  }
+
+  return {
+    source: report.source || "",
+    score: report.score || 0,
+    verdict: report.verdict || "",
+    acquisition: summarizeAcquisition(report.acquisition)
+  };
+}
+
+function serializeError(error) {
+  if (!error) {
+    return null;
+  }
+
+  return {
+    name: error.name || "Error",
+    message: error.message || String(error),
+    stack: error.stack || ""
+  };
 }

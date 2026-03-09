@@ -8,20 +8,35 @@
   const App = globalThis.AIScriptDetector || {};
   const Text = App.text;
   const Dom = App.dom;
+  const Debug = globalThis.ScriptLensDebug || {};
+  const logger = Debug.createLogger
+    ? Debug.createLogger("content")
+    : console;
+  if (Debug.installGlobalErrorHandlers) {
+    Debug.installGlobalErrorHandlers("content");
+  }
 
   const BOOTSTRAP_ATTRIBUTE = "data-scriptlens-youtube-bootstrap";
   const BOOTSTRAP_REQUEST_EVENT = "scriptlens:request-youtube-bootstrap";
   const BOOTSTRAP_READY_EVENT = "scriptlens:youtube-bootstrap-ready";
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    logger.info("page message", {
+      type: message?.type || "",
+      href: location.href
+    });
     handleMessage(message)
       .then((response) => sendResponse(response))
-      .catch((error) =>
+      .catch((error) => {
+        logger.error("page message failed", {
+          type: message?.type || "",
+          error: summarizeError(error)
+        });
         sendResponse({
           ok: false,
           error: error?.message || "Page text extraction failed."
-        })
-      );
+        });
+      });
 
     return true;
   });
@@ -103,6 +118,12 @@
     const pagePayload = Dom.extractVisibleDocumentPayload(document);
     const adapter = isYouTubeVideoPage() ? await buildYouTubePageAdapter() : null;
     const video = adapter ? buildVideoContextFromAdapter(adapter) : null;
+    logger.info("buildPageContextPayload", {
+      href: location.href,
+      isYouTubeVideoPage: isYouTubeVideoPage(),
+      extractedWordCount: pagePayload.metadata?.extractedWordCount || 0,
+      video: summarizeVideo(video)
+    });
 
     return {
       ok: true,
@@ -125,6 +146,9 @@
 
   async function buildYouTubePageAdapter() {
     if (!isYouTubeVideoPage()) {
+      logger.warn("buildYouTubePageAdapter called outside supported page", {
+        href: location.href
+      });
       return null;
     }
 
@@ -134,6 +158,16 @@
     const descriptionTranscriptText = getDescriptionTranscriptText(description);
     const videoDurationSeconds =
       bootstrapSnapshot.videoDurationSeconds || getVideoDurationSecondsFromDom();
+
+    logger.info("buildYouTubePageAdapter", {
+      href: location.href,
+      title: getDisplayTitle(),
+      bootstrap: summarizeBootstrap(bootstrapSnapshot),
+      descriptionLength: description.length,
+      descriptionTranscriptLength: descriptionTranscriptText.length,
+      domTranscriptSegments: domTranscriptSegments.length,
+      videoDurationSeconds
+    });
 
     return {
       title: getDisplayTitle(),
@@ -218,7 +252,12 @@
         }
         finished = true;
         window.removeEventListener(BOOTSTRAP_READY_EVENT, complete);
-        resolve(readBootstrapAttribute());
+        const snapshot = readBootstrapAttribute();
+        logger.info("requestBootstrapSnapshot complete", {
+          href: location.href,
+          snapshot: summarizeBootstrap(snapshot)
+        });
+        resolve(snapshot);
       };
 
       window.addEventListener(BOOTSTRAP_READY_EVENT, complete, { once: true });
@@ -273,11 +312,25 @@
     }
 
     if (getVisibleTranscriptSegments().length) {
+      logger.info("openYouTubeTranscriptPanel using already visible transcript", {
+        href: location.href,
+        visibleSegments: getVisibleTranscriptSegments().length
+      });
       return buildYouTubePageAdapter();
     }
 
     const opened = await ensureTranscriptPanelVisible();
     const adapter = await buildYouTubePageAdapter();
+    logger.info("openYouTubeTranscriptPanel result", {
+      href: location.href,
+      opened,
+      adapter: {
+        domTranscriptSegments: Array.isArray(adapter?.domTranscriptSegments)
+          ? adapter.domTranscriptSegments.length
+          : 0,
+        transcriptParams: Boolean(adapter?.bootstrapSnapshot?.transcriptParams)
+      }
+    });
 
     if (!opened && !adapter?.domTranscriptSegments?.length) {
       return {
@@ -454,30 +507,79 @@
       return true;
     }
 
-    await expandDescriptionSection();
+    logger.info("ensureTranscriptPanelVisible:start", {
+      href: location.href,
+      controls: summarizeTranscriptControls()
+    });
+    const descriptionExpanded = await expandDescriptionSection();
+    logger.info("ensureTranscriptPanelVisible:afterExpand", {
+      href: location.href,
+      descriptionExpanded,
+      controls: summarizeTranscriptControls()
+    });
 
-    const directTrigger = findTranscriptTrigger();
+    const directTrigger = await waitForTranscriptTrigger(1400);
+    logger.info("ensureTranscriptPanelVisible:directTrigger", {
+      found: Boolean(directTrigger),
+      label: readElementSummary(directTrigger)
+    });
     if (directTrigger) {
       clickElement(directTrigger);
-      if (await waitForTranscriptSegments(1200)) {
+      if (await waitForTranscriptSegments(3200)) {
+        logger.info("ensureTranscriptPanelVisible:directTriggerWorked", {
+          href: location.href
+        });
         return true;
       }
     }
 
+    const transcriptPanel = findTranscriptPanelElement();
+    logger.info("ensureTranscriptPanelVisible:transcriptPanel", {
+      found: Boolean(transcriptPanel),
+      panel: summarizePanelElement(transcriptPanel)
+    });
+    if (transcriptPanel) {
+      revealEngagementPanel(transcriptPanel, "ENGAGEMENT_PANEL_VISIBILITY_EXPANDED");
+      if (await waitForTranscriptSegments(2800)) {
+        logger.info("ensureTranscriptPanelVisible:transcriptPanelRevealWorked", {
+          href: location.href
+        });
+        return true;
+      }
+    }
+
+    if (await openTranscriptFromTimelinePanel()) {
+      return true;
+    }
+
     const moreActionsButton = findMoreActionsButton();
+    logger.info("ensureTranscriptPanelVisible:moreActions", {
+      found: Boolean(moreActionsButton),
+      label: readElementSummary(moreActionsButton)
+    });
     if (moreActionsButton) {
       clickElement(moreActionsButton);
       await delay(220);
 
       const menuTrigger = findTranscriptMenuItem();
+      logger.info("ensureTranscriptPanelVisible:menuTrigger", {
+        found: Boolean(menuTrigger),
+        label: readElementSummary(menuTrigger)
+      });
       if (menuTrigger) {
         clickElement(menuTrigger);
-        if (await waitForTranscriptSegments(1400)) {
+        if (await waitForTranscriptSegments(3200)) {
+          logger.info("ensureTranscriptPanelVisible:menuTriggerWorked", {
+            href: location.href
+          });
           return true;
         }
       }
     }
 
+    logger.warn("ensureTranscriptPanelVisible:failed", {
+      href: location.href
+    });
     return getVisibleTranscriptSegments().length > 0;
   }
 
@@ -492,15 +594,87 @@
     return getVisibleTranscriptSegments().length > 0;
   }
 
+  async function waitForTranscriptTrigger(timeoutMs) {
+    const deadlineAt = Date.now() + timeoutMs;
+    let trigger = findTranscriptTrigger();
+
+    while (!trigger && Date.now() < deadlineAt) {
+      await delay(140);
+      trigger = findTranscriptTrigger();
+    }
+
+    return trigger;
+  }
+
+  async function openTranscriptFromTimelinePanel() {
+    const timelineTrigger = findTimelinePanelTrigger();
+    logger.info("ensureTranscriptPanelVisible:timelineTrigger", {
+      found: Boolean(timelineTrigger),
+      label: readElementSummary(timelineTrigger)
+    });
+    if (timelineTrigger) {
+      clickElement(timelineTrigger);
+      await delay(320);
+    }
+
+    const timelinePanel = await waitForTimelinePanel(1800);
+    logger.info("ensureTranscriptPanelVisible:timelinePanel", {
+      found: Boolean(timelinePanel),
+      panel: summarizePanelElement(timelinePanel)
+    });
+    if (!timelinePanel) {
+      return false;
+    }
+
+    revealEngagementPanel(timelinePanel, "ENGAGEMENT_PANEL_VISIBILITY_EXPANDED");
+    await delay(180);
+
+    const transcriptChip = findTranscriptChip(timelinePanel) || findTranscriptTrigger();
+    logger.info("ensureTranscriptPanelVisible:timelineTranscriptChip", {
+      found: Boolean(transcriptChip),
+      label: readElementSummary(transcriptChip)
+    });
+    if (!transcriptChip) {
+      return false;
+    }
+
+    clickElement(transcriptChip);
+    if (await waitForTranscriptSegments(3600)) {
+      logger.info("ensureTranscriptPanelVisible:timelineTranscriptChipWorked", {
+        href: location.href
+      });
+      return true;
+    }
+
+    return false;
+  }
+
+  async function waitForTimelinePanel(timeoutMs) {
+    const deadlineAt = Date.now() + timeoutMs;
+    let panel = findTimelinePanelElement();
+
+    while (!panel && Date.now() < deadlineAt) {
+      await delay(160);
+      panel = findTimelinePanelElement();
+    }
+
+    return panel;
+  }
+
   function findTranscriptTrigger() {
     const selectorMatches = [
       "button[aria-label*='transcript' i]",
+      "[role='button'][aria-label*='transcript' i]",
       "button[title*='transcript' i]",
-      "ytd-video-description-transcript-section-renderer button"
+      "ytd-video-description-transcript-section-renderer button",
+      "ytd-video-description-transcript-section-renderer [role='button']",
+      "ytd-video-description-transcript-section-renderer yt-button-shape button",
+      "ytd-engagement-panel-section-list-renderer [aria-label*='transcript' i]",
+      "[aria-label='Transcript']"
     ];
 
     for (const selector of selectorMatches) {
-      const element = document.querySelector(selector);
+      const element = Array.from(document.querySelectorAll(selector)).find(isElementVisible);
       if (isElementVisible(element)) {
         return resolveClickableElement(element);
       }
@@ -509,16 +683,48 @@
     return findVisibleElementByText(
       [
         "button",
+        "[role='button']",
+        "[role='tab']",
         "ytd-button-renderer",
         "tp-yt-paper-button",
-        "yt-formatted-string"
+        "yt-formatted-string",
+        "yt-button-shape button",
+        "yt-chip-cloud-chip-renderer",
+        "button-view-model"
       ],
       "transcript"
     );
   }
 
+  function findTimelinePanelTrigger() {
+    const selectors = [
+      "button[aria-label*='in this video' i]",
+      "[role='button'][aria-label*='in this video' i]"
+    ];
+
+    for (const selector of selectors) {
+      const element = Array.from(document.querySelectorAll(selector)).find(isElementVisible);
+      if (isElementVisible(element)) {
+        return resolveClickableElement(element);
+      }
+    }
+
+    return findVisibleElementByText(
+      [
+        "button",
+        "[role='button']",
+        "yt-button-shape button",
+        "ytd-button-renderer",
+        "tp-yt-paper-button",
+        "yt-formatted-string"
+      ],
+      "in this video"
+    );
+  }
+
   function findMoreActionsButton() {
     const selectors = [
+      "#actions button[aria-label*='more' i]",
       "ytd-menu-renderer button[aria-label*='more' i]",
       "button[aria-label*='more actions' i]",
       "button[aria-label='Action menu']",
@@ -542,23 +748,77 @@
         "ytd-menu-service-item-renderer",
         "tp-yt-paper-item",
         "yt-formatted-string",
-        "button"
+        "button",
+        "[role='menuitem']",
+        "[role='button']"
       ],
       "transcript"
     );
   }
 
+  function findTranscriptPanelElement() {
+    const selectors = [
+      "ytd-engagement-panel-section-list-renderer[target-id='engagement-panel-searchable-transcript']",
+      "ytd-engagement-panel-section-list-renderer[panel-identifier='engagement-panel-searchable-transcript']"
+    ];
+
+    for (const selector of selectors) {
+      const element = document.querySelector(selector);
+      if (element instanceof HTMLElement) {
+        return element;
+      }
+    }
+
+    return null;
+  }
+
+  function findTimelinePanelElement() {
+    const selectors = [
+      "ytd-engagement-panel-section-list-renderer[target-id='engagement-panel-timeline-view-consolidated']",
+      "ytd-engagement-panel-section-list-renderer[panel-identifier='engagement-panel-timeline-view-consolidated']"
+    ];
+
+    for (const selector of selectors) {
+      const element = document.querySelector(selector);
+      if (element instanceof HTMLElement) {
+        return element;
+      }
+    }
+
+    return null;
+  }
+
+  function findTranscriptChip(rootElement) {
+    return findElementByTextWithin(
+      rootElement,
+      [
+        "button",
+        "[role='button']",
+        "[role='tab']",
+        "yt-formatted-string",
+        "yt-button-shape button",
+        "yt-chip-cloud-chip-renderer"
+      ],
+      "transcript",
+      false
+    );
+  }
+
   function findVisibleElementByText(selectors, textNeedle) {
+    return findElementByTextWithin(document, selectors, textNeedle, true);
+  }
+
+  function findElementByTextWithin(rootElement, selectors, textNeedle, requireVisible) {
     const needle = String(textNeedle || "").trim().toLowerCase();
     if (!needle) {
       return null;
     }
 
     for (const selector of selectors) {
-      const elements = Array.from(document.querySelectorAll(selector));
+      const elements = Array.from(rootElement.querySelectorAll(selector));
       const match = elements.find((element) => {
         const text = Text.sanitizeInput(element?.textContent || "").toLowerCase();
-        return text.includes(needle) && isElementVisible(element);
+        return text.includes(needle) && (!requireVisible || isElementVisible(element));
       });
       if (match) {
         return resolveClickableElement(match);
@@ -572,9 +832,11 @@
     const candidates = [
       "tp-yt-paper-button#expand-sizer",
       "ytd-watch-metadata tp-yt-paper-button#expand",
+      "ytd-watch-metadata button#expand",
       "ytd-watch-metadata ytd-text-inline-expander tp-yt-paper-button",
       "ytd-watch-metadata button[aria-label*='more' i]",
       "#description-inline-expander tp-yt-paper-button#expand",
+      "#description-inline-expander button#expand",
       "#description-inline-expander tp-yt-paper-button",
       "#description-inline-expander button[aria-label*='more' i]",
       "tp-yt-paper-button"
@@ -584,18 +846,25 @@
       const elements = Array.from(document.querySelectorAll(selector));
       const target = elements.find((element) => {
         const text = Text.sanitizeInput(element?.textContent || "").toLowerCase();
-        return Boolean(text.includes("more") || text.includes("expand"));
+        return Boolean((text.includes("more") || text.includes("expand")) && isElementVisible(element));
       });
 
       if (!target) {
         continue;
       }
 
+      logger.info("expandDescriptionSection:clicked", {
+        selector,
+        target: readElementSummary(target)
+      });
       clickElement(target);
-      await delay(220);
+      await delay(420);
       return true;
     }
 
+    logger.info("expandDescriptionSection:notFound", {
+      href: location.href
+    });
     return false;
   }
 
@@ -644,6 +913,23 @@
     target.click();
   }
 
+  function revealEngagementPanel(panel, visibilityValue) {
+    if (!(panel instanceof HTMLElement)) {
+      return;
+    }
+
+    panel.hidden = false;
+    panel.removeAttribute("hidden");
+    panel.style.display = "";
+    panel.style.visibility = "";
+    if (visibilityValue) {
+      panel.setAttribute("visibility", visibilityValue);
+    }
+    panel.scrollIntoView({
+      block: "nearest"
+    });
+  }
+
   function buildRequestShapeValidation(bootstrapSnapshot) {
     const observed = bootstrapSnapshot?.observedTranscriptRequest || null;
     if (!observed) {
@@ -666,5 +952,90 @@
 
   function delay(timeoutMs) {
     return new Promise((resolve) => window.setTimeout(resolve, timeoutMs));
+  }
+
+  function summarizeBootstrap(snapshot) {
+    if (!snapshot) {
+      return null;
+    }
+
+    return {
+      videoId: snapshot.videoId || "",
+      captionTracks: Array.isArray(snapshot.captionTracks) ? snapshot.captionTracks.length : 0,
+      translationLanguages: Array.isArray(snapshot.translationLanguages)
+        ? snapshot.translationLanguages.length
+        : 0,
+      transcriptParams: Boolean(snapshot.transcriptParams),
+      observedTranscriptRequest: Boolean(snapshot.observedTranscriptRequest?.params),
+      clientName: snapshot.clientName || "",
+      hl: snapshot.hl || ""
+    };
+  }
+
+  function summarizeVideo(video) {
+    if (!video) {
+      return null;
+    }
+
+    return {
+      title: video.title || "",
+      transcriptAvailable: Boolean(video.transcriptAvailable),
+      descriptionAvailable: Boolean(video.descriptionAvailable),
+      transcriptTrackCount: Array.isArray(video.transcriptTracks)
+        ? video.transcriptTracks.length
+        : 0,
+      availableSources: video.availableSources || {}
+    };
+  }
+
+  function summarizeError(error) {
+    if (!error) {
+      return null;
+    }
+
+    return {
+      message: error.message || String(error),
+      stack: error.stack || ""
+    };
+  }
+
+  function readElementSummary(element) {
+    if (!(element instanceof HTMLElement)) {
+      return "";
+    }
+
+    return Text.sanitizeInput(
+      [
+        element.tagName || "",
+        element.getAttribute("aria-label") || "",
+        element.getAttribute("title") || "",
+        element.textContent || ""
+      ].join(" ")
+    );
+  }
+
+  function summarizePanelElement(element) {
+    if (!(element instanceof HTMLElement)) {
+      return null;
+    }
+
+    return {
+      tagName: element.tagName || "",
+      targetId: element.getAttribute("target-id") || "",
+      panelIdentifier: element.getAttribute("panel-identifier") || "",
+      visibility: element.getAttribute("visibility") || "",
+      hidden: element.hasAttribute("hidden")
+    };
+  }
+
+  function summarizeTranscriptControls() {
+    return {
+      visibleSegments: getVisibleTranscriptSegments().length,
+      hasDescriptionTranscriptSection: Boolean(
+        document.querySelector("ytd-video-description-transcript-section-renderer")
+      ),
+      hasTranscriptPanelElement: Boolean(findTranscriptPanelElement()),
+      hasTimelinePanelElement: Boolean(findTimelinePanelElement())
+    };
   }
 })();

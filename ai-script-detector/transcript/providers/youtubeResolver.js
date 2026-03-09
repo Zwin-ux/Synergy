@@ -2,6 +2,10 @@
   const ScriptLens = (root.ScriptLens = root.ScriptLens || {});
   const Transcript = (ScriptLens.transcript = ScriptLens.transcript || {});
   const Providers = (Transcript.providers = Transcript.providers || {});
+  const Debug = root.ScriptLensDebug || {};
+  const logger = Debug.createLogger
+    ? Debug.createLogger("youtube-resolver")
+    : console;
 
   const TOTAL_TIMEOUT_MS = 6000;
   const BOOTSTRAP_SETTLE_WINDOW_MS = 1200;
@@ -10,7 +14,7 @@
   const STRATEGY_TIMEOUTS = {
     "youtubei-transcript": 2200,
     "caption-track": 2200,
-    "dom-transcript": 2200
+    "dom-transcript": 7000
   };
 
   Providers.youtubeResolver = {
@@ -25,6 +29,17 @@
     const errors = [];
     const candidates = [];
     const resolvedContext = await settleAdapterState(context, startedAt + BOOTSTRAP_SETTLE_WINDOW_MS);
+    logger.info("resolve:start", {
+      traceId: context?.traceId || "",
+      videoId: resolvedContext?.adapter?.videoId || "",
+      transcriptParams: Boolean(resolvedContext?.adapter?.bootstrapSnapshot?.transcriptParams),
+      captionTracks: Array.isArray(resolvedContext?.adapter?.bootstrapSnapshot?.captionTracks)
+        ? resolvedContext.adapter.bootstrapSnapshot.captionTracks.length
+        : 0,
+      domTranscriptSegments: Array.isArray(resolvedContext?.adapter?.domTranscriptSegments)
+        ? resolvedContext.adapter.domTranscriptSegments.length
+        : 0
+    });
 
     const phaseOneTasks = [
       startStrategyTask(
@@ -45,6 +60,12 @@
 
     await waitForPhaseOne(phaseOneTasks, startedAt + PHASE_ONE_WINDOW_MS);
     collectSettledResults(phaseOneTasks, attempts, errors, candidates);
+    logger.info("resolve:afterPhaseOne", {
+      traceId: context?.traceId || "",
+      attempts: attempts.map(summarizeAttempt),
+      errors: errors.map(summarizeError),
+      candidates: candidates.map(summarizeCandidate)
+    });
 
     if (!hasStrongTranscriptCandidate(candidates)) {
       const result = await runStrategyWithTimeout(
@@ -61,6 +82,12 @@
       if (result.candidate) {
         candidates.push(result.candidate);
       }
+      logger.info("resolve:domTranscript", {
+        traceId: context?.traceId || "",
+        attempt: summarizeAttempt(result.attempt),
+        error: summarizeError(result.error),
+        candidate: summarizeCandidate(result.candidate)
+      });
     }
 
     const selection = chooseWinner(candidates);
@@ -69,6 +96,11 @@
       .map((attempt) => `${attempt.provider}:${attempt.strategy}`);
 
     if (!selection.winner) {
+      logger.warn("resolve:noWinner", {
+        traceId: context?.traceId || "",
+        attempts: attempts.map(summarizeAttempt),
+        errors: errors.map(summarizeError)
+      });
       return Transcript.normalize.buildUnavailableResult({
         requestedLanguageCode: context?.requestedLanguageCode || null,
         videoDurationSeconds: resolvedContext?.adapter?.videoDurationSeconds || null,
@@ -91,6 +123,12 @@
       resolverPath,
       winnerSelectedBy: selection.reasons
     };
+
+    logger.info("resolve:winner", {
+      traceId: context?.traceId || "",
+      winner: summarizeCandidate(winner),
+      reasons: selection.reasons
+    });
 
     return winner;
   }
@@ -143,10 +181,25 @@
 
     runStrategyWithTimeout(strategy, handler, context, deadlineAt, timeoutMs)
       .then((result) => {
+        logger.info("strategyTask:settled", {
+          traceId: context?.traceId || "",
+          strategy,
+          attempt: summarizeAttempt(result.attempt),
+          error: summarizeError(result.error),
+          candidate: summarizeCandidate(result.candidate)
+        });
         task.settled = true;
         task.result = result;
       })
       .catch((error) => {
+        logger.error("strategyTask:crashed", {
+          traceId: context?.traceId || "",
+          strategy,
+          error: {
+            message: error?.message || "",
+            stack: error?.stack || ""
+          }
+        });
         task.settled = true;
         task.result = {
           attempt: buildAttempt(strategy, false, false, 0, null, [], "unexpected_error"),
@@ -336,6 +389,54 @@
 
   function hasStrongTranscriptCandidate(candidates) {
     return candidates.some((candidate) => candidate?.quality === "strong-transcript");
+  }
+
+  function summarizeAttempt(attempt) {
+    if (!attempt) {
+      return null;
+    }
+
+    return {
+      strategy: attempt.strategy || "",
+      ok: Boolean(attempt.ok),
+      skipped: Boolean(attempt.skipped),
+      durationMs: attempt.durationMs || 0,
+      sourceConfidence: attempt.sourceConfidence || null,
+      warningCodes: Array.isArray(attempt.warningCodes)
+        ? attempt.warningCodes.slice(0, 6)
+        : [],
+      errorCode: attempt.errorCode || null
+    };
+  }
+
+  function summarizeError(error) {
+    if (!error) {
+      return null;
+    }
+
+    return {
+      strategy: error.strategy || "",
+      code: error.code || "",
+      message: error.message || ""
+    };
+  }
+
+  function summarizeCandidate(candidate) {
+    if (!candidate) {
+      return null;
+    }
+
+    return {
+      provider: candidate.provider || null,
+      strategy: candidate.strategy || null,
+      quality: candidate.quality || null,
+      sourceConfidence: candidate.sourceConfidence || null,
+      warnings: Array.isArray(candidate.warnings) ? candidate.warnings.slice(0, 6) : [],
+      segmentCount: candidate.segmentCount || 0,
+      coverageRatio:
+        typeof candidate.coverageRatio === "number" ? candidate.coverageRatio : null,
+      textLength: String(candidate.text || "").length
+    };
   }
 
   function buildAttempt(strategy, ok, skipped, durationMs, sourceConfidence, warningCodes, errorCode) {
