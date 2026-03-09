@@ -22,15 +22,15 @@
   ].join(",");
 
   const ROOT_CANDIDATES = [
-    "main",
-    "article",
-    "[role='main']",
-    ".article",
-    ".post",
-    ".entry-content",
-    ".content",
-    ".story",
-    "#content"
+    { selector: "article", kind: "article-content" },
+    { selector: ".article", kind: "article-content" },
+    { selector: ".post", kind: "article-content" },
+    { selector: ".entry-content", kind: "article-content" },
+    { selector: ".story", kind: "article-content" },
+    { selector: "main", kind: "page-content" },
+    { selector: "[role='main']", kind: "page-content" },
+    { selector: ".content", kind: "page-content" },
+    { selector: "#content", kind: "page-content" }
   ];
 
   const IGNORE_SELECTOR = [
@@ -69,11 +69,16 @@
   }
 
   function extractVisibleDocumentPayload(doc) {
-    const root = findContentRoot(doc) || doc.body;
+    const rootInfo = findContentRoot(doc) || {
+      element: doc.body,
+      selector: "body",
+      kind: "page-content"
+    };
+    const root = rootInfo.element;
     if (!root) {
       return {
         text: "",
-        metadata: buildMetadata("", "", 0)
+        metadata: buildMetadata("", "", 0, rootInfo)
       };
     }
 
@@ -100,32 +105,62 @@
 
     return {
       text: extractedText,
-      metadata: buildMetadata(extractedText, visibleText, blocks.length)
+      metadata: buildMetadata(extractedText, visibleText, blocks.length, rootInfo)
     };
   }
 
-  function buildMetadata(extractedText, visibleText, blockCount) {
+  function buildMetadata(extractedText, visibleText, blockCount, rootInfo) {
     const extractedWordCount = Text.countWords(extractedText);
     const visibleWordCount = Math.max(extractedWordCount, Text.countWords(visibleText));
     const coverageRatio =
       visibleWordCount > 0 ? extractedWordCount / Math.max(visibleWordCount, 1) : 0;
+    const normalizedCoverage = roundTo(coverageRatio, 3);
+    const contentKind = deriveContentKind(
+      rootInfo?.kind || "page-content",
+      extractedWordCount,
+      blockCount,
+      normalizedCoverage
+    );
 
     return {
       blockCount,
       extractedWordCount,
       visibleWordCount,
-      coverageRatio: roundTo(coverageRatio, 3)
+      coverageRatio: normalizedCoverage,
+      contentKind,
+      rootSelector: rootInfo?.selector || "body",
+      rootTag: rootInfo?.element?.tagName?.toLowerCase?.() || "body"
     };
   }
 
   function findContentRoot(doc) {
-    for (const selector of ROOT_CANDIDATES) {
-      const element = doc.querySelector(selector);
+    for (const candidate of ROOT_CANDIDATES) {
+      const element = doc.querySelector(candidate.selector);
       if (element && isElementVisible(element)) {
-        return element;
+        return {
+          element,
+          selector: candidate.selector,
+          kind: candidate.kind
+        };
       }
     }
-    return doc.body;
+    return {
+      element: doc.body,
+      selector: "body",
+      kind: "page-content"
+    };
+  }
+
+  function deriveContentKind(baseKind, extractedWordCount, blockCount, coverageRatio) {
+    if (baseKind === "article-content") {
+      return "article-content";
+    }
+
+    if (extractedWordCount >= 220 && blockCount >= 5 && coverageRatio >= 0.18) {
+      return "article-content";
+    }
+
+    return "page-content";
   }
 
   function shouldKeepElement(element, root) {

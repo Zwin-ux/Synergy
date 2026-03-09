@@ -2,8 +2,11 @@
   "name": "scriptlens-extension",
   "version": "0.1.0",
   "private": true,
-  "description": "Playwright E2E harness for the ScriptLens Chrome extension.",
+  "description": "YouTube-only ScriptLens Chrome extension tooling, packaging, and tests.",
   "scripts": {
+    "backend:start": "node backend/server.js",
+    "build:extension": "node scripts/build-extension.mjs",
+    "package:extension": "node scripts/package-extension.mjs",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:youtube": "playwright test tests/youtube.smoke.spec.js --headed",

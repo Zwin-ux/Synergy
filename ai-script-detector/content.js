@@ -8,8 +8,10 @@
   const App = globalThis.AIScriptDetector || {};
   const Text = App.text;
   const Dom = App.dom;
-  const VISIBLE_TRANSCRIPT_TRACK_ID = "visible-transcript";
-  const DESCRIPTION_TRANSCRIPT_TRACK_ID = "description-transcript";
+
+  const BOOTSTRAP_ATTRIBUTE = "data-scriptlens-youtube-bootstrap";
+  const BOOTSTRAP_REQUEST_EVENT = "scriptlens:request-youtube-bootstrap";
+  const BOOTSTRAP_READY_EVENT = "scriptlens:youtube-bootstrap-ready";
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     handleMessage(message)
@@ -30,10 +32,16 @@
         return extractSelectionPayload();
       case "extract:page":
         return extractPagePayload();
-      case "extract:youtube-transcript":
-        return extractYouTubeTranscriptPayload();
-      case "extract:panel-input":
-        return extractPanelInput(message.request || {});
+      case "youtube:page-adapter":
+        return {
+          ok: true,
+          adapter: await buildYouTubePageAdapter()
+        };
+      case "youtube:open-transcript-panel":
+        return {
+          ok: true,
+          adapter: await openYouTubeTranscriptPanel()
+        };
       case "page:context":
         return buildPageContextPayload();
       default:
@@ -57,8 +65,9 @@
       ok: true,
       text,
       meta: {
-        title: getDisplayTitle(),
         sourceType: "selection",
+        sourceLabel: "Selection",
+        title: getDisplayTitle(),
         includedSources: ["selection"]
       }
     };
@@ -74,22 +83,26 @@
       };
     }
 
+    const contentKind = payload.metadata?.contentKind || "page-content";
+
     return {
       ok: true,
       text,
       meta: {
+        sourceType: contentKind,
+        sourceLabel:
+          contentKind === "article-content" ? "Article content" : "Visible page content",
         title: getDisplayTitle(),
-        sourceType: "page",
-        includedSources: ["page"],
+        includedSources: [contentKind],
         ...payload.metadata
       }
     };
   }
 
   async function buildPageContextPayload() {
-    const selectionText = Text.sanitizeInput(getSelectionText());
     const pagePayload = Dom.extractVisibleDocumentPayload(document);
-    const video = isYouTubeVideoPage() ? await getYouTubeVideoContext() : null;
+    const adapter = isYouTubeVideoPage() ? await buildYouTubePageAdapter() : null;
+    const video = adapter ? buildVideoContextFromAdapter(adapter) : null;
 
     return {
       ok: true,
@@ -97,597 +110,125 @@
         supported: true,
         title: getDisplayTitle(),
         hostname: location.hostname,
-        selectionAvailable: Boolean(selectionText),
+        selectionAvailable: Boolean(Text.sanitizeInput(getSelectionText())),
         pageAvailable: pagePayload.metadata.extractedWordCount >= 30,
         pageWordCount: pagePayload.metadata.extractedWordCount,
+        pageKind: pagePayload.metadata.contentKind || "page-content",
         pageMeta: pagePayload.metadata,
-        isYouTubeVideo: Boolean(video),
-        transcriptAvailable: Boolean(video?.transcriptAvailable),
+        isYouTubeVideo: Boolean(adapter),
+        transcriptAvailable: Boolean(video?.availableSources?.transcript),
         transcriptSourceLabel: video?.defaultTrackLabel || "",
         video
       }
     };
   }
 
-  async function extractYouTubeTranscriptPayload() {
+  async function buildYouTubePageAdapter() {
     if (!isYouTubeVideoPage()) {
-      return {
-        ok: false,
-        error: "Open a YouTube watch page or Shorts page to capture a transcript."
-      };
+      return null;
     }
 
-    const transcriptResult = await getTranscriptResult({});
-    if (!transcriptResult.text) {
-      return {
-        ok: false,
-        error: "No transcript or captions were found for this YouTube video."
-      };
-    }
-
-    return {
-      ok: true,
-      text: transcriptResult.text,
-      meta: {
-        title: getDisplayTitle(),
-        sourceType: "youtube",
-        includedSources: ["transcript"],
-        transcriptSource: transcriptResult.trackLabel,
-        transcriptSegmentCount: transcriptResult.segmentCount,
-        selectedTrack: transcriptResult.selectedTrack || null
-      }
-    };
-  }
-
-  async function extractPanelInput(request) {
-    if (request.mode === "selection") {
-      return extractSelectionPayload();
-    }
-
-    if (request.mode === "page") {
-      return extractPagePayload();
-    }
-
-    if (request.mode === "youtube") {
-      return extractYouTubeCompositePayload(request);
-    }
-
-    return {
-      ok: false,
-      error: "Unsupported analysis source."
-    };
-  }
-
-  async function extractYouTubeCompositePayload(request) {
-    if (!isYouTubeVideoPage()) {
-      return {
-        ok: false,
-        error: "Open a YouTube watch page to use video-specific analysis."
-      };
-    }
-
-    const includeSources = normalizeSourceList(request.includeSources);
+    const bootstrapSnapshot = (await requestBootstrapSnapshot()) || {};
     const description = getYouTubeDescriptionText();
-    const title = getDisplayTitle();
-    const pieces = [];
-    const usedSources = [];
-    let transcriptMeta = null;
-    let fallbackApplied = false;
-
-    if (includeSources.includes("transcript")) {
-      const transcriptResult = await getTranscriptResult(request);
-      if (transcriptResult.text) {
-        pieces.push(transcriptResult.text);
-        usedSources.push("transcript");
-        transcriptMeta = transcriptResult;
-      }
-    }
-
-    if (includeSources.includes("description")) {
-      if (description && transcriptMeta?.sourceOrigin !== "description") {
-        pieces.push(description);
-        usedSources.push("description");
-      }
-    }
-
-    if (includeSources.includes("title")) {
-      if (title) {
-        pieces.push(title);
-        usedSources.push("title");
-      }
-    }
-
-    if (
-      includeSources.includes("transcript") &&
-      !usedSources.includes("transcript")
-    ) {
-      if (description && transcriptMeta?.sourceOrigin !== "description" && !usedSources.includes("description")) {
-        pieces.push(description);
-        usedSources.push("description");
-        fallbackApplied = true;
-      }
-      if (title && !usedSources.includes("title")) {
-        pieces.push(title);
-        usedSources.push("title");
-        fallbackApplied = true;
-      }
-    }
-
-    const text = Text.sanitizeInput(pieces.join("\n\n"));
-    if (!text) {
-      const transcriptRequested = includeSources.includes("transcript");
-      const fallbackHint =
-        transcriptRequested && (getYouTubeDescriptionText() || getDisplayTitle())
-          ? " Try enabling Description or Title as a fallback source."
-          : "";
-
-      return {
-        ok: false,
-        error: `No usable video text could be extracted from the selected YouTube sources.${fallbackHint}`
-      };
-    }
+    const domTranscriptSegments = getVisibleTranscriptSegments();
+    const descriptionTranscriptText = getDescriptionTranscriptText(description);
+    const videoDurationSeconds =
+      bootstrapSnapshot.videoDurationSeconds || getVideoDurationSecondsFromDom();
 
     return {
-      ok: true,
-      text,
-      meta: {
-        title: getDisplayTitle(),
-        sourceType: "youtube",
-        includedSources: usedSources,
-        transcriptSource: transcriptMeta?.trackLabel || "",
-        transcriptSegmentCount: transcriptMeta?.segmentCount || 0,
-        selectedTrack: transcriptMeta?.selectedTrack || null,
-        fallbackApplied,
-        fallbackReason:
-          fallbackApplied && includeSources.includes("transcript")
-            ? "Transcript text was unavailable, so ScriptLens used the best local video context instead."
-            : ""
-      }
-    };
-  }
-
-  async function getYouTubeVideoContext() {
-    const title = getDisplayTitle();
-    const description = getYouTubeDescriptionText();
-    const descriptionTranscript = getDescriptionTranscriptText(description);
-    const visibleLines = getVisibleTranscriptLines();
-    const tracks = await getYouTubeCaptionTracks();
-    const preferredTrack = selectPreferredTrack(tracks, {});
-    const transcriptTracks = [];
-
-    if (visibleLines.length >= 4) {
-      transcriptTracks.push({
-        id: VISIBLE_TRANSCRIPT_TRACK_ID,
-        label: "Visible transcript",
-        languageCode: "",
-        kind: "visible",
-        baseUrl: VISIBLE_TRANSCRIPT_TRACK_ID
-      });
-    }
-
-    if (descriptionTranscript) {
-      transcriptTracks.push({
-        id: DESCRIPTION_TRANSCRIPT_TRACK_ID,
-        label: "Description transcript",
-        languageCode: "",
-        kind: "description-transcript",
-        baseUrl: DESCRIPTION_TRANSCRIPT_TRACK_ID
-      });
-    }
-
-    transcriptTracks.push(
-      ...tracks.map((track) => ({
-        id: track.baseUrl,
-        label: getTrackLabel(track),
-        languageCode: track.languageCode || "",
-        kind: track.kind || "manual",
-        baseUrl: track.baseUrl
-      }))
-    );
-
-    return {
-      title,
+      title: getDisplayTitle(),
       description,
-      descriptionAvailable: Boolean(description),
-      descriptionLength: description.length,
-      transcriptAvailable: visibleLines.length >= 4 || Boolean(descriptionTranscript) || tracks.length > 0,
-      transcriptTracks,
-      defaultTrackBaseUrl:
-        visibleLines.length >= 4
-          ? VISIBLE_TRANSCRIPT_TRACK_ID
-          : descriptionTranscript
-            ? DESCRIPTION_TRANSCRIPT_TRACK_ID
-            : preferredTrack?.baseUrl || "",
-      defaultTrackLabel:
-        visibleLines.length >= 4
-          ? "Visible transcript"
-          : descriptionTranscript
-            ? "Description transcript"
-            : preferredTrack
-              ? getTrackLabel(preferredTrack)
-              : "",
-      availableSources: {
-        transcript: visibleLines.length >= 4 || Boolean(descriptionTranscript) || tracks.length > 0,
-        description: Boolean(description),
-        title: Boolean(title)
-      }
+      descriptionTranscriptText,
+      domTranscriptSegments,
+      domTranscriptLanguageCode: bootstrapSnapshot.hl || null,
+      requestShapeValidation: buildRequestShapeValidation(bootstrapSnapshot),
+      bootstrapSnapshot,
+      videoDurationSeconds,
+      url: location.href,
+      videoId: bootstrapSnapshot.videoId || new URLSearchParams(location.search).get("v") || ""
     };
   }
 
-  async function getTranscriptResult(request) {
-    const visibleLines = getVisibleTranscriptLines();
-    const descriptionTranscript = getDescriptionTranscriptText();
-    if (
-      visibleLines.length >= 4 &&
-      (!request.trackBaseUrl || request.trackBaseUrl === VISIBLE_TRANSCRIPT_TRACK_ID)
-    ) {
-      return {
-        text: Text.sanitizeInput(visibleLines.join("\n")),
-        segmentCount: visibleLines.length,
-        trackLabel: "Visible transcript",
-        selectedTrack: {
-          id: VISIBLE_TRANSCRIPT_TRACK_ID,
-          label: "Visible transcript",
-          languageCode: "",
-          kind: "visible",
-          baseUrl: VISIBLE_TRANSCRIPT_TRACK_ID
-        }
-      };
-    }
-
-    if (
-      descriptionTranscript &&
-      (!request.trackBaseUrl || request.trackBaseUrl === DESCRIPTION_TRANSCRIPT_TRACK_ID)
-    ) {
-      return {
-        text: descriptionTranscript,
-        segmentCount: Math.max(Text.splitParagraphs(descriptionTranscript).length, 1),
-        trackLabel: "Description transcript",
-        sourceOrigin: "description",
-        selectedTrack: {
-          id: DESCRIPTION_TRANSCRIPT_TRACK_ID,
-          label: "Description transcript",
-          languageCode: "",
-          kind: "description-transcript",
-          baseUrl: DESCRIPTION_TRANSCRIPT_TRACK_ID
-        }
-      };
-    }
-
-    const tracks = await getYouTubeCaptionTracks();
-    if (!tracks.length) {
-      if (descriptionTranscript) {
-        return {
-          text: descriptionTranscript,
-          segmentCount: Math.max(Text.splitParagraphs(descriptionTranscript).length, 1),
-          trackLabel: "Description transcript",
-          sourceOrigin: "description",
-          selectedTrack: {
-            id: DESCRIPTION_TRANSCRIPT_TRACK_ID,
-            label: "Description transcript",
-            languageCode: "",
-            kind: "description-transcript",
-            baseUrl: DESCRIPTION_TRANSCRIPT_TRACK_ID
-          }
-        };
-      }
-
-      return {
-        text: "",
-        segmentCount: 0,
-        trackLabel: "",
-        selectedTrack: null
-      };
-    }
-
-    const track = selectPreferredTrack(tracks, request);
-    if (!track) {
-      return {
-        text: "",
-        segmentCount: 0,
-        trackLabel: "",
-        selectedTrack: null
-      };
-    }
-
-    const transcript = await fetchCaptionTrack(track.baseUrl);
-    if (!transcript.text && visibleLines.length >= 4) {
-      return {
-        text: Text.sanitizeInput(visibleLines.join("\n")),
-        segmentCount: visibleLines.length,
-        trackLabel: "Visible transcript",
-        selectedTrack: {
-          id: VISIBLE_TRANSCRIPT_TRACK_ID,
-          label: "Visible transcript",
-          languageCode: "",
-          kind: "visible",
-          baseUrl: VISIBLE_TRANSCRIPT_TRACK_ID
-        }
-      };
-    }
-
-    if (!transcript.text && descriptionTranscript) {
-      return {
-        text: descriptionTranscript,
-        segmentCount: Math.max(Text.splitParagraphs(descriptionTranscript).length, 1),
-        trackLabel: "Description transcript",
-        sourceOrigin: "description",
-        selectedTrack: {
-          id: DESCRIPTION_TRANSCRIPT_TRACK_ID,
-          label: "Description transcript",
-          languageCode: "",
-          kind: "description-transcript",
-          baseUrl: DESCRIPTION_TRANSCRIPT_TRACK_ID
-        }
-      };
-    }
-
-    return {
-      text: transcript.text,
-      segmentCount: transcript.segmentCount,
-      trackLabel: getTrackLabel(track),
-      selectedTrack: {
-        id: track.baseUrl,
-        label: getTrackLabel(track),
-        languageCode: track.languageCode || "",
-        kind: track.kind || "manual",
-        baseUrl: track.baseUrl
-      }
-    };
-  }
-
-  function getVisibleTranscriptLines() {
-    const segments = Array.from(document.querySelectorAll("ytd-transcript-segment-renderer"));
-    if (!segments.length) {
-      return [];
-    }
-
-    return segments
-      .map((segment) => {
-        const textElement =
-          segment.querySelector(".segment-text") ||
-          segment.querySelector("[class*='segment-text']") ||
-          segment.querySelector("yt-formatted-string");
-        return Text.sanitizeInput(textElement?.textContent || "");
-      })
-      .filter(Boolean);
-  }
-
-  async function getYouTubeCaptionTracks() {
-    const snapshot = await requestYouTubeCaptionSnapshot();
-    return Array.isArray(snapshot?.captionTracks) ? snapshot.captionTracks : [];
-  }
-
-  function selectPreferredTrack(tracks, request) {
-    const normalized = tracks.map((track) => ({
-      ...track,
-      languageCode: String(track.languageCode || "").toLowerCase()
+  function buildVideoContextFromAdapter(adapter) {
+    const tracks = Array.isArray(adapter.bootstrapSnapshot?.captionTracks)
+      ? adapter.bootstrapSnapshot.captionTracks
+      : [];
+    const transcriptTracks = tracks.map((track) => ({
+      id: track.baseUrl,
+      label: getCaptionTrackLabel(track),
+      languageCode: track.languageCode || "",
+      kind: track.kind || "manual",
+      baseUrl: track.baseUrl
     }));
 
-    if (request.trackBaseUrl) {
-      const directMatch = normalized.find((track) => track.baseUrl === request.trackBaseUrl);
-      if (directMatch) {
-        return directMatch;
-      }
-    }
-
-    const visibleTrack = normalized.find(
-      (track) => track.kind === "visible" || track.baseUrl === VISIBLE_TRANSCRIPT_TRACK_ID
-    );
-    if (visibleTrack) {
-      return visibleTrack;
-    }
-
-    const descriptionTrack = normalized.find(
-      (track) =>
-        track.kind === "description-transcript" ||
-        track.baseUrl === DESCRIPTION_TRANSCRIPT_TRACK_ID
-    );
-    if (descriptionTrack) {
-      return descriptionTrack;
-    }
-
-    const preference = request.transcriptBias || "manual-en";
-    const manualEnglish =
-      normalized.find((track) => track.languageCode === "en" && track.kind !== "asr") ||
-      normalized.find((track) => track.languageCode.startsWith("en-") && track.kind !== "asr");
-    const autoEnglish =
-      normalized.find((track) => track.languageCode === "en") ||
-      normalized.find((track) => track.languageCode.startsWith("en-"));
-    const firstManual = normalized.find((track) => track.kind !== "asr");
-
-    if (preference === "manual-en") {
-      return manualEnglish || autoEnglish || firstManual || normalized[0];
-    }
-    if (preference === "auto-en") {
-      return autoEnglish || manualEnglish || firstManual || normalized[0];
-    }
-    if (preference === "manual-any") {
-      return firstManual || autoEnglish || normalized[0];
-    }
-    if (preference === "auto-any") {
-      return normalized.find((track) => track.kind === "asr") || autoEnglish || firstManual || normalized[0];
-    }
-
-    return autoEnglish || manualEnglish || firstManual || normalized[0];
-  }
-
-  async function fetchCaptionTrack(baseUrl) {
-    const attemptUrls = buildCaptionAttemptUrls(baseUrl);
-
-    for (const attemptUrl of attemptUrls) {
-      try {
-        const response = await fetch(attemptUrl, {
-          credentials: "include"
-        });
-        if (!response.ok) {
-          continue;
-        }
-
-        const payloadText = await response.text();
-        const parsedTranscript = parseCaptionPayload(payloadText);
-        if (parsedTranscript.text) {
-          return parsedTranscript;
-        }
-      } catch (error) {
-        continue;
-      }
-    }
-
-    return {
-      text: "",
-      segmentCount: 0
-    };
-  }
-
-  function buildCaptionAttemptUrls(baseUrl) {
-    const values = [];
-    const seen = new Set();
-
-    const pushUrl = (value) => {
-      if (!value || seen.has(value)) {
-        return;
-      }
-      seen.add(value);
-      values.push(value);
-    };
-
-    pushUrl(baseUrl);
-
-    try {
-      const url = new URL(baseUrl);
-      ["json3", "srv3", "vtt"].forEach((format) => {
-        const nextUrl = new URL(url.toString());
-        nextUrl.searchParams.set("fmt", format);
-        pushUrl(nextUrl.toString());
+    if (adapter.domTranscriptSegments.length) {
+      transcriptTracks.push({
+        id: "visible-dom-transcript",
+        label: "Visible transcript",
+        languageCode: adapter.domTranscriptLanguageCode || "",
+        kind: "visible",
+        baseUrl: "visible-dom-transcript"
       });
-    } catch (error) {
-      return values;
     }
 
-    return values;
-  }
-
-  function parseCaptionPayload(payloadText) {
-    const source = String(payloadText || "").trim();
-    if (!source) {
-      return {
-        text: "",
-        segmentCount: 0
-      };
+    if (adapter.descriptionTranscriptText) {
+      transcriptTracks.push({
+        id: "description-transcript",
+        label: "Description transcript",
+        languageCode: adapter.bootstrapSnapshot?.hl || "",
+        kind: "description-transcript",
+        baseUrl: "description-transcript"
+      });
     }
 
-    if (source.startsWith("{")) {
-      return parseJsonCaptionPayload(source);
-    }
-
-    if (source.startsWith("WEBVTT")) {
-      return parseVttCaptionPayload(source);
-    }
-
-    return parseXmlCaptionPayload(source);
-  }
-
-  function parseJsonCaptionPayload(source) {
-    try {
-      const parsed = JSON.parse(source);
-      const segments = (parsed?.events || [])
-        .map((event) => {
-          const text = (event?.segs || [])
-            .map((segment) => decodeCaptionText(segment?.utf8 || ""))
-            .join("")
-            .replace(/\s+/g, " ")
-            .trim();
-          return Text.sanitizeInput(text);
-        })
-        .filter(Boolean);
-
-      return {
-        text: Text.sanitizeInput(segments.join("\n")),
-        segmentCount: segments.length
-      };
-    } catch (error) {
-      return {
-        text: "",
-        segmentCount: 0
-      };
-    }
-  }
-
-  function parseXmlCaptionPayload(source) {
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(source, "text/xml");
-    const candidateNodes = xml.querySelectorAll("text, p");
-    const segments = Array.from(candidateNodes)
-      .map((node) => Text.sanitizeInput(decodeCaptionText(node.textContent || "")))
-      .filter(Boolean);
+    const defaultCaptionTrack = pickDefaultCaptionTrack(transcriptTracks);
 
     return {
-      text: Text.sanitizeInput(segments.join("\n")),
-      segmentCount: segments.length
+      title: adapter.title,
+      description: adapter.description,
+      descriptionAvailable: Boolean(adapter.description),
+      descriptionLength: adapter.description.length,
+      transcriptAvailable:
+        Boolean(adapter.bootstrapSnapshot?.transcriptParams) ||
+        tracks.length > 0 ||
+        adapter.domTranscriptSegments.length > 0 ||
+        Boolean(adapter.descriptionTranscriptText),
+      transcriptTracks,
+      defaultTrackBaseUrl: defaultCaptionTrack?.baseUrl || "",
+      defaultTrackLabel: defaultCaptionTrack?.label || "",
+      availableSources: {
+        transcript:
+          Boolean(adapter.bootstrapSnapshot?.transcriptParams) ||
+          tracks.length > 0 ||
+          adapter.domTranscriptSegments.length > 0 ||
+          Boolean(adapter.descriptionTranscriptText),
+        description: Boolean(adapter.description),
+        title: Boolean(adapter.title)
+      }
     };
   }
 
-  function parseVttCaptionPayload(source) {
-    const lines = source
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter((line) => {
-        if (!line) {
-          return false;
-        }
-
-        if (
-          line === "WEBVTT" ||
-          /^\d+$/.test(line) ||
-          /^(?:\d{2}:)?\d{2}:\d{2}\.\d{3}\s+-->\s+(?:\d{2}:)?\d{2}:\d{2}\.\d{3}/.test(line) ||
-          /^(NOTE|STYLE|REGION)\b/.test(line)
-        ) {
-          return false;
-        }
-
-        return true;
-      })
-      .map((line) => Text.sanitizeInput(decodeCaptionText(line)));
-
-    return {
-      text: Text.sanitizeInput(lines.join("\n")),
-      segmentCount: lines.length
-    };
-  }
-
-  function decodeCaptionText(value) {
-    const element = document.createElement("textarea");
-    element.innerHTML = String(value || "");
-    return element.value.replace(/\u00a0/g, " ");
-  }
-
-  async function requestYouTubeCaptionSnapshot() {
-    const attributeName = "data-scriptlens-caption-snapshot";
-    const requestEvent = "scriptlens:request-caption-snapshot";
-    const readyEvent = "scriptlens:caption-snapshot-ready";
-
+  async function requestBootstrapSnapshot() {
     return new Promise((resolve) => {
-      let completed = false;
+      let finished = false;
 
-      const finish = () => {
-        if (completed) {
+      const complete = () => {
+        if (finished) {
           return;
         }
-
-        completed = true;
-        window.removeEventListener(readyEvent, finish);
-        resolve(readCaptionSnapshotAttribute(attributeName));
+        finished = true;
+        window.removeEventListener(BOOTSTRAP_READY_EVENT, complete);
+        resolve(readBootstrapAttribute());
       };
 
-      window.addEventListener(readyEvent, finish, { once: true });
-      document.dispatchEvent(new CustomEvent(requestEvent));
-      window.setTimeout(finish, 180);
+      window.addEventListener(BOOTSTRAP_READY_EVENT, complete, { once: true });
+      document.dispatchEvent(new CustomEvent(BOOTSTRAP_REQUEST_EVENT));
+      window.setTimeout(complete, 160);
     });
   }
 
-  function readCaptionSnapshotAttribute(attributeName) {
-    const rawValue = document.documentElement?.getAttribute(attributeName) || "";
+  function readBootstrapAttribute() {
+    const rawValue = document.documentElement?.getAttribute(BOOTSTRAP_ATTRIBUTE) || "";
     if (!rawValue) {
       return null;
     }
@@ -699,28 +240,53 @@
     }
   }
 
-  function getTrackLabel(track) {
-    if (track?.kind === "visible" || track?.baseUrl === VISIBLE_TRANSCRIPT_TRACK_ID) {
-      return "Visible transcript";
-    }
-    if (
-      track?.kind === "description-transcript" ||
-      track?.baseUrl === DESCRIPTION_TRANSCRIPT_TRACK_ID
-    ) {
-      return "Description transcript";
+  function getVisibleTranscriptSegments() {
+    return Array.from(document.querySelectorAll("ytd-transcript-segment-renderer"))
+      .map((segment, index) => {
+        const textElement =
+          segment.querySelector(".segment-text") ||
+          segment.querySelector("[class*='segment-text']") ||
+          segment.querySelector("yt-formatted-string");
+        const timeElement =
+          segment.querySelector(".segment-timestamp") ||
+          segment.querySelector("[class*='segment-timestamp']") ||
+          segment.querySelector("#segment-timestamp");
+        const text = Text.sanitizeInput(textElement?.textContent || "");
+        if (!text) {
+          return null;
+        }
+
+        const startMs = parseDisplayedTime(timeElement?.textContent || "");
+        return {
+          startMs,
+          durationMs: null,
+          text,
+          index
+        };
+      })
+      .filter(Boolean);
+  }
+
+  async function openYouTubeTranscriptPanel() {
+    if (!isYouTubeVideoPage()) {
+      return null;
     }
 
-    const name =
-      track?.name?.simpleText ||
-      (Array.isArray(track?.name?.runs)
-        ? track.name.runs.map((part) => part.text).join("")
-        : "");
-
-    if (track?.kind === "asr") {
-      return name ? `${name} auto captions` : "Auto captions";
+    if (getVisibleTranscriptSegments().length) {
+      return buildYouTubePageAdapter();
     }
 
-    return name ? `${name} captions` : "Video captions";
+    const opened = await ensureTranscriptPanelVisible();
+    const adapter = await buildYouTubePageAdapter();
+
+    if (!opened && !adapter?.domTranscriptSegments?.length) {
+      return {
+        ...(adapter || {}),
+        requestShapeValidation: buildRequestShapeValidation(adapter?.bootstrapSnapshot || {})
+      };
+    }
+
+    return adapter;
   }
 
   function getYouTubeDescriptionText() {
@@ -752,7 +318,7 @@
   }
 
   function getDescriptionTranscriptText(descriptionText) {
-    const source = Text.sanitizeInput(descriptionText || getYouTubeDescriptionText());
+    const source = Text.sanitizeInput(descriptionText || "");
     if (!source) {
       return "";
     }
@@ -774,14 +340,6 @@
       "";
 
     return Text.sanitizeInput(title).replace(/\s+-\s+YouTube$/i, "");
-  }
-
-  function isYouTubeVideoPage() {
-    const host = normalizeHost(location.hostname);
-    return (
-      (host === "youtube.com" || host === "m.youtube.com") &&
-      (location.pathname === "/watch" || location.pathname.startsWith("/shorts/"))
-    );
   }
 
   function getSelectionText() {
@@ -814,14 +372,299 @@
     return active.value.slice(start, end);
   }
 
-  function normalizeSourceList(value) {
-    const allowed = new Set(["transcript", "description", "title"]);
-    const list = Array.isArray(value) ? value : [];
-    const normalized = list.filter((item) => allowed.has(item));
-    return normalized.length ? normalized : ["transcript"];
+  function getCaptionTrackLabel(track) {
+    const name =
+      track?.name?.simpleText ||
+      (Array.isArray(track?.name?.runs)
+        ? track.name.runs.map((part) => part.text).join("")
+        : "");
+
+    if (track?.kind === "asr") {
+      return name ? `${name} auto captions` : "Auto captions";
+    }
+    return name ? `${name} captions` : "Caption track";
   }
 
-  function normalizeHost(hostname) {
-    return String(hostname || "").replace(/^www\./, "");
+  function pickDefaultCaptionTrack(tracks) {
+    const list = Array.isArray(tracks) ? tracks.slice() : [];
+    const manualCaption = list.find(
+      (track) =>
+        track.kind !== "asr" &&
+        track.kind !== "visible" &&
+        track.kind !== "description-transcript"
+    );
+    const generatedCaption = list.find((track) => track.kind === "asr");
+    const visibleTrack = list.find((track) => track.kind === "visible");
+    const descriptionTrack = list.find((track) => track.kind === "description-transcript");
+    return manualCaption || generatedCaption || visibleTrack || descriptionTrack || list[0] || null;
+  }
+
+  function getVideoDurationSecondsFromDom() {
+    const durationText =
+      document.querySelector(".ytp-time-duration")?.textContent ||
+      document.querySelector("meta[itemprop='duration']")?.getAttribute("content") ||
+      "";
+
+    if (/^PT/i.test(durationText)) {
+      return parseIsoDuration(durationText);
+    }
+
+    const startMs = parseDisplayedTime(durationText);
+    return startMs !== null ? startMs / 1000 : null;
+  }
+
+  function parseDisplayedTime(value) {
+    const parts = String(value || "")
+      .trim()
+      .split(":")
+      .map((part) => Number(part));
+
+    if (!parts.length || parts.some((part) => !Number.isFinite(part))) {
+      return null;
+    }
+
+    let seconds = 0;
+    while (parts.length) {
+      seconds = seconds * 60 + parts.shift();
+    }
+    return seconds * 1000;
+  }
+
+  function parseIsoDuration(value) {
+    const match = String(value || "").match(
+      /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/i
+    );
+    if (!match) {
+      return null;
+    }
+
+    const hours = Number(match[1] || 0);
+    const minutes = Number(match[2] || 0);
+    const seconds = Number(match[3] || 0);
+    return hours * 3600 + minutes * 60 + seconds;
+  }
+
+  function isYouTubeVideoPage() {
+    const host = String(location.hostname || "").replace(/^www\./, "");
+    return host === "youtube.com" && location.pathname === "/watch";
+  }
+
+  async function ensureTranscriptPanelVisible() {
+    if (getVisibleTranscriptSegments().length) {
+      return true;
+    }
+
+    await expandDescriptionSection();
+
+    const directTrigger = findTranscriptTrigger();
+    if (directTrigger) {
+      clickElement(directTrigger);
+      if (await waitForTranscriptSegments(1200)) {
+        return true;
+      }
+    }
+
+    const moreActionsButton = findMoreActionsButton();
+    if (moreActionsButton) {
+      clickElement(moreActionsButton);
+      await delay(220);
+
+      const menuTrigger = findTranscriptMenuItem();
+      if (menuTrigger) {
+        clickElement(menuTrigger);
+        if (await waitForTranscriptSegments(1400)) {
+          return true;
+        }
+      }
+    }
+
+    return getVisibleTranscriptSegments().length > 0;
+  }
+
+  async function waitForTranscriptSegments(timeoutMs) {
+    const deadlineAt = Date.now() + timeoutMs;
+    while (Date.now() < deadlineAt) {
+      if (getVisibleTranscriptSegments().length) {
+        return true;
+      }
+      await delay(120);
+    }
+    return getVisibleTranscriptSegments().length > 0;
+  }
+
+  function findTranscriptTrigger() {
+    const selectorMatches = [
+      "button[aria-label*='transcript' i]",
+      "button[title*='transcript' i]",
+      "ytd-video-description-transcript-section-renderer button"
+    ];
+
+    for (const selector of selectorMatches) {
+      const element = document.querySelector(selector);
+      if (isElementVisible(element)) {
+        return resolveClickableElement(element);
+      }
+    }
+
+    return findVisibleElementByText(
+      [
+        "button",
+        "ytd-button-renderer",
+        "tp-yt-paper-button",
+        "yt-formatted-string"
+      ],
+      "transcript"
+    );
+  }
+
+  function findMoreActionsButton() {
+    const selectors = [
+      "ytd-menu-renderer button[aria-label*='more' i]",
+      "button[aria-label*='more actions' i]",
+      "button[aria-label='Action menu']",
+      "button[aria-haspopup='true'][aria-label]"
+    ];
+
+    for (const selector of selectors) {
+      const candidates = Array.from(document.querySelectorAll(selector));
+      const element = candidates.find(isElementVisible);
+      if (element) {
+        return resolveClickableElement(element);
+      }
+    }
+
+    return null;
+  }
+
+  function findTranscriptMenuItem() {
+    return findVisibleElementByText(
+      [
+        "ytd-menu-service-item-renderer",
+        "tp-yt-paper-item",
+        "yt-formatted-string",
+        "button"
+      ],
+      "transcript"
+    );
+  }
+
+  function findVisibleElementByText(selectors, textNeedle) {
+    const needle = String(textNeedle || "").trim().toLowerCase();
+    if (!needle) {
+      return null;
+    }
+
+    for (const selector of selectors) {
+      const elements = Array.from(document.querySelectorAll(selector));
+      const match = elements.find((element) => {
+        const text = Text.sanitizeInput(element?.textContent || "").toLowerCase();
+        return text.includes(needle) && isElementVisible(element);
+      });
+      if (match) {
+        return resolveClickableElement(match);
+      }
+    }
+
+    return null;
+  }
+
+  async function expandDescriptionSection() {
+    const candidates = [
+      "tp-yt-paper-button#expand-sizer",
+      "ytd-watch-metadata tp-yt-paper-button#expand",
+      "ytd-watch-metadata ytd-text-inline-expander tp-yt-paper-button",
+      "ytd-watch-metadata button[aria-label*='more' i]",
+      "#description-inline-expander tp-yt-paper-button#expand",
+      "#description-inline-expander tp-yt-paper-button",
+      "#description-inline-expander button[aria-label*='more' i]",
+      "tp-yt-paper-button"
+    ];
+
+    for (const selector of candidates) {
+      const elements = Array.from(document.querySelectorAll(selector));
+      const target = elements.find((element) => {
+        const text = Text.sanitizeInput(element?.textContent || "").toLowerCase();
+        return Boolean(text.includes("more") || text.includes("expand"));
+      });
+
+      if (!target) {
+        continue;
+      }
+
+      clickElement(target);
+      await delay(220);
+      return true;
+    }
+
+    return false;
+  }
+
+  function resolveClickableElement(element) {
+    if (!(element instanceof HTMLElement)) {
+      return null;
+    }
+
+    return (
+      element.closest(
+        [
+          "button",
+          "tp-yt-paper-button",
+          "ytd-button-renderer",
+          "ytd-menu-service-item-renderer",
+          "tp-yt-paper-item"
+        ].join(",")
+      ) || element
+    );
+  }
+
+  function isElementVisible(element) {
+    if (!(element instanceof HTMLElement)) {
+      return false;
+    }
+
+    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+    return (
+      rect.width > 0 &&
+      rect.height > 0 &&
+      style.visibility !== "hidden" &&
+      style.display !== "none"
+    );
+  }
+
+  function clickElement(element) {
+    const target = resolveClickableElement(element);
+    if (!target) {
+      return;
+    }
+    target.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+    target.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, cancelable: true }));
+    target.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, cancelable: true }));
+    target.dispatchEvent(new MouseEvent("pointerup", { bubbles: true, cancelable: true }));
+    target.click();
+  }
+
+  function buildRequestShapeValidation(bootstrapSnapshot) {
+    const observed = bootstrapSnapshot?.observedTranscriptRequest || null;
+    if (!observed) {
+      return null;
+    }
+
+    const mismatchedFields = [];
+    if ((observed.params || "") !== (bootstrapSnapshot?.transcriptParams || "")) {
+      mismatchedFields.push("params");
+    }
+
+    return {
+      matches: mismatchedFields.length === 0,
+      reconstructedParams: bootstrapSnapshot?.transcriptParams || null,
+      observedParams: observed.params || null,
+      mismatchedFields,
+      validatedAt: observed.observedAt || Date.now()
+    };
+  }
+
+  function delay(timeoutMs) {
+    return new Promise((resolve) => window.setTimeout(resolve, timeoutMs));
   }
 })();

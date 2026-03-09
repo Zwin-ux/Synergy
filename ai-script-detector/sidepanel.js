@@ -1,20 +1,25 @@
 (function () {
   const DEFAULT_SETTINGS = {
     sensitivity: "medium",
-    maxTextLength: 18000
+    maxTextLength: 18000,
+    debugMode: false,
+    allowBackendTranscriptFallback: true
   };
+  const DEFAULT_SELECTION = {
+    includeSources: ["transcript"],
+    trackBaseUrl: "",
+    allowFallbackText: false
+  };
+  const DEFAULT_DISCLAIMER =
+    "This score reflects AI-like writing patterns, not proof of authorship.";
+  const Surface = globalThis.ScriptLensSurface;
 
   const state = {
     settings: { ...DEFAULT_SETTINGS },
     recentReports: [],
     pageContext: null,
-    sitePreference: {},
-    uiHints: {},
     currentReport: null,
-    videoSelection: {
-      includeSources: [],
-      trackBaseUrl: ""
-    },
+    videoSelection: { ...DEFAULT_SELECTION },
     busy: false,
     activeTabId: null,
     lastHandledLaunchAt: 0,
@@ -29,7 +34,6 @@
   async function init() {
     cacheElements();
     bindEvents();
-    updateManualMeta();
     showStatus("Loading workspace...", "info");
 
     await refreshWorkspace(false);
@@ -42,24 +46,21 @@
     elements.pageTitle = document.getElementById("pageTitle");
     elements.pageSummary = document.getElementById("pageSummary");
     elements.pageBadges = document.getElementById("pageBadges");
-    elements.onboardingSection = document.getElementById("onboardingSection");
-    elements.onboardingList = document.getElementById("onboardingList");
     elements.recommendedActionTitle = document.getElementById("recommendedActionTitle");
     elements.recommendedActionCopy = document.getElementById("recommendedActionCopy");
     elements.recommendedActionButton = document.getElementById("recommendedActionButton");
-    elements.analyzeSelectionButton = document.getElementById("analyzeSelectionButton");
-    elements.analyzePageButton = document.getElementById("analyzePageButton");
     elements.openWorkspaceButton = document.getElementById("openWorkspaceButton");
     elements.youtubeControls = document.getElementById("youtubeControls");
     elements.videoSourceChips = document.getElementById("videoSourceChips");
     elements.trackField = document.getElementById("trackField");
     elements.trackSelect = document.getElementById("trackSelect");
-    elements.manualInput = document.getElementById("manualInput");
-    elements.analyzeManualButton = document.getElementById("analyzeManualButton");
-    elements.clearManualButton = document.getElementById("clearManualButton");
-    elements.manualMeta = document.getElementById("manualMeta");
+    elements.allowFallbackTextInput = document.getElementById("allowFallbackTextInput");
     elements.sensitivitySelect = document.getElementById("sensitivitySelect");
     elements.maxTextLengthInput = document.getElementById("maxTextLengthInput");
+    elements.debugModeInput = document.getElementById("debugModeInput");
+    elements.allowBackendTranscriptFallbackInput = document.getElementById(
+      "allowBackendTranscriptFallbackInput"
+    );
     elements.saveSettingsButton = document.getElementById("saveSettingsButton");
     elements.resultPanel = document.getElementById("resultPanel");
     elements.resultEmpty = document.getElementById("resultEmpty");
@@ -68,10 +69,19 @@
     elements.scoreValue = document.getElementById("scoreValue");
     elements.verdictBadge = document.getElementById("verdictBadge");
     elements.qualityBadge = document.getElementById("qualityBadge");
+    elements.providerBadge = document.getElementById("providerBadge");
     elements.reportExplanation = document.getElementById("reportExplanation");
+    elements.acquisitionStateCopy = document.getElementById("acquisitionStateCopy");
     elements.reportSource = document.getElementById("reportSource");
     elements.reportCounts = document.getElementById("reportCounts");
     elements.reportMeta = document.getElementById("reportMeta");
+    elements.sourceValue = document.getElementById("sourceValue");
+    elements.sourceMeta = document.getElementById("sourceMeta");
+    elements.sourceConfidenceValue = document.getElementById("sourceConfidenceValue");
+    elements.sourceConfidenceMeta = document.getElementById("sourceConfidenceMeta");
+    elements.detectorConfidenceValue = document.getElementById("detectorConfidenceValue");
+    elements.detectorConfidenceMeta = document.getElementById("detectorConfidenceMeta");
+    elements.privacyDisclosure = document.getElementById("privacyDisclosure");
     elements.qualitySummary = document.getElementById("qualitySummary");
     elements.trustMeans = document.getElementById("trustMeans");
     elements.trustNotMeans = document.getElementById("trustNotMeans");
@@ -81,6 +91,11 @@
     elements.topReasonsList = document.getElementById("topReasonsList");
     elements.flaggedCount = document.getElementById("flaggedCount");
     elements.flaggedSentencesList = document.getElementById("flaggedSentencesList");
+    elements.debugSection = document.getElementById("debugSection");
+    elements.debugWinningPath = document.getElementById("debugWinningPath");
+    elements.debugWinnerReason = document.getElementById("debugWinnerReason");
+    elements.debugWarnings = document.getElementById("debugWarnings");
+    elements.debugErrors = document.getElementById("debugErrors");
     elements.recentReportsList = document.getElementById("recentReportsList");
   }
 
@@ -88,36 +103,21 @@
     elements.recommendedActionButton.addEventListener("click", () => {
       analyzeRequest(getRecommendedRequest());
     });
-    elements.analyzeSelectionButton.addEventListener("click", () => {
-      analyzeRequest({ mode: "selection" });
-    });
-    elements.analyzePageButton.addEventListener("click", () => {
-      analyzeRequest({ mode: "page" });
-    });
-    elements.openWorkspaceButton.addEventListener("click", () => {
-      refreshWorkspace(true);
+    elements.openWorkspaceButton.addEventListener("click", async () => {
+      showStatus("Refreshing current video...", "info");
+      await refreshWorkspace(true);
+      clearStatus();
     });
     elements.videoSourceChips.addEventListener("click", handleVideoChipClick);
     elements.trackSelect.addEventListener("change", () => {
       state.videoSelection.trackBaseUrl = elements.trackSelect.value;
-      if (state.videoSelection.includeSources.includes("transcript")) {
-        analyzeRequest(getCurrentVideoRequest());
-      }
+      renderRecommendation();
     });
-    elements.manualInput.addEventListener("input", updateManualMeta);
-    elements.analyzeManualButton.addEventListener("click", () => {
-      analyzeRequest({
-        mode: "manual",
-        text: elements.manualInput.value
-      });
-    });
-    elements.clearManualButton.addEventListener("click", () => {
-      elements.manualInput.value = "";
-      updateManualMeta();
-      elements.manualInput.focus();
+    elements.allowFallbackTextInput.addEventListener("change", () => {
+      state.videoSelection.allowFallbackText = elements.allowFallbackTextInput.checked;
+      renderRecommendation();
     });
     elements.saveSettingsButton.addEventListener("click", saveSettings);
-    elements.onboardingList.addEventListener("click", handleHintClick);
   }
 
   function registerExtensionListeners() {
@@ -168,8 +168,6 @@
     };
     state.recentReports = response.recentReports || [];
     state.pageContext = response.pageContext || null;
-    state.sitePreference = response.sitePreference || {};
-    state.uiHints = response.uiHints || {};
     state.activeTabId = nextTabId;
 
     if (tabChanged && !preserveReport) {
@@ -189,78 +187,36 @@
     renderPageContext();
     renderRecommendedAction();
     renderSourceControls();
-    renderOnboardingHints();
     renderReport();
     renderRecentReports();
   }
 
   function renderPageContext() {
-    const context = state.pageContext;
-    const badges = [];
-
-    if (!context?.supported) {
-      elements.pageTitle.textContent = "Current page access is limited";
-      elements.pageSummary.textContent =
-        "Open a regular webpage or a YouTube watch page to unlock richer capture and analysis.";
-      elements.pageBadges.innerHTML = renderBadges([
-        { label: "Restricted page", variant: "attention" }
-      ]);
-      return;
-    }
-
-    elements.pageTitle.textContent = context.title || "Current page";
-    elements.pageSummary.textContent = context.isYouTubeVideo
-      ? context.transcriptAvailable
-        ? "This video supports transcript-aware analysis and source switching."
-        : "This video can still be analyzed from description and title context."
-      : "Use selection, page capture, or manual input to inspect the current tab.";
-
-    if (context.selectionAvailable) {
-      badges.push({ label: "Selection ready" });
-    }
-    if (context.pageAvailable) {
-      badges.push({ label: "Visible page ready" });
-    }
-    if (context.isYouTubeVideo) {
-      badges.push({ label: "YouTube video", variant: "primary" });
-    }
-    if (context.transcriptAvailable) {
-      badges.push({ label: "Transcript available", variant: "primary" });
-    }
-    if (context.hostname) {
-      badges.push({ label: context.hostname });
-    }
-
-    elements.pageBadges.innerHTML = renderBadges(badges);
+    const viewModel = Surface.buildPageContextViewModel(state.pageContext);
+    elements.pageTitle.textContent = viewModel.title;
+    elements.pageSummary.textContent = viewModel.summary;
+    elements.pageBadges.innerHTML = Surface.renderBadges(viewModel.badges);
   }
 
   function renderRecommendedAction() {
     const request = getRecommendedRequest();
-    if (!request) {
-      elements.recommendedActionTitle.textContent = "Choose a source";
-      elements.recommendedActionCopy.textContent =
-        "ScriptLens could not find a strong default source on this tab yet.";
-      elements.recommendedActionButton.textContent = "Unavailable";
-      elements.recommendedActionButton.disabled = true;
-      return;
-    }
+    const label = Surface.getRequestLabel(request);
+    const supported = Boolean(state.pageContext?.supported && state.pageContext?.isYouTubeVideo);
 
-    const label = getRequestLabel(request);
-    elements.recommendedActionTitle.textContent = label.title;
-    elements.recommendedActionCopy.textContent = label.copy;
-    elements.recommendedActionButton.textContent = label.button;
-    elements.recommendedActionButton.disabled = state.busy;
+    elements.recommendedActionTitle.textContent = supported
+      ? "Analyze this video"
+      : label.title;
+    elements.recommendedActionCopy.textContent = supported
+      ? "Run a transcript-first check for the active video, then compare transcript options below if you want a second pass."
+      : label.copy;
+    elements.recommendedActionButton.textContent = supported ? "Analyze Video" : label.button;
+    elements.recommendedActionButton.disabled = state.busy || !request;
+    elements.openWorkspaceButton.disabled = state.busy;
   }
 
   function renderSourceControls() {
     const context = state.pageContext;
-    const isSupported = Boolean(context?.supported);
-
-    elements.analyzeSelectionButton.disabled = state.busy || !context?.selectionAvailable;
-    elements.analyzePageButton.disabled = state.busy || !context?.pageAvailable;
-    elements.openWorkspaceButton.disabled = state.busy;
-
-    if (!isSupported || !context.isYouTubeVideo || !context.video) {
+    if (!context?.supported || !context.isYouTubeVideo || !context.video) {
       elements.youtubeControls.classList.add("hidden");
       return;
     }
@@ -268,6 +224,7 @@
     elements.youtubeControls.classList.remove("hidden");
     renderVideoSourceChips(context.video.availableSources || {});
     renderTrackSelector(context.video.transcriptTracks || []);
+    elements.allowFallbackTextInput.checked = Boolean(state.videoSelection.allowFallbackText);
   }
 
   function renderVideoSourceChips(availableSources) {
@@ -281,129 +238,82 @@
       .map((source) => {
         const active = state.videoSelection.includeSources.includes(source) ? " active" : "";
         const disabled = availableSources[source] ? "" : " disabled";
-        return `
-          <button class="chip-button${active}" type="button" data-source="${source}"${disabled}>
-            ${labels[source]}
-          </button>
-        `;
+        return `<button class="chip-button${active}" type="button" data-source="${source}"${disabled}>${labels[source]}</button>`;
       })
       .join("");
   }
 
   function renderTrackSelector(tracks) {
     const transcriptSelected = state.videoSelection.includeSources.includes("transcript");
-    if (!transcriptSelected || !tracks.length) {
+    const captionTracks = filterCaptionTracks(tracks);
+
+    if (!transcriptSelected || !captionTracks.length) {
       elements.trackField.classList.add("hidden");
       return;
     }
 
     elements.trackField.classList.remove("hidden");
-    elements.trackSelect.innerHTML = tracks
+    elements.trackSelect.innerHTML = captionTracks
       .map((track) => {
         const selected = track.baseUrl === state.videoSelection.trackBaseUrl ? " selected" : "";
-        return `<option value="${escapeHtml(track.baseUrl)}"${selected}>${escapeHtml(track.label)}</option>`;
-      })
-      .join("");
-  }
-
-  function renderOnboardingHints() {
-    const hints = [];
-    const isYouTube = Boolean(state.pageContext?.isYouTubeVideo);
-    const qualityScore = state.currentReport?.quality?.score || 0;
-
-    if (!state.uiHints.sidePanelIntroDismissed) {
-      hints.push({
-        key: "sidePanelIntroDismissed",
-        title: "How the workspace works",
-        body:
-          "Use the recommended action first, then switch sources if you want to compare how the score changes."
-      });
-    }
-
-    if (isYouTube && !state.uiHints.youtubeIntroDismissed) {
-      hints.push({
-        key: "youtubeIntroDismissed",
-        title: "YouTube source switching",
-        body:
-          "Transcript is usually the cleanest starting point. Add description or title when you want more authored context."
-      });
-    }
-
-    if (state.currentReport && qualityScore < 50 && !state.uiHints.lowQualityHintDismissed) {
-      hints.push({
-        key: "lowQualityHintDismissed",
-        title: "This input is weaker",
-        body:
-          "Short excerpts, noisy page capture, or missing transcripts make the score more directional and less stable."
-      });
-    }
-
-    if (!hints.length) {
-      elements.onboardingSection.classList.add("hidden");
-      elements.onboardingList.innerHTML = "";
-      return;
-    }
-
-    elements.onboardingSection.classList.remove("hidden");
-    elements.onboardingList.innerHTML = hints
-      .map((hint) => {
-        return `
-          <article class="hint-card">
-            <div class="hint-top">
-              <div>
-                <strong class="hint-title">${escapeHtml(hint.title)}</strong>
-                <div class="hint-copy">${escapeHtml(hint.body)}</div>
-              </div>
-              <button class="dismiss-button" type="button" data-hint-key="${hint.key}">
-                Dismiss
-              </button>
-            </div>
-          </article>
-        `;
+        return `<option value="${Surface.escapeHtml(track.baseUrl)}"${selected}>${Surface.escapeHtml(track.label)}</option>`;
       })
       .join("");
   }
 
   function renderReport() {
-    const report = state.currentReport;
-    if (!report) {
+    const viewModel = Surface.buildReportViewModel(state.currentReport, state.settings);
+    if (!viewModel) {
       elements.resultPanel.classList.add("empty-state");
       elements.resultEmpty.classList.remove("hidden");
       elements.resultContent.classList.add("hidden");
+      elements.providerBadge.classList.add("hidden");
+      elements.privacyDisclosure.classList.add("hidden");
+      elements.debugSection.classList.add("hidden");
       return;
     }
-
-    const quality = report.quality || {};
-    const interpretation = report.interpretation || {};
 
     elements.resultPanel.classList.remove("empty-state");
     elements.resultEmpty.classList.add("hidden");
     elements.resultContent.classList.remove("hidden");
 
-    elements.scoreValue.textContent = String(report.score);
-    elements.verdictBadge.textContent = report.verdict;
-    elements.verdictBadge.className = `verdict-badge ${getVerdictClass(report.score)}`;
-    elements.qualityBadge.textContent = quality.label || "Input quality";
-    elements.qualityBadge.className = `quality-badge ${getQualityClass(quality.label)}`;
-    elements.reportExplanation.textContent = report.explanation || "";
-    elements.reportSource.textContent = report.source || "Local analysis";
-    elements.reportCounts.textContent = `${report.metadata?.wordCount || 0} words - ${report.metadata?.sentenceCount || 0} sentences`;
-    elements.reportMeta.textContent = `Sensitivity: ${capitalize(report.metadata?.sensitivity || state.settings.sensitivity)}`;
-    elements.flaggedCount.textContent = `${(report.flaggedSentences || []).length} flagged`;
+    elements.scoreValue.textContent = String(viewModel.score);
+    elements.verdictBadge.textContent = viewModel.verdict;
+    elements.verdictBadge.className = `badge verdict-badge ${viewModel.verdictClass}`;
+    elements.qualityBadge.textContent = viewModel.inputLabel;
+    elements.qualityBadge.className = `badge input-badge ${viewModel.inputClass}`;
+    elements.providerBadge.textContent = viewModel.providerLabel;
+    elements.providerBadge.className = "badge provider-badge";
+    elements.providerBadge.classList.toggle("hidden", !viewModel.providerLabel);
+    elements.reportExplanation.textContent = viewModel.explanation;
+    elements.acquisitionStateCopy.textContent = viewModel.acquisitionStateNote;
+    elements.reportSource.textContent = viewModel.source;
+    elements.reportCounts.textContent = viewModel.counts;
+    elements.reportMeta.textContent = viewModel.meta;
 
-    const scorePalette = getScorePalette(report.score);
-    elements.scoreBadge.style.background = scorePalette.background;
-    elements.scoreBadge.style.borderColor = scorePalette.border;
-    elements.scoreValue.style.color = scorePalette.text;
+    elements.scoreBadge.style.background = viewModel.palette.background;
+    elements.scoreBadge.style.borderColor = viewModel.palette.border;
+    elements.scoreValue.style.color = viewModel.palette.text;
 
-    elements.qualitySummary.textContent = quality.summary || "";
-    elements.trustMeans.textContent = interpretation.means || "";
-    elements.trustNotMeans.textContent = interpretation.notMeans || "";
-    renderBulletList(elements.falsePositiveList, interpretation.falsePositives || []);
-    renderBulletList(elements.trustMoreList, interpretation.trustMore || []);
-    renderCategoryGrid(report.categoryScores || {});
-    renderReasonList(report.topReasons || []);
-    renderFlaggedSentences(report.flaggedSentences || []);
+    elements.sourceValue.textContent = viewModel.sourceLabel;
+    elements.sourceMeta.textContent = viewModel.sourceMeta;
+    elements.sourceConfidenceValue.textContent = viewModel.sourceConfidence;
+    elements.sourceConfidenceMeta.textContent = viewModel.sourceConfidenceMeta;
+    elements.detectorConfidenceValue.textContent = viewModel.detectorConfidence;
+    elements.detectorConfidenceMeta.textContent = viewModel.detectorConfidenceMeta;
+    elements.privacyDisclosure.textContent = viewModel.privacyDisclosure;
+    elements.privacyDisclosure.classList.toggle("hidden", !viewModel.privacyDisclosure);
+    elements.qualitySummary.textContent = viewModel.inputSummary;
+    elements.trustMeans.textContent = viewModel.interpretationMeans;
+    elements.trustNotMeans.textContent = viewModel.interpretationNotMeans;
+    elements.flaggedCount.textContent = `${viewModel.flaggedSentences.length} flagged`;
+
+    renderBulletList(elements.falsePositiveList, viewModel.falsePositives);
+    renderBulletList(elements.trustMoreList, viewModel.trustMore);
+    renderCategoryGrid(viewModel.categoryScores);
+    renderReasonList(viewModel.topReasons);
+    renderFlaggedSentences(viewModel.flaggedSentences);
+    renderDebug(viewModel);
   }
 
   function renderCategoryGrid(categoryScores) {
@@ -413,7 +323,7 @@
         return `
           <article class="signal-row">
             <div class="signal-meta">
-              <strong>${formatCategoryName(key)}</strong>
+              <strong>${Surface.formatCategoryName(key)}</strong>
               <span>${value}/100</span>
             </div>
             <div class="signal-track">
@@ -428,54 +338,64 @@
   function renderReasonList(reasons) {
     if (!reasons.length) {
       elements.topReasonsList.innerHTML =
-        '<li class="empty-list">No strong category-level signals were triggered.</li>';
+        '<li class="flag-item">No strong category-level signals were triggered.</li>';
       return;
     }
 
     elements.topReasonsList.innerHTML = reasons
-      .map((reason) => `<li class="reason-item">${escapeHtml(reason)}</li>`)
+      .map((reason) => `<li class="flag-item">${Surface.escapeHtml(reason)}</li>`)
       .join("");
   }
 
   function renderFlaggedSentences(flags) {
     if (!flags.length) {
       elements.flaggedSentencesList.innerHTML =
-        '<li class="empty-list">No individual sentence stood out enough to flag.</li>';
+        '<li class="flag-item">No individual sentence stood out enough to flag.</li>';
       return;
     }
 
     elements.flaggedSentencesList.innerHTML = flags
       .map((flag) => {
-        const reasons = (flag.reasons || [])
-          .map((reason) => `<span class="flag-reason">${escapeHtml(reason)}</span>`)
-          .join("");
-
         return `
           <li class="flag-item">
-            <strong>Sentence ${flag.sentenceNumber} - severity ${flag.severity}</strong>
-            <p>${escapeHtml(flag.sentence)}</p>
-            <div class="flag-reasons">${reasons}</div>
+            <strong>Sentence ${flag.sentenceNumber} | severity ${flag.severity}</strong>
+            <p>${Surface.escapeHtml(flag.sentence)}</p>
+            <p>${Surface.escapeHtml((flag.reasons || []).join(" | "))}</p>
           </li>
         `;
       })
       .join("");
   }
 
-  function renderRecentReports() {
-    if (!state.recentReports.length) {
-      elements.recentReportsList.innerHTML =
-        '<li class="empty-list">Recent reports will appear here after analysis.</li>';
+  function renderDebug(viewModel) {
+    if (!viewModel.debugVisible) {
+      elements.debugSection.classList.add("hidden");
       return;
     }
 
-    elements.recentReportsList.innerHTML = state.recentReports
+    elements.debugSection.classList.remove("hidden");
+    elements.debugWinningPath.textContent = viewModel.debugWinningPath;
+    elements.debugWinnerReason.textContent = viewModel.debugWinnerReason;
+    elements.debugWarnings.textContent = viewModel.debugWarnings;
+    elements.debugErrors.textContent = viewModel.debugErrors;
+  }
+
+  function renderRecentReports() {
+    const recentReports = Surface.buildRecentReportsViewModel(state.recentReports);
+    if (!recentReports.length) {
+      elements.recentReportsList.innerHTML =
+        '<li class="recent-item">Recent reports will appear here after analysis.</li>';
+      return;
+    }
+
+    elements.recentReportsList.innerHTML = recentReports
       .map((report) => {
         return `
           <li class="recent-item">
-            <strong>${escapeHtml(report.source)}</strong>
-            <span class="recent-pill">${report.score}/100 - ${escapeHtml(report.verdict)}</span>
-            <span>${escapeHtml(report.preview)}</span>
-            <span>${escapeHtml(report.qualityLabel || "")}</span>
+            <strong>${Surface.escapeHtml(report.source)}</strong>
+            <span>${Surface.escapeHtml(`${report.score}/100 - ${report.verdict}`)}</span>
+            <span>${Surface.escapeHtml(report.sourceLabel || report.strategy || "Direct input")}</span>
+            <span>${Surface.escapeHtml(report.summary || "")}</span>
           </li>
         `;
       })
@@ -484,41 +404,32 @@
 
   function renderBulletList(element, items) {
     if (!items.length) {
-      element.innerHTML = '<li class="empty-list">No additional notes.</li>';
+      element.innerHTML = "<li>No additional notes.</li>";
       return;
     }
 
     element.innerHTML = items
-      .map((item) => `<li>${escapeHtml(item)}</li>`)
+      .map((item) => `<li>${Surface.escapeHtml(item)}</li>`)
       .join("");
   }
 
   function syncVideoSelection(preserveCurrentSelection) {
     const video = state.pageContext?.video;
     if (!video) {
-      state.videoSelection = {
-        includeSources: [],
-        trackBaseUrl: ""
-      };
+      state.videoSelection = { ...DEFAULT_SELECTION };
       return;
     }
 
-    const defaultPreset = video.defaultPreset || {
-      includeSources: video.availableSources?.transcript
-        ? ["transcript"]
-        : [video.availableSources?.description ? "description" : null, video.availableSources?.title ? "title" : null].filter(Boolean),
-      trackBaseUrl: video.defaultTrackBaseUrl || ""
-    };
-
+    const defaultPreset = video.defaultPreset || DEFAULT_SELECTION;
     let includeSources = preserveCurrentSelection
       ? state.videoSelection.includeSources.filter((source) => video.availableSources?.[source])
       : [];
 
     if (!includeSources.length) {
-      includeSources = defaultPreset.includeSources || [];
+      includeSources = (defaultPreset.includeSources || DEFAULT_SELECTION.includeSources).slice();
     }
 
-    const trackOptions = video.transcriptTracks || [];
+    const trackOptions = filterCaptionTracks(video.transcriptTracks || []);
     let trackBaseUrl = preserveCurrentSelection ? state.videoSelection.trackBaseUrl : "";
     if (!trackOptions.find((track) => track.baseUrl === trackBaseUrl)) {
       trackBaseUrl = defaultPreset.trackBaseUrl || trackOptions[0]?.baseUrl || "";
@@ -526,11 +437,17 @@
 
     state.videoSelection = {
       includeSources,
-      trackBaseUrl
+      trackBaseUrl,
+      allowFallbackText: preserveCurrentSelection
+        ? Boolean(state.videoSelection.allowFallbackText)
+        : Boolean(defaultPreset.allowFallbackText)
     };
   }
 
   function getRecommendedRequest() {
+    if (state.pageContext?.supported && state.pageContext?.isYouTubeVideo) {
+      return getCurrentVideoRequest();
+    }
     return state.pageContext?.recommendedRequest || null;
   }
 
@@ -538,7 +455,10 @@
     return {
       mode: "youtube",
       includeSources: state.videoSelection.includeSources.slice(),
-      trackBaseUrl: state.videoSelection.trackBaseUrl
+      trackBaseUrl: state.videoSelection.trackBaseUrl,
+      transcriptBias: "manual-en",
+      requireTranscript: true,
+      allowFallbackText: Boolean(state.videoSelection.allowFallbackText)
     };
   }
 
@@ -562,30 +482,7 @@
 
     state.videoSelection.includeSources = Array.from(current);
     renderSourceControls();
-    analyzeRequest(getCurrentVideoRequest());
-  }
-
-  async function handleHintClick(event) {
-    const button = event.target.closest("[data-hint-key]");
-    if (!button) {
-      return;
-    }
-
-    const key = button.getAttribute("data-hint-key");
-    const response = await sendMessage({
-      type: "uiHints:update",
-      updates: {
-        [key]: true
-      }
-    });
-
-    if (!response.ok) {
-      showStatus(response.error || "Could not update hints.", "error");
-      return;
-    }
-
-    state.uiHints = response.uiHints || state.uiHints;
-    renderOnboardingHints();
+    renderRecommendedAction();
   }
 
   async function saveSettings() {
@@ -596,7 +493,9 @@
       ...getTargetContextPayload(),
       settings: {
         sensitivity: elements.sensitivitySelect.value,
-        maxTextLength: Number(elements.maxTextLengthInput.value)
+        maxTextLength: Number(elements.maxTextLengthInput.value),
+        debugMode: elements.debugModeInput.checked,
+        allowBackendTranscriptFallback: elements.allowBackendTranscriptFallbackInput.checked
       }
     });
 
@@ -610,6 +509,7 @@
       ...(response.settings || {})
     };
     applySettings();
+    renderWorkspace();
     showStatus("Settings saved locally.", "success");
   }
 
@@ -630,6 +530,14 @@
     setBusy(false);
 
     if (!response.ok) {
+      state.currentReport = response.acquisition
+        ? buildUnavailableReport(response.acquisition, response.error)
+        : null;
+      if (response.pageContext) {
+        state.pageContext = response.pageContext;
+        syncVideoSelection(true);
+      }
+      renderWorkspace();
       showStatus(response.error || "Analysis failed.", "error");
       return;
     }
@@ -637,8 +545,6 @@
     state.currentReport = response.report || null;
     state.recentReports = response.recentReports || [];
     state.pageContext = response.pageContext || state.pageContext;
-    state.sitePreference = response.sitePreference || state.sitePreference;
-    state.uiHints = response.uiHints || state.uiHints;
     state.settings = {
       ...DEFAULT_SETTINGS,
       ...(response.settings || state.settings)
@@ -648,7 +554,8 @@
     if (request.mode === "youtube") {
       state.videoSelection = {
         includeSources: (request.includeSources || []).slice(),
-        trackBaseUrl: request.trackBaseUrl || ""
+        trackBaseUrl: request.trackBaseUrl || "",
+        allowFallbackText: Boolean(request.allowFallbackText)
       };
     }
 
@@ -674,26 +581,24 @@
   function applySettings() {
     elements.sensitivitySelect.value = state.settings.sensitivity;
     elements.maxTextLengthInput.value = state.settings.maxTextLength;
-  }
-
-  function updateManualMeta() {
-    const text = elements.manualInput.value.trim();
-    const wordCount = text ? text.split(/\s+/).length : 0;
-    const charCount = text.length;
-    elements.manualMeta.textContent = `${wordCount} words - ${charCount} chars`;
+    elements.debugModeInput.checked = Boolean(state.settings.debugMode);
+    elements.allowBackendTranscriptFallbackInput.checked = Boolean(
+      state.settings.allowBackendTranscriptFallback
+    );
   }
 
   function setBusy(isBusy) {
     state.busy = isBusy;
     [
       elements.recommendedActionButton,
-      elements.analyzeSelectionButton,
-      elements.analyzePageButton,
       elements.openWorkspaceButton,
       elements.trackSelect,
-      elements.analyzeManualButton,
-      elements.clearManualButton,
-      elements.saveSettingsButton
+      elements.allowFallbackTextInput,
+      elements.saveSettingsButton,
+      elements.sensitivitySelect,
+      elements.maxTextLengthInput,
+      elements.debugModeInput,
+      elements.allowBackendTranscriptFallbackInput
     ].forEach((element) => {
       element.disabled = isBusy;
     });
@@ -704,115 +609,51 @@
     }
   }
 
-  function renderBadges(badges) {
-    return badges
-      .map((badge) => {
-        const variant = badge.variant ? ` ${badge.variant}` : "";
-        return `<span class="context-badge${variant}">${escapeHtml(badge.label)}</span>`;
-      })
-      .join("");
-  }
-
-  function getRequestLabel(request) {
-    if (request.mode === "selection") {
-      return {
-        title: "Use the live selection",
-        copy: "Analyze the highlighted passage without unrelated page content.",
-        button: "Analyze Selection"
-      };
-    }
-
-    if (request.mode === "page") {
-      return {
-        title: "Analyze the visible page",
-        copy: "Use the main readable page content and ignore most browser chrome.",
-        button: "Analyze Page"
-      };
-    }
-
-    if (request.mode === "youtube") {
-      const sources = (request.includeSources || []).join(" + ");
-      return {
-        title: "Analyze this video",
-        copy: `Use ${sources || "video"} sources and keep switching inside the workspace.`,
-        button: "Analyze Video"
-      };
-    }
-
-    if (request.mode === "manual") {
-      return {
-        title: "Analyze pasted text",
-        copy: "Use the manual input exactly as written in the workspace.",
-        button: "Analyze Pasted Text"
-      };
-    }
-
+  function buildUnavailableReport(acquisition, errorMessage) {
     return {
-      title: "Choose a source",
-      copy: "Select a source before running analysis.",
-      button: "Analyze"
+      acquisition,
+      detection: {
+        aiScore: 0,
+        detectorConfidence: "low",
+        verdict: "Unavailable",
+        reasons: [],
+        categoryScores: {},
+        triggeredPatterns: [],
+        flaggedSentences: [],
+        explanation: errorMessage || "Analysis unavailable."
+      },
+      inputQuality: {
+        label: "Weak input",
+        summary: "ScriptLens could not resolve a scoreable transcript for this video right now.",
+        reasons: acquisition?.warnings || []
+      },
+      interpretation: {
+        means: "No score was produced because ScriptLens could not resolve a scoreable source.",
+        notMeans: DEFAULT_DISCLAIMER,
+        falsePositives: [],
+        trustMore: ["Try a video with available captions or allow a fallback source."]
+      },
+      metadata: {
+        wordCount: 0,
+        sentenceCount: 0,
+        sensitivity: state.settings.sensitivity
+      },
+      disclaimer: DEFAULT_DISCLAIMER,
+      source: acquisition?.sourceLabel || "Unavailable",
+      topReasons: [],
+      categoryScores: {},
+      flaggedSentences: []
     };
   }
 
-  function getVerdictClass(score) {
-    if (score >= 75) {
-      return "verdict-high";
-    }
-    if (score >= 30) {
-      return "verdict-mid";
-    }
-    return "verdict-low";
-  }
-
-  function getQualityClass(label) {
-    if (label === "Strong input") {
-      return "quality-strong";
-    }
-    if (label === "Useful input") {
-      return "quality-useful";
-    }
-    return "quality-weak";
-  }
-
-  function getScorePalette(score) {
-    if (score >= 75) {
-      return {
-        background: "#fbefef",
-        border: "#efc8c8",
-        text: "#a23a3a"
-      };
-    }
-    if (score >= 50) {
-      return {
-        background: "#fcf5ea",
-        border: "#ecdcb8",
-        text: "#8a6420"
-      };
-    }
-    if (score >= 30) {
-      return {
-        background: "#f5f1ea",
-        border: "#ded2c4",
-        text: "#6f614e"
-      };
-    }
-    return {
-      background: "#edf7f1",
-      border: "#cfe6d8",
-      text: "#236847"
-    };
-  }
-
-  function formatCategoryName(key) {
-    return key
-      .split(/[_-]/)
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(" ");
-  }
-
-  function capitalize(value) {
-    const text = String(value || "");
-    return text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
+  function filterCaptionTracks(tracks) {
+    return tracks.filter(
+      (track) =>
+        track.kind !== "visible" &&
+        track.kind !== "description-transcript" &&
+        track.baseUrl !== "visible-dom-transcript" &&
+        track.baseUrl !== "description-transcript"
+    );
   }
 
   function showStatus(message, kind) {
@@ -823,15 +664,6 @@
   function clearStatus() {
     elements.statusBanner.textContent = "";
     elements.statusBanner.className = "status-banner hidden";
-  }
-
-  function escapeHtml(value) {
-    return String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
   }
 
   async function sendMessage(message) {

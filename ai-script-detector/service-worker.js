@@ -4,12 +4,24 @@ importScripts(
   "detector/patterns.js",
   "detector/heuristics.js",
   "detector/scoring.js",
-  "detector/analyze.js"
+  "detector/analyze.js",
+  "detector/detect.js",
+  "transcript/normalize.js",
+  "transcript/strategies/youtubei.js",
+  "transcript/strategies/captionTrack.js",
+  "transcript/strategies/domTranscript.js",
+  "transcript/strategies/descriptionTranscript.js",
+  "transcript/strategies/titleDescription.js",
+  "transcript/providers/youtubeResolver.js",
+  "transcript/providers/backendResolver.js",
+  "transcript/providers/nativeHelper.js",
+  "transcript/acquire.js"
 );
 
 const STORAGE_KEYS = {
   settings: "settings",
   recentReports: "recentReports",
+  debugReports: "debugReports",
   sitePreferences: "sitePreferences",
   uiHints: "uiHints"
 };
@@ -23,22 +35,28 @@ const DEFAULT_SETTINGS = {
   maxTextLength: 18000,
   minCharacters: 180,
   minWords: 40,
-  recentReportsLimit: 5
+  recentReportsLimit: 5,
+  debugMode: false,
+  allowBackendTranscriptFallback: true,
+  backendTranscriptEndpoint: "http://127.0.0.1:4317/transcript/resolve"
 };
 
 const DEFAULT_UI_HINTS = {
   sidePanelIntroDismissed: false,
+  popupIntroDismissed: false,
   youtubeIntroDismissed: false,
-  lowQualityHintDismissed: false
+  lowQualityHintDismissed: false,
+  nativeHelperHintDismissed: false
 };
 
-const VISIBLE_TRANSCRIPT_TRACK_ID = "visible-transcript";
-const DESCRIPTION_TRANSCRIPT_TRACK_ID = "description-transcript";
+const DISCLAIMER =
+  "This score reflects AI-like writing patterns, not proof of authorship.";
 
 chrome.runtime.onInstalled.addListener(async () => {
   const localValues = await localGet([
     STORAGE_KEYS.settings,
     STORAGE_KEYS.recentReports,
+    STORAGE_KEYS.debugReports,
     STORAGE_KEYS.sitePreferences,
     STORAGE_KEYS.uiHints
   ]);
@@ -49,6 +67,9 @@ chrome.runtime.onInstalled.addListener(async () => {
   }
   if (!Array.isArray(localValues[STORAGE_KEYS.recentReports])) {
     nextValues[STORAGE_KEYS.recentReports] = [];
+  }
+  if (!Array.isArray(localValues[STORAGE_KEYS.debugReports])) {
+    nextValues[STORAGE_KEYS.debugReports] = [];
   }
   if (!localValues[STORAGE_KEYS.sitePreferences]) {
     nextValues[STORAGE_KEYS.sitePreferences] = {};
@@ -78,15 +99,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function handleMessage(message, sender) {
   switch (message?.type) {
     case "popup:init":
-      return buildPopupInitResponse();
+      return buildSurfaceInitResponse(message || {}, false, sender);
+    case "popup:analyze":
+      return handleAnalyze(message || {}, { sender });
     case "panel:init":
-      return buildPanelInitResponse(message || {});
+      return buildSurfaceInitResponse(message || {}, true, sender);
     case "panel:open":
       return openWorkspace(message || {}, sender);
     case "panel:analyze":
-      return handlePanelAnalyze(message || {});
+      return handleAnalyze(message || {}, { sender });
+    case "inline:init":
+      return buildInlineInitResponse(message || {}, sender);
+    case "inline:analyze":
+      return handleAnalyze(message || {}, {
+        sender,
+        preferSenderTab: true
+      });
     case "video:sources":
-      return getVideoSources(message || {});
+      {
+        const pageContext = await getHydratedPageContext(
+          await resolveContextTab(message || {}, sender)
+        );
+        return {
+          ok: true,
+          pageContext,
+          video: pageContext?.video || null
+        };
+      }
     case "sitePreferences:get":
       return {
         ok: true,
@@ -106,15 +145,7 @@ async function handleMessage(message, sender) {
         uiHints: await updateUiHints(message.updates || {})
       };
     case "settings:update":
-      {
-        const targetTab = await resolveContextTab(message || {});
-        return {
-          ok: true,
-          settings: await saveSettings(message.settings || {}),
-          recentReports: await loadRecentReports(),
-          pageContext: await getHydratedPageContext(targetTab)
-        };
-      }
+      return handleSettingsUpdate(message || {}, sender);
     default:
       return {
         ok: false,
@@ -123,31 +154,37 @@ async function handleMessage(message, sender) {
   }
 }
 
-async function buildPopupInitResponse() {
-  const recentReports = await loadRecentReports();
-  const pageContext = await getHydratedPageContext();
+async function buildSurfaceInitResponse(message, includeLaunchRequest, sender) {
+  const targetTab = await resolveContextTab(message, sender);
+  const pageContext = await getHydratedPageContext(targetTab);
+  const response = await buildSurfacePayload(pageContext);
 
+  if (includeLaunchRequest) {
+    response.launchRequest = await loadLaunchRequest();
+  }
+
+  return response;
+}
+
+async function buildInlineInitResponse(message, sender) {
+  const targetTab = await resolveContextTab(message, sender, true);
+  const pageContext = await getHydratedPageContext(targetTab);
+  const settings = await loadSettings();
   return {
     ok: true,
-    settings: await loadSettings(),
-    recentReports,
-    lastReport: recentReports[0] || null,
+    inlineSettings: {
+      allowBackendTranscriptFallback: Boolean(settings.allowBackendTranscriptFallback)
+    },
     pageContext
   };
 }
 
-async function buildPanelInitResponse(message) {
-  const targetTab = await resolveContextTab(message);
-  const pageContext = await getHydratedPageContext(targetTab);
-  return {
-    ok: true,
-    settings: await loadSettings(),
-    recentReports: await loadRecentReports(),
-    pageContext,
-    sitePreference: await getSitePreference(pageContext?.hostname || ""),
-    uiHints: await loadUiHints(),
-    launchRequest: await loadLaunchRequest()
-  };
+async function handleSettingsUpdate(message, sender) {
+  await saveSettings(message.settings || {});
+  const pageContext = await getHydratedPageContext(
+    await resolveContextTab(message, sender)
+  );
+  return buildSurfacePayload(pageContext);
 }
 
 async function openWorkspace(message, sender) {
@@ -176,8 +213,9 @@ async function openWorkspace(message, sender) {
   }
 
   const pageContext = await getHydratedPageContext(tab);
-  const normalizedRequest =
-    request === null ? null : resolveRequestedAction(pageContext, request || { mode: "recommended" });
+  const normalizedRequest = request
+    ? resolveRequestedAction(pageContext, request)
+    : pageContext.recommendedRequest || null;
 
   if (normalizedRequest) {
     await saveLaunchRequest({
@@ -197,18 +235,17 @@ async function openWorkspace(message, sender) {
   };
 }
 
-async function handlePanelAnalyze(message) {
+async function handleAnalyze(message, options = {}) {
+  const settings = await loadSettings();
   const request = message.request || {};
-  const tab = await resolveContextTab(message);
-  if (!tab?.id) {
-    return {
-      ok: false,
-      error: "No active browser tab is available."
-    };
-  }
+  const targetTab = await resolveContextTab(
+    message,
+    options.sender,
+    options.preferSenderTab
+  ).catch(() => null);
+  const pageContext = targetTab ? await getHydratedPageContext(targetTab) : null;
+  const normalizedRequest = resolveRequestedAction(pageContext, request);
 
-  const pageContext = await getHydratedPageContext(tab);
-  const normalizedRequest = resolveRequestedAction(pageContext, request || { mode: "recommended" });
   if (!normalizedRequest) {
     return {
       ok: false,
@@ -216,311 +253,761 @@ async function handlePanelAnalyze(message) {
     };
   }
 
-  await clearLaunchRequest();
-
-  const analysisResult =
-    normalizedRequest.mode === "manual"
-      ? await analyzeManualText(normalizedRequest)
-      : await analyzeTabRequest(tab, normalizedRequest);
-
-  if (!analysisResult.ok) {
-    return analysisResult;
+  let analysis;
+  if (normalizedRequest.mode === "manual") {
+    analysis = await analyzeDirectText(normalizedRequest.text, settings, {
+      sourceType: "manual",
+      sourceLabel: "Pasted text",
+      title: "Pasted text"
+    });
+  } else if (normalizedRequest.mode === "selection") {
+    analysis = await analyzeSelection(targetTab, settings);
+  } else if (normalizedRequest.mode === "page") {
+    analysis = await analyzePage(targetTab, settings);
+  } else if (normalizedRequest.mode === "youtube") {
+    analysis = await analyzeYouTube(targetTab, normalizedRequest, settings);
+  } else {
+    analysis = {
+      ok: false,
+      error: "Unsupported analysis source."
+    };
   }
 
-  if (pageContext?.hostname) {
-    await rememberSuccessfulRequest(pageContext.hostname, normalizedRequest, analysisResult.sourceMeta);
+  if (!analysis.ok) {
+    return {
+      ok: false,
+      error: analysis.error,
+      acquisition: analysis.acquisition || null,
+      settings,
+      pageContext
+    };
   }
 
-  await clearLaunchRequest();
+  await persistRecentReport(analysis.report, settings.recentReportsLimit);
+  if (settings.debugMode) {
+    await persistDebugReport(analysis.report);
+  }
+
+  return {
+    report: analysis.report,
+    ...(await buildSurfacePayload(
+      targetTab ? await getHydratedPageContext(targetTab) : null
+    ))
+  };
+}
+
+async function buildSurfacePayload(pageContext) {
+  const recentReports = await loadRecentReports();
+  const resolvedPageContext = pageContext || { supported: false, hostname: "" };
 
   return {
     ok: true,
-    report: analysisResult.report,
-    recentReports: await loadRecentReports(),
     settings: await loadSettings(),
-    pageContext: await getHydratedPageContext(tab),
-    sitePreference: await getSitePreference(pageContext?.hostname || ""),
+    recentReports,
+    lastReport: recentReports[0] || null,
+    pageContext: resolvedPageContext,
+    sitePreference: await getSitePreference(normalizeHost(resolvedPageContext.hostname || "")),
     uiHints: await loadUiHints()
   };
 }
 
-async function getVideoSources(message) {
-  const targetTab = await resolveContextTab(message);
-  const pageContext = await getHydratedPageContext(targetTab);
-  return {
-    ok: true,
-    pageContext,
-    video: pageContext?.video || null
-  };
-}
-
-async function analyzeManualText(request) {
-  return runTextAnalysis(request.text, "Pasted text", {
-    sourceType: "manual",
-    includedSources: ["manual"]
-  });
-}
-
-async function analyzeTabRequest(tab, request) {
-  try {
-    await ensureContentScripts(tab.id);
-  } catch (error) {
-    return {
-      ok: false,
-      error:
-        "This page does not allow extension text access. Try a regular web page instead."
-    };
-  }
-
-  const payload = await sendTabMessage(tab.id, {
-    type: "extract:panel-input",
-    request
-  });
-
+async function analyzeSelection(tab, settings) {
+  const payload = await requestTabExtraction(tab?.id, { type: "extract:selection" });
   if (!payload?.ok) {
     return {
       ok: false,
-      error: payload?.error || "No usable text could be extracted from this page."
+      error: payload?.error || "No live text selection found on the page."
     };
   }
 
-  return runTextAnalysis(payload.text, buildSourceLabel(payload.meta), payload.meta);
+  return analyzeDirectText(payload.text, settings, payload.meta || {});
 }
 
-async function runTextAnalysis(text, sourceLabel, sourceMeta) {
-  const settings = await loadSettings();
-  const result = globalThis.AIScriptDetector.analyze.runAnalysis(text, {
-    ...settings,
-    source: sourceLabel
-  });
-
-  if (!result.ok) {
+async function analyzePage(tab, settings) {
+  const payload = await requestTabExtraction(tab?.id, { type: "extract:page" });
+  if (!payload?.ok) {
     return {
       ok: false,
-      error: result.error,
-      settings
+      error: payload?.error || "No visible page text could be extracted."
     };
   }
 
-  const enrichedReport = enrichReport(result.report, sourceMeta || {});
-  await persistRecentReport(enrichedReport, settings.recentReportsLimit);
+  return analyzeDirectText(payload.text, settings, payload.meta || {});
+}
+
+async function analyzeDirectText(text, settings, sourceMeta) {
+  const acquisition = globalThis.ScriptLens.transcript.normalize.normalizeDirectAcquisition(
+    {
+      kind: mapDirectKind(sourceMeta),
+      sourceType: sourceMeta?.sourceType,
+      sourceLabel: sourceMeta?.sourceLabel,
+      title: sourceMeta?.title,
+      text,
+      coverageRatio: sourceMeta?.coverageRatio,
+      blockCount: sourceMeta?.blockCount
+    },
+    {
+      maxTextLength: settings.maxTextLength
+    }
+  );
+
+  if (!acquisition.ok || !acquisition.text) {
+    return {
+      ok: false,
+      error: "No usable content could be extracted from this source."
+    };
+  }
+
+  const sourceLabel = buildAnalysisDisplaySource(acquisition, sourceMeta?.title || "");
+  const detectionResult = globalThis.AIScriptDetector.detect.runDetection(acquisition.text, {
+    ...settings,
+    source: sourceLabel,
+    sourceConfidence: acquisition.sourceConfidence
+  });
+
+  if (!detectionResult.ok) {
+    return {
+      ok: false,
+      error: detectionResult.error
+    };
+  }
 
   return {
     ok: true,
-    report: enrichedReport,
-    sourceMeta: sourceMeta || {}
+    report: buildAnalysisReport({
+      title: sourceMeta.title || sourceLabel,
+      sourceLabel,
+      acquisition,
+      directMeta: sourceMeta,
+      detection: detectionResult.detection,
+      legacyReport: detectionResult.legacyReport,
+      settings
+    })
   };
 }
 
-function enrichReport(report, sourceMeta) {
-  const quality = buildInputQuality(report, sourceMeta);
-  const interpretation = buildInterpretation(quality, sourceMeta);
+async function analyzeYouTube(tab, request, settings) {
+  const adapterResponse = await requestTabExtraction(tab?.id, { type: "youtube:page-adapter" });
+  if (!adapterResponse?.ok || !adapterResponse.adapter) {
+    return {
+      ok: false,
+      error:
+        adapterResponse?.error ||
+        "Open a YouTube watch page to analyze transcript-aware video text."
+    };
+  }
+
+  const adapter = adapterResponse.adapter;
+  const navigationGuard = createNavigationAbortController(tab.id, adapter.videoId);
+  let acquisition;
+  try {
+    acquisition = await resolveYouTubeAcquisition(
+      adapter,
+      tab.id,
+      request,
+      settings,
+      navigationGuard.signal
+    );
+  } finally {
+    navigationGuard.stop();
+  }
+
+  if (navigationGuard.signal.aborted) {
+    return {
+      ok: false,
+      error: "The YouTube tab changed while ScriptLens was resolving sources. Try again on the current video."
+    };
+  }
+
+  const latestTab = await getTabById(tab.id).catch(() => null);
+  if (latestTab?.url && extractVideoIdFromUrl(latestTab.url) !== adapter.videoId) {
+    return {
+      ok: false,
+      error: "The YouTube tab changed while ScriptLens was resolving sources. Try again on the current video."
+    };
+  }
+
+  if (!acquisition.ok || !acquisition.text) {
+    return {
+      ok: false,
+      error: buildAcquisitionFailureMessage(acquisition),
+      acquisition
+    };
+  }
+
+  const sourceLabel = buildYouTubeSourceLabel(adapter.title, acquisition);
+  const detectionResult = globalThis.AIScriptDetector.detect.runDetection(acquisition.text, {
+    ...settings,
+    source: sourceLabel,
+    sourceConfidence: acquisition.sourceConfidence
+  });
+
+  if (!detectionResult.ok) {
+    return {
+      ok: false,
+      error: detectionResult.error,
+      acquisition
+    };
+  }
 
   return {
-    ...report,
-    quality,
+    ok: true,
+    report: buildAnalysisReport({
+      title: adapter.title,
+      sourceLabel,
+      acquisition,
+      directMeta: {
+        sourceType: "youtube"
+      },
+      detection: detectionResult.detection,
+      legacyReport: detectionResult.legacyReport,
+      settings
+    })
+  };
+}
+
+async function resolveYouTubeAcquisition(adapter, tabId, request, settings, signal) {
+  const includeSources = normalizeVideoSources(request.includeSources);
+  const transcriptRequested = includeSources.includes("transcript");
+  const requireTranscript = request.requireTranscript !== false;
+  const allowFallbackText = Boolean(request.allowFallbackText) || !transcriptRequested;
+  let acquisition = null;
+
+  if (transcriptRequested) {
+    acquisition = await globalThis.ScriptLens.transcript.acquire.resolveBestTranscript({
+      adapter,
+      maxTextLength: settings.maxTextLength,
+      requestedLanguageCode: null,
+      transcriptBias: request.transcriptBias || "manual-en",
+      preferredTrackBaseUrl: request.trackBaseUrl || "",
+      signal,
+      allowBackendTranscriptFallback: Boolean(settings.allowBackendTranscriptFallback),
+      backendEndpoint: settings.backendTranscriptEndpoint || "",
+      extensionVersion: chrome.runtime.getManifest()?.version || "0.1.0",
+      refreshAdapter: async () => {
+        const refreshed = await requestTabExtraction(tabId, { type: "youtube:page-adapter" });
+        return refreshed?.ok ? refreshed.adapter : adapter;
+      },
+      domTranscriptLoader: async () => {
+        const opened = await requestTabExtraction(tabId, {
+          type: "youtube:open-transcript-panel"
+        });
+        return opened?.ok ? opened.adapter : adapter;
+      }
+    });
+
+    if (acquisition.ok && acquisition.text) {
+      return acquisition;
+    }
+  }
+
+  if (requireTranscript && !allowFallbackText) {
+    return acquisition ||
+      globalThis.ScriptLens.transcript.normalize.buildUnavailableResult({
+        provider: "youtubeResolver",
+        providerClass: "local",
+        strategy: "transcript-unavailable",
+        sourceLabel: "Transcript unavailable",
+        requestedLanguageCode: null,
+        videoDurationSeconds: adapter.videoDurationSeconds || null,
+        warnings: ["transcript_required"],
+        errors: acquisition?.errors || [],
+        resolverAttempts: acquisition?.resolverAttempts || [],
+        resolverPath: acquisition?.resolverPath || [],
+        winnerSelectedBy: acquisition?.winnerSelectedBy || ["transcript-required"],
+        failureReason: acquisition?.failureReason || "transcript_required"
+      });
+  }
+
+  const fallbackSources = resolveFallbackSources(includeSources, adapter, allowFallbackText);
+  const fallback = buildWeakFallbackAcquisition(adapter, fallbackSources, settings.maxTextLength);
+  if (fallback.ok) {
+    if (acquisition) {
+      fallback.errors = []
+        .concat(acquisition.errors || [])
+        .concat(fallback.errors || []);
+      fallback.resolverAttempts = []
+        .concat(acquisition.resolverAttempts || [])
+        .concat(fallback.resolverAttempts || []);
+      fallback.resolverPath = []
+        .concat(acquisition.resolverPath || [])
+        .concat(fallback.resolverPath || []);
+      fallback.winnerSelectedBy = ["fallback-after-transcript-failure"];
+      fallback.failureReason = acquisition.failureReason || null;
+      fallback.warnings = dedupeList(
+        (fallback.warnings || []).concat(["user_fallback_override"])
+      );
+    }
+    return fallback;
+  }
+
+  return acquisition || fallback;
+}
+
+function buildWeakFallbackAcquisition(adapter, includeSources, maxTextLength) {
+  const useDescription = includeSources.includes("description") && adapter.description;
+  const useTitle = includeSources.includes("title") && adapter.title;
+
+  if (!useDescription && !useTitle) {
+    return globalThis.ScriptLens.transcript.normalize.buildUnavailableResult({
+      provider: "youtubeResolver",
+      providerClass: "local",
+      strategy: "title-description",
+      sourceLabel: "Transcript unavailable",
+      requestedLanguageCode: null,
+      videoDurationSeconds: adapter.videoDurationSeconds || null,
+      warnings: ["transcript_unavailable"],
+      errors: [],
+      resolverAttempts: [],
+      resolverPath: [],
+      winnerSelectedBy: [],
+      failureReason: "transcript_unavailable"
+    });
+  }
+
+  const parts = [];
+  let sourceLabel = "Title + description fallback";
+
+  if (useTitle) {
+    parts.push(adapter.title);
+  }
+  if (useDescription) {
+    parts.push(adapter.description);
+  }
+
+  if (useDescription && !useTitle) {
+    sourceLabel = "Description fallback";
+  } else if (useTitle && !useDescription) {
+    sourceLabel = "Title fallback";
+  }
+
+  return globalThis.ScriptLens.transcript.normalize.stripInternalFields(
+    globalThis.ScriptLens.transcript.normalize.normalizeCandidate(
+      {
+        ok: true,
+        provider: "youtubeResolver",
+        providerClass: "local",
+        strategy: "title-description",
+        sourceLabel,
+        languageCode: adapter.bootstrapSnapshot?.hl || null,
+        originalLanguageCode: adapter.bootstrapSnapshot?.hl || null,
+        requestedLanguageCode: null,
+        isGenerated: null,
+        isTranslated: false,
+        isMachineTranslated: false,
+        videoDurationSeconds: adapter.videoDurationSeconds || null,
+        segments: [],
+        text: parts.join("\n\n"),
+        warnings: ["fallback_source", "weak_evidence", "user_fallback_override"]
+      },
+      { maxTextLength }
+    )
+  );
+}
+
+function resolveFallbackSources(includeSources, adapter, allowFallbackText) {
+  const explicitSources = includeSources.filter((source) => source === "description" || source === "title");
+  if (explicitSources.length) {
+    return explicitSources;
+  }
+
+  if (!allowFallbackText) {
+    return [];
+  }
+
+  return ["description", "title"].filter((source) => {
+    if (source === "description") {
+      return Boolean(adapter.description);
+    }
+    if (source === "title") {
+      return Boolean(adapter.title);
+    }
+    return false;
+  });
+}
+
+function buildAnalysisReport(input) {
+  const acquisition = input.acquisition;
+  const detection = input.detection;
+  const legacyReport = input.legacyReport || {};
+  const inputQuality = buildInputQuality(acquisition, legacyReport.metadata);
+  const interpretation = buildInterpretation(acquisition, inputQuality);
+  const sourceInfo = buildSourceInfo(acquisition);
+
+  return {
+    acquisition,
+    detection,
+    inputQuality,
     interpretation,
-    sourceMeta: {
-      ...sourceMeta
-    },
     metadata: {
-      ...report.metadata,
-      sourceType: sourceMeta.sourceType || "",
-      includedSources: sourceMeta.includedSources || [],
-      transcriptSegmentCount: sourceMeta.transcriptSegmentCount || 0
+      ...(legacyReport.metadata || {}),
+      sensitivity: input.settings.sensitivity
+    },
+    disclaimer: DISCLAIMER,
+    source: input.sourceLabel,
+    sourceInfo,
+    score: detection.aiScore,
+    verdict: detection.verdict,
+    explanation: detection.explanation,
+    topReasons: detection.reasons,
+    categoryScores: detection.categoryScores,
+    triggeredPatterns: detection.triggeredPatterns,
+    flaggedSentences: detection.flaggedSentences,
+    quality: {
+      label: inputQuality.label,
+      summary: inputQuality.summary,
+      reasons: inputQuality.reasons
+    },
+    sourceMeta: {
+      kind: acquisition?.kind || mapDirectKind(input.directMeta),
+      sourceType: input.directMeta?.sourceType || "",
+      includedSources: Array.isArray(input.directMeta?.includedSources)
+        ? input.directMeta.includedSources.slice()
+        : [],
+      provider: acquisition?.provider || null,
+      providerClass: acquisition?.providerClass || "local",
+      strategy: acquisition?.strategy || null,
+      sourceConfidence: acquisition?.sourceConfidence || null,
+      quality: acquisition?.quality || null,
+      acquisitionState: acquisition?.acquisitionState || null,
+      transcriptRequiredSatisfied: acquisition?.transcriptRequiredSatisfied ?? true,
+      failureReason: acquisition?.failureReason || null,
+      languageCode: acquisition?.languageCode || null,
+      segmentCount: acquisition?.segmentCount || 0,
+      coverageRatio: acquisition?.coverageRatio ?? null,
+      transcriptSpanSeconds: acquisition?.transcriptSpanSeconds ?? null
     }
   };
 }
 
-function buildInputQuality(report, sourceMeta) {
-  const includedSources = Array.isArray(sourceMeta.includedSources)
-    ? sourceMeta.includedSources
-    : sourceMeta.sourceType
-      ? [sourceMeta.sourceType]
-      : [];
+function buildInputQuality(acquisition, metadata) {
+  if (acquisition.quality === "strong-transcript") {
+    return {
+      label: "Strong input",
+      summary:
+        acquisition.kind === "transcript"
+          ? acquisition.providerClass === "backend"
+            ? "This analysis is grounded in a strong transcript resolved through the backend fallback because the local path needed help."
+            : "This analysis is grounded in a strong transcript source with meaningful coverage."
+          : "This analysis uses a relatively clean and substantive direct content source.",
+      reasons: buildAcquisitionReasons(acquisition)
+    };
+  }
 
-  let score = 12;
+  if (acquisition.quality === "partial-transcript") {
+    return {
+      label: "Useful input",
+      summary:
+        acquisition.kind === "transcript"
+          ? acquisition.providerClass === "backend"
+            ? "This analysis uses recovered transcript material because the on-page transcript path was incomplete."
+            : "This analysis uses transcript material, but coverage or segment quality is still limited."
+          : "This analysis uses useful local content, but source cleanliness and sample size still shape the score.",
+      reasons: buildAcquisitionReasons(acquisition)
+    };
+  }
+
+  return {
+    label: "Weak input",
+    summary:
+      acquisition.quality === "enhanced-extraction-unavailable"
+        ? acquisition.kind === "transcript"
+          ? buildTranscriptUnavailableMessage(acquisition)
+          : "ScriptLens could not retrieve a reliable source from this page."
+        : acquisition.kind === "transcript"
+          ? "This score is directional only because ScriptLens had to rely on title and description fallback instead of a real transcript."
+          : "This score is directional only because the available content is short, noisy, or limited in context.",
+    reasons: buildAcquisitionReasons(acquisition)
+  };
+}
+
+function buildAcquisitionReasons(acquisition) {
   const reasons = [];
+  reasons.push(`${capitalize(formatSourceKind(acquisition.kind))}: ${acquisition.sourceLabel}.`);
+  reasons.push(`Source confidence: ${capitalize(acquisition.sourceConfidence)}.`);
 
-  if (includedSources.includes("transcript")) {
-    score += 38;
-    reasons.push("Transcript text reduces layout and navigation noise.");
+  if (typeof acquisition.coverageRatio === "number") {
+    reasons.push(`Coverage ratio: ${Math.round(acquisition.coverageRatio * 100)}%.`);
   }
-  if (includedSources.includes("selection")) {
-    score += 28;
-    reasons.push("Selected text is narrowly scoped to the passage you chose.");
+  if (acquisition.kind === "transcript" && acquisition.segmentCount) {
+    reasons.push(`Captured ${acquisition.segmentCount} normalized segments.`);
   }
-  if (includedSources.includes("page")) {
-    score += 18;
-    reasons.push("Visible page capture keeps the analysis tied to the main readable content.");
+  if (acquisition.providerClass === "backend") {
+    reasons.push("Recovered transcript text was used after the on-page transcript path came back weak or unavailable.");
   }
-  if (includedSources.includes("description")) {
-    score += 14;
-    reasons.push("The video description adds authored context around the transcript.");
+  if (acquisition.isGenerated === true) {
+    reasons.push("The winning source uses generated captions.");
   }
-  if (includedSources.includes("title")) {
-    score += 6;
+  if (acquisition.kind === "selection") {
+    reasons.push("Only the selected passage was analyzed, so broader page context is excluded.");
   }
-  if (sourceMeta.sourceType === "manual") {
-    score += 26;
-    reasons.push("Pasted text avoids page extraction noise.");
+  if (acquisition.kind === "manual-input") {
+    reasons.push("Pasted text avoids page extraction noise and is scored directly.");
   }
-
-  const wordCount = report.metadata?.wordCount || 0;
-  if (wordCount >= 700) {
-    score += 24;
-  } else if (wordCount >= 400) {
-    score += 18;
-  } else if (wordCount >= 220) {
-    score += 12;
-  } else if (wordCount >= 120) {
-    score += 6;
+  if (acquisition.warnings?.includes("fallback_source")) {
+    reasons.push("Fallback context was used instead of a full transcript.");
   }
 
-  if (typeof sourceMeta.coverageRatio === "number") {
-    if (sourceMeta.coverageRatio >= 0.55) {
-      score += 12;
-    } else if (sourceMeta.coverageRatio >= 0.35) {
-      score += 8;
-    } else if (sourceMeta.coverageRatio >= 0.2) {
-      score += 4;
-    } else {
-      score -= 4;
-      reasons.push("The captured text appears to include more page noise than ideal.");
-    }
-  }
-
-  if (includedSources.includes("transcript")) {
-    const segmentCount = sourceMeta.transcriptSegmentCount || 0;
-    if (segmentCount >= 40) {
-      score += 12;
-    } else if (segmentCount >= 15) {
-      score += 8;
-    } else if (segmentCount >= 5) {
-      score += 4;
-    } else {
-      score -= 4;
-    }
-  }
-
-  if (includedSources.length >= 2) {
-    score += 6;
-    reasons.push("Multiple complementary sources make the read more stable.");
-  }
-
-  const clampedScore = clampNumber(score, 0, 100, 0);
-  const label =
-    clampedScore >= 75 ? "Strong input" : clampedScore >= 50 ? "Useful input" : "Weak input";
-  const summary =
-    clampedScore >= 75
-      ? "This analysis is based on a relatively clean and substantial input."
-      : clampedScore >= 50
-        ? "This analysis is useful, but source quality still matters when reading the score."
-        : "Treat this as directional only. The input is short, noisy, or missing stronger source material.";
-
-  return {
-    score: clampedScore,
-    label,
-    summary,
-    reasons: reasons.slice(0, 4)
-  };
+  return reasons.slice(0, 4);
 }
 
-function buildInterpretation(quality, sourceMeta) {
-  const usesTranscript = Array.isArray(sourceMeta.includedSources)
-    ? sourceMeta.includedSources.includes("transcript")
-    : false;
+function buildInterpretation(acquisition, inputQuality) {
+  const weakEvidence = acquisition?.quality === "weak-fallback";
+  const transcriptMissing = acquisition?.quality === "enhanced-extraction-unavailable";
+  const contentSource = acquisition?.kind && acquisition.kind !== "transcript";
 
   return {
-    headline: "How to read this score",
     means:
       "The score reflects how strongly the writing matches AI-like patterns in structure, phrasing, and rhythm.",
     notMeans:
       "It is not proof of authorship and should not be treated as a definitive human-vs-AI judgment.",
     falsePositives: [
       "Highly polished scripts, voiceovers, study guides, and SEO copy can trigger strong pattern matches.",
-      "Short excerpts and page captures with little context can overstate the signal.",
-      usesTranscript
-        ? "Edited transcripts can sound more uniform than the original spoken performance."
-        : "Heavily edited marketing or educational copy can read as more templated than its source."
+      weakEvidence
+        ? contentSource
+          ? "Short or noisy page captures can overstate patterns because there is less surrounding context."
+          : "Short title and description fallbacks can overstate packaging signals without enough transcript context."
+        : contentSource
+          ? "Heavily edited article or page content can read more uniform than the original authored workflow."
+          : "Edited transcripts can sound more uniform than the original spoken performance.",
+      "Heavily edited marketing or educational copy can read as more templated than its source."
     ],
-    trustMore: quality.score >= 75
+    trustMore: transcriptMissing
       ? [
-          "The input is long enough to surface repeated structure instead of one-off phrasing.",
-          "The source is relatively clean, which lowers the chance of page noise distorting the read."
+          contentSource
+            ? "Use a longer direct text sample or a cleaner article page when possible."
+            : "Use a video with readable captions or a visible transcript panel when possible.",
+          "Longer direct text samples usually produce a more stable result."
         ]
-      : [
-          "Use longer text and cleaner sources for a more stable result.",
-          "On YouTube, transcripts usually give a better read than page text alone."
-        ]
+      : inputQuality.label === "Strong input"
+        ? [
+            "The source is relatively clean and long enough to surface repeated structure instead of one-off phrasing.",
+            "Transcript provenance and confidence are separate from AI-likelihood, so read both together."
+          ]
+        : [
+            contentSource
+              ? "Use longer text and cleaner article or page captures for a more stable result."
+              : "Use longer text and cleaner transcript sources for a more stable result.",
+            contentSource
+              ? "Short selections and noisy page captures should be treated as weak evidence."
+              : "Fallback title and description analysis should be treated as weak evidence."
+          ]
   };
 }
 
-function buildSourceLabel(meta) {
-  const titleSuffix = meta?.title ? ` - ${meta.title}` : "";
-  if (meta?.sourceType === "selection") {
-    return `Selection${titleSuffix}`;
+function buildSourceInfo(acquisition) {
+  return {
+    kind: acquisition.kind || null,
+    sourceLabel: acquisition.sourceLabel,
+    sourceConfidence: acquisition.sourceConfidence,
+    quality: acquisition.quality,
+    provider: acquisition.provider,
+    providerClass: acquisition.providerClass || "local",
+    strategy: acquisition.strategy,
+    acquisitionState: acquisition.acquisitionState || null,
+    transcriptRequiredSatisfied: acquisition.transcriptRequiredSatisfied ?? true,
+    failureReason: acquisition.failureReason || null,
+    languageCode: acquisition.languageCode,
+    originalLanguageCode: acquisition.originalLanguageCode,
+    isGenerated: acquisition.isGenerated,
+    isTranslated: acquisition.isTranslated,
+    warnings: acquisition.warnings || [],
+    requestShapeValidation: acquisition.requestShapeValidation || null
+  };
+}
+
+function buildAcquisitionFailureMessage(acquisition) {
+  if (!acquisition) {
+    return "No usable text could be extracted.";
   }
-  if (meta?.sourceType === "page") {
-    return `Page${titleSuffix}`;
+  if (acquisition.quality === "enhanced-extraction-unavailable") {
+    return acquisition.kind === "transcript"
+      ? acquisition.failureReason === "transcript_required"
+        ? "ScriptLens could not get a transcript for this video, and the current settings did not allow a title or description fallback."
+        : buildTranscriptUnavailableMessage(acquisition)
+      : "ScriptLens could not retrieve a reliable source from this page.";
   }
-  if (meta?.sourceType === "manual") {
+  return "No usable video text could be extracted from the selected sources.";
+}
+
+function buildTranscriptUnavailableMessage(acquisition) {
+  const failureReason = String(acquisition?.failureReason || "").trim();
+  const warnings = Array.isArray(acquisition?.warnings) ? acquisition.warnings : [];
+  const hasCode = (code) => failureReason === code || warnings.includes(code);
+
+  if (
+    hasCode("caption_fetch_failed") ||
+    hasCode("youtubei_failed_precondition") ||
+    hasCode("youtubei_failed")
+  ) {
+    return "ScriptLens found transcript info for this video, but YouTube did not return enough transcript text to score right now.";
+  }
+
+  if (hasCode("backend_timeout")) {
+    return "ScriptLens found transcript info for this video, but the optional recovery step did not finish in time.";
+  }
+
+  return "ScriptLens could not retrieve a usable transcript for this video right now.";
+}
+
+function buildDirectSourceLabel(sourceMeta) {
+  return buildAnalysisDisplaySource(
+    {
+      kind: mapDirectKind(sourceMeta),
+      sourceLabel: sourceMeta?.sourceLabel || "Local analysis"
+    },
+    sourceMeta?.title || ""
+  );
+}
+
+function buildYouTubeSourceLabel(title, acquisition) {
+  return `YouTube video - ${title} - ${acquisition.sourceLabel}`;
+}
+
+function buildAnalysisDisplaySource(acquisition, title) {
+  const safeTitle = String(title || "").trim();
+
+  if (acquisition.kind === "transcript") {
+    return buildYouTubeSourceLabel(safeTitle || "Untitled video", acquisition);
+  }
+  if (acquisition.kind === "article-content") {
+    return safeTitle ? `Article content - ${safeTitle}` : "Article content";
+  }
+  if (acquisition.kind === "page-content") {
+    return safeTitle ? `Visible page content - ${safeTitle}` : "Visible page content";
+  }
+  if (acquisition.kind === "selection") {
+    return safeTitle ? `Selected text - ${safeTitle}` : "Selected text";
+  }
+  if (acquisition.kind === "manual-input") {
     return "Pasted text";
   }
-  if (meta?.sourceType === "youtube") {
-    const parts = [];
-    if (Array.isArray(meta.includedSources)) {
-      if (meta.includedSources.includes("transcript")) {
-        parts.push("Transcript");
-      }
-      if (meta.includedSources.includes("description")) {
-        parts.push("Description");
-      }
-      if (meta.includedSources.includes("title")) {
-        parts.push("Title");
-      }
+
+  return safeTitle || acquisition.sourceLabel || "Local analysis";
+}
+
+function mapDirectKind(sourceMeta) {
+  const sourceType = String(
+    sourceMeta?.kind || sourceMeta?.sourceType || ""
+  ).toLowerCase();
+
+  if (sourceType === "manual" || sourceType === "manual-input") {
+    return "manual-input";
+  }
+  if (sourceType === "selection") {
+    return "selection";
+  }
+  if (sourceType === "article" || sourceType === "article-content") {
+    return "article-content";
+  }
+  return "page-content";
+}
+
+function formatSourceKind(kind) {
+  if (kind === "manual-input") {
+    return "manual input";
+  }
+  if (kind === "article-content") {
+    return "article content";
+  }
+  if (kind === "page-content") {
+    return "page content";
+  }
+  if (kind === "selection") {
+    return "selection";
+  }
+  return "transcript source";
+}
+
+function createNavigationAbortController(tabId, expectedVideoId) {
+  const controller = new AbortController();
+  let disposed = false;
+  let timer = null;
+
+  const check = async () => {
+    if (disposed || controller.signal.aborted) {
+      return;
     }
 
-    const fallbackSuffix = meta.fallbackApplied ? " (transcript fallback)" : "";
-    return `YouTube video${titleSuffix}${parts.length ? ` - ${parts.join(" + ")}` : ""}${fallbackSuffix}`;
+    const latestTab = await getTabById(tabId).catch(() => null);
+    const currentVideoId = latestTab?.url ? extractVideoIdFromUrl(latestTab.url) : "";
+    if (!latestTab?.id || (expectedVideoId && currentVideoId !== expectedVideoId)) {
+      controller.abort(new Error("navigation_changed"));
+      stop();
+    }
+  };
+
+  const tick = async () => {
+    await check();
+    if (!disposed && !controller.signal.aborted) {
+      timer = setTimeout(tick, 180);
+    }
+  };
+
+  timer = setTimeout(tick, 180);
+
+  function stop() {
+    disposed = true;
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
   }
 
-  return meta?.title ? `Local analysis - ${meta.title}` : "Local analysis";
+  return {
+    signal: controller.signal,
+    stop
+  };
+}
+
+async function requestTabExtraction(tabId, message) {
+  if (!Number.isFinite(Number(tabId))) {
+    return {
+      ok: false,
+      error: "Open a supported YouTube video and try again."
+    };
+  }
+
+  try {
+    return await sendTabMessage(tabId, message);
+  } catch (error) {
+    return {
+      ok: false,
+      error: error?.message || "Could not communicate with the current page."
+    };
+  }
 }
 
 async function getHydratedPageContext(tab) {
   const resolvedTab = tab || (await getActiveTab().catch(() => null));
   if (!resolvedTab?.id) {
-    return {
-      supported: false
-    };
+    return buildUnsupportedPageContext(null);
+  }
+
+  if (!isSupportedYouTubeUrl(resolvedTab.url)) {
+    return buildUnsupportedPageContext(resolvedTab);
   }
 
   try {
-    await ensureContentScripts(resolvedTab.id);
     const payload = await sendTabMessage(resolvedTab.id, { type: "page:context" });
     if (!payload?.ok) {
-      return {
-        supported: false,
-        error: payload?.error || "Context capture unavailable."
-      };
+      return buildUnsupportedPageContext(
+        resolvedTab,
+        payload?.error || "Reload this YouTube tab and try again."
+      );
     }
 
     const rawContext = payload.context || { supported: true };
-    const sitePreference = await getSitePreference(rawContext.hostname || "");
-    return hydratePageContext(rawContext, sitePreference, resolvedTab);
+    return hydratePageContext(rawContext, resolvedTab);
   } catch (error) {
-    return {
-      supported: false,
-      tabId: resolvedTab.id,
-      windowId: resolvedTab.windowId,
-      url: resolvedTab.url || "",
-      error: "This page does not allow ScriptLens access."
-    };
+    return buildUnsupportedPageContext(
+      resolvedTab,
+      "Reload this YouTube tab and try again."
+    );
   }
 }
 
-function hydratePageContext(rawContext, sitePreference, tab) {
+function hydratePageContext(rawContext, tab) {
   if (!rawContext?.supported) {
     return {
       ...(rawContext || { supported: false }),
@@ -530,9 +1017,7 @@ function hydratePageContext(rawContext, sitePreference, tab) {
     };
   }
 
-  const normalizedHost = normalizeHost(rawContext.hostname || "");
-  const preference = sitePreference || {};
-  const recommendedRequest = buildRecommendedRequest(rawContext, preference);
+  const recommendedRequest = buildRecommendedRequest(rawContext);
   const video = rawContext.video
     ? {
         ...rawContext.video,
@@ -540,15 +1025,16 @@ function hydratePageContext(rawContext, sitePreference, tab) {
           recommendedRequest?.mode === "youtube"
             ? {
                 includeSources: recommendedRequest.includeSources || [],
-                trackBaseUrl: recommendedRequest.trackBaseUrl || ""
+                trackBaseUrl: recommendedRequest.trackBaseUrl || "",
+                allowFallbackText: Boolean(recommendedRequest.allowFallbackText)
               }
-            : buildDefaultVideoPreset(rawContext.video)
+            : null
       }
     : null;
 
   return {
     ...rawContext,
-    hostname: normalizedHost,
+    hostname: normalizeHost(rawContext.hostname || ""),
     tabId: tab?.id || null,
     windowId: tab?.windowId || null,
     url: tab?.url || "",
@@ -558,100 +1044,19 @@ function hydratePageContext(rawContext, sitePreference, tab) {
   };
 }
 
-function buildDefaultVideoPreset(video) {
-  if (!video) {
-    return null;
-  }
-
-  if (video.availableSources?.transcript) {
-    return {
-      includeSources: ["transcript"],
-      trackBaseUrl: video.defaultTrackBaseUrl || ""
-    };
-  }
-
-  const fallbackSources = [];
-  if (video.availableSources?.description) {
-    fallbackSources.push("description");
-  }
-  if (video.availableSources?.title) {
-    fallbackSources.push("title");
-  }
-
-  return {
-    includeSources: fallbackSources,
-    trackBaseUrl: ""
-  };
-}
-
-function buildRecommendedRequest(context, sitePreference) {
+function buildRecommendedRequest(context) {
   if (context.isYouTubeVideo && context.video) {
-    return buildRecommendedVideoRequest(context.video, sitePreference);
-  }
-
-  if (
-    sitePreference?.preferredCaptureMode === "selection" &&
-    context.selectionAvailable
-  ) {
     return {
-      mode: "selection"
-    };
-  }
-
-  if (sitePreference?.preferredCaptureMode === "page" && context.pageAvailable) {
-    return {
-      mode: "page"
-    };
-  }
-
-  if (context.selectionAvailable) {
-    return {
-      mode: "selection"
-    };
-  }
-
-  if (context.pageAvailable) {
-    return {
-      mode: "page"
+      mode: "youtube",
+      includeSources: ["transcript"],
+      transcriptBias: "manual-en",
+      trackBaseUrl: context.video.defaultTrackBaseUrl || "",
+      requireTranscript: true,
+      allowFallbackText: false
     };
   }
 
   return null;
-}
-
-function buildRecommendedVideoRequest(video, sitePreference) {
-  const available = video.availableSources || {};
-  const preferredSources = Array.isArray(sitePreference?.youtubePreset?.includeSources)
-    ? sitePreference.youtubePreset.includeSources.filter(Boolean)
-    : ["transcript"];
-
-  const nextSources = preferredSources.filter((source) => {
-    if (source === "transcript") {
-      return available.transcript;
-    }
-    if (source === "description") {
-      return available.description;
-    }
-    if (source === "title") {
-      return available.title;
-    }
-    return false;
-  });
-
-  const includeSources = nextSources.length
-    ? nextSources
-    : available.transcript
-      ? ["transcript"]
-      : [available.description ? "description" : null, available.title ? "title" : null].filter(Boolean);
-
-  return includeSources.length
-    ? {
-        mode: "youtube",
-        includeSources,
-        transcriptBias: sitePreference?.transcriptBias || "manual-en",
-        trackBaseUrl: pickPreferredTrack(video.transcriptTracks || [], sitePreference?.transcriptBias)
-      }
-    : null;
 }
 
 function resolveRequestedAction(pageContext, request) {
@@ -660,9 +1065,7 @@ function resolveRequestedAction(pageContext, request) {
   }
 
   if (request.mode === "selection" || request.mode === "page") {
-    return {
-      mode: request.mode
-    };
+    return { mode: request.mode };
   }
 
   if (request.mode === "manual") {
@@ -673,113 +1076,17 @@ function resolveRequestedAction(pageContext, request) {
   }
 
   if (request.mode === "youtube") {
-    const includeSources = normalizeVideoSources(request.includeSources);
     return {
       mode: "youtube",
-      includeSources,
+      includeSources: normalizeVideoSources(request.includeSources),
       transcriptBias: request.transcriptBias || "manual-en",
-      trackBaseUrl: request.trackBaseUrl || pickPreferredTrack(pageContext?.video?.transcriptTracks || [], request.transcriptBias)
+      trackBaseUrl: request.trackBaseUrl || "",
+      requireTranscript: request.requireTranscript !== false,
+      allowFallbackText: Boolean(request.allowFallbackText)
     };
   }
 
   return null;
-}
-
-async function rememberSuccessfulRequest(hostname, request, sourceMeta) {
-  const normalizedHost = normalizeHost(hostname);
-  if (!normalizedHost || request.mode === "manual") {
-    return;
-  }
-
-  const existing = await getSitePreference(normalizedHost);
-  const updates = {};
-
-  if (request.mode === "selection" || request.mode === "page") {
-    updates.preferredCaptureMode = request.mode;
-  }
-
-  if (request.mode === "youtube") {
-    updates.preferredCaptureMode = "youtube";
-    updates.youtubePreset = {
-      includeSources: normalizeVideoSources(request.includeSources)
-    };
-    updates.transcriptBias = deriveTranscriptBias(sourceMeta?.selectedTrack);
-  }
-
-  await saveSitePreference(normalizedHost, {
-    ...existing,
-    ...updates,
-    updatedAt: Date.now()
-  });
-}
-
-function deriveTranscriptBias(track) {
-  if (!track) {
-    return "manual-en";
-  }
-
-  const languageCode = String(track.languageCode || "").toLowerCase();
-  if (languageCode.startsWith("en") && track.kind === "asr") {
-    return "auto-en";
-  }
-  if (languageCode.startsWith("en")) {
-    return "manual-en";
-  }
-  if (track.kind === "asr") {
-    return "auto-any";
-  }
-  return "manual-any";
-}
-
-function pickPreferredTrack(tracks, transcriptBias) {
-  if (!Array.isArray(tracks) || !tracks.length) {
-    return "";
-  }
-
-  const bias = transcriptBias || "manual-en";
-  const normalized = tracks.map((track) => ({
-    ...track,
-    languageCode: String(track.languageCode || "").toLowerCase()
-  }));
-  const visibleTrack = normalized.find(
-    (track) => track.kind === "visible" || track.baseUrl === VISIBLE_TRANSCRIPT_TRACK_ID
-  );
-
-  if (visibleTrack) {
-    return visibleTrack.baseUrl || "";
-  }
-
-  const descriptionTrack = normalized.find(
-    (track) =>
-      track.kind === "description-transcript" ||
-      track.baseUrl === DESCRIPTION_TRANSCRIPT_TRACK_ID
-  );
-
-  if (descriptionTrack) {
-    return descriptionTrack.baseUrl || "";
-  }
-
-  const manualEnglish =
-    normalized.find((track) => track.languageCode === "en" && track.kind !== "asr") ||
-    normalized.find((track) => track.languageCode.startsWith("en-") && track.kind !== "asr");
-  const autoEnglish =
-    normalized.find((track) => track.languageCode === "en") ||
-    normalized.find((track) => track.languageCode.startsWith("en-"));
-  const manualAny = normalized.find((track) => track.kind !== "asr");
-
-  if (bias === "manual-en") {
-    return (manualEnglish || autoEnglish || manualAny || normalized[0]).baseUrl || "";
-  }
-  if (bias === "auto-en") {
-    return (autoEnglish || manualEnglish || manualAny || normalized[0]).baseUrl || "";
-  }
-  if (bias === "manual-any") {
-    return (manualAny || autoEnglish || normalized[0]).baseUrl || "";
-  }
-  if (bias === "auto-any") {
-    return (normalized.find((track) => track.kind === "asr") || autoEnglish || manualAny || normalized[0]).baseUrl || "";
-  }
-  return (normalized[0] || {}).baseUrl || "";
 }
 
 async function loadSettings() {
@@ -792,9 +1099,11 @@ async function saveSettings(nextSettings) {
     ...(await loadSettings()),
     ...nextSettings
   });
+
   await localSet({
     [STORAGE_KEYS.settings]: merged
   });
+
   return merged;
 }
 
@@ -822,10 +1131,55 @@ function summarizeReport(report) {
     source: report.source,
     score: report.score,
     verdict: report.verdict,
-    qualityLabel: report.quality?.label || "",
-    preview: report.metadata?.preview || "No preview available",
-    topReasons: (report.topReasons || []).slice(0, 3)
+    summary: report.explanation,
+    kind: report.acquisition?.kind || null,
+    provider: report.acquisition?.provider || null,
+    providerClass: report.acquisition?.providerClass || "local",
+    strategy: report.acquisition?.strategy || null,
+    sourceLabel: report.acquisition?.sourceLabel || null,
+    sourceConfidence: report.acquisition?.sourceConfidence || null,
+    acquisitionQuality: report.acquisition?.quality || null,
+    acquisitionState: report.acquisition?.acquisitionState || null,
+    languageCode: report.acquisition?.languageCode || null,
+    segmentCount: report.acquisition?.segmentCount || 0,
+    coverageRatio: report.acquisition?.coverageRatio ?? null
   };
+}
+
+async function loadDebugReports() {
+  const { debugReports } = await localGet([STORAGE_KEYS.debugReports]);
+  return Array.isArray(debugReports) ? debugReports : [];
+}
+
+async function persistDebugReport(report) {
+  const current = await loadDebugReports();
+  const entry = {
+    id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    createdAt: new Date().toISOString(),
+    kind: report.acquisition?.kind || null,
+    sourceLabel: report.acquisition?.sourceLabel || null,
+    providerPathAttempted: report.acquisition?.resolverPath || [],
+    winningProvider: report.acquisition?.provider || null,
+    winningProviderClass: report.acquisition?.providerClass || "local",
+    winningStrategy: report.acquisition?.strategy || null,
+    winnerSelectedBy: report.acquisition?.winnerSelectedBy || [],
+    normalizedTextSlice: report.acquisition?.text || "",
+    languageCode: report.acquisition?.languageCode || null,
+    originalLanguageCode: report.acquisition?.originalLanguageCode || null,
+    segmentCount: report.acquisition?.segmentCount || 0,
+    coverageRatio: report.acquisition?.coverageRatio ?? null,
+    warnings: report.acquisition?.warnings || [],
+    errors: report.acquisition?.errors || [],
+    resolverAttempts: report.acquisition?.resolverAttempts || [],
+    quality: report.acquisition?.quality || null,
+    acquisitionState: report.acquisition?.acquisitionState || null,
+    failureReason: report.acquisition?.failureReason || null,
+    sourceConfidence: report.acquisition?.sourceConfidence || null
+  };
+
+  await localSet({
+    [STORAGE_KEYS.debugReports]: [entry, ...current].slice(0, 10)
+  });
 }
 
 async function getSitePreference(hostname) {
@@ -845,11 +1199,10 @@ async function saveSitePreference(hostname, updates) {
   }
 
   const { sitePreferences } = await localGet([STORAGE_KEYS.sitePreferences]);
-  const currentPreference = sitePreferences?.[normalizedHost] || {};
   const nextPreferences = {
     ...(sitePreferences || {}),
     [normalizedHost]: {
-      ...currentPreference,
+      ...(sitePreferences?.[normalizedHost] || {}),
       ...(updates || {})
     }
   };
@@ -901,17 +1254,26 @@ function normalizeSettings(input) {
   const sensitivity = ["low", "medium", "high"].includes(input.sensitivity)
     ? input.sensitivity
     : DEFAULT_SETTINGS.sensitivity;
-  const maxTextLength = clampNumber(
-    input.maxTextLength,
-    4000,
-    50000,
-    DEFAULT_SETTINGS.maxTextLength
-  );
 
   return {
     ...DEFAULT_SETTINGS,
     sensitivity,
-    maxTextLength
+    maxTextLength: clampNumber(
+      input.maxTextLength,
+      4000,
+      50000,
+      DEFAULT_SETTINGS.maxTextLength
+    ),
+    debugMode: Boolean(input.debugMode),
+    allowBackendTranscriptFallback:
+      typeof input.allowBackendTranscriptFallback === "boolean"
+        ? input.allowBackendTranscriptFallback
+        : DEFAULT_SETTINGS.allowBackendTranscriptFallback,
+    backendTranscriptEndpoint:
+      typeof input.backendTranscriptEndpoint === "string" &&
+      input.backendTranscriptEndpoint.trim()
+        ? input.backendTranscriptEndpoint.trim()
+        : DEFAULT_SETTINGS.backendTranscriptEndpoint
   };
 }
 
@@ -922,16 +1284,16 @@ function normalizeVideoSources(value) {
   return normalized.length ? normalized : ["transcript"];
 }
 
-function normalizeHost(hostname) {
-  return String(hostname || "").replace(/^www\./, "");
-}
-
 async function getCurrentHost() {
   const pageContext = await getHydratedPageContext();
   return pageContext?.hostname || "";
 }
 
-async function resolveContextTab(message) {
+async function resolveContextTab(message, sender, preferSenderTab = false) {
+  if (preferSenderTab && sender?.tab?.id) {
+    return sender.tab;
+  }
+
   const explicitTabId = Number(message?.tabId);
   if (Number.isFinite(explicitTabId)) {
     return getTabById(explicitTabId).catch(() => ({
@@ -939,6 +1301,10 @@ async function resolveContextTab(message) {
       windowId: Number(message?.windowId) || null,
       url: ""
     }));
+  }
+
+  if (sender?.tab?.id) {
+    return sender.tab;
   }
 
   return getActiveTab();
@@ -959,13 +1325,6 @@ async function resolveTabForLaunch(message, sender) {
   }
 
   return getActiveTab();
-}
-
-async function ensureContentScripts(tabId) {
-  await executeScript({
-    target: { tabId },
-    files: ["utils/text.js", "utils/stats.js", "utils/dom.js", "content.js"]
-  });
 }
 
 async function openSidePanel(windowId) {
@@ -1080,10 +1439,78 @@ function storageAreaSet(area, value) {
   });
 }
 
+function normalizeHost(hostname) {
+  return String(hostname || "").replace(/^www\./, "");
+}
+
+function buildUnsupportedPageContext(tab, errorMessage) {
+  return {
+    supported: false,
+    isYouTubeVideo: false,
+    title: "Open a YouTube video",
+    summary: "",
+    hostname: normalizeHost(readHostname(tab?.url || "")),
+    tabId: tab?.id || null,
+    windowId: tab?.windowId || null,
+    url: tab?.url || "",
+    error:
+      errorMessage ||
+      "ScriptLens for Chrome currently supports desktop YouTube watch pages only."
+  };
+}
+
+function isSupportedYouTubeUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    const host = normalizeHost(url.hostname);
+    return host === "youtube.com" && url.pathname === "/watch" && Boolean(url.searchParams.get("v"));
+  } catch (error) {
+    return false;
+  }
+}
+
+function readHostname(value) {
+  try {
+    return new URL(String(value || "")).hostname || "";
+  } catch (error) {
+    return "";
+  }
+}
+
+function capitalize(value) {
+  const text = String(value || "");
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
+}
+
+function dedupeList(values) {
+  const seen = new Set();
+  return values.filter((value) => {
+    const key = String(value || "");
+    if (!key || seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
 function clampNumber(value, min, max, fallback) {
   const nextValue = Number(value);
   if (!Number.isFinite(nextValue)) {
     return fallback;
   }
   return Math.min(max, Math.max(min, Math.round(nextValue)));
+}
+
+function extractVideoIdFromUrl(value) {
+  try {
+    const url = new URL(value);
+    if (url.pathname === "/watch") {
+      return url.searchParams.get("v") || "";
+    }
+    const shortsMatch = url.pathname.match(/^\/shorts\/([^/?#]+)/);
+    return shortsMatch ? shortsMatch[1] : "";
+  } catch (error) {
+    return "";
+  }
 }

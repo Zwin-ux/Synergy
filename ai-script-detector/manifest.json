@@ -2,17 +2,15 @@
   "manifest_version": 3,
   "name": "ScriptLens",
   "version": "0.1.0",
-  "description": "Privacy-first AI-like writing analysis that runs fully inside the extension.",
+  "description": "Analyze YouTube video transcripts for AI-like writing patterns with a one-click inline button.",
   "minimum_chrome_version": "114",
   "permissions": [
-    "activeTab",
     "sidePanel",
-    "scripting",
     "storage"
   ],
+  "homepage_url": "https://zwin-ux.github.io/Synergy/",
   "host_permissions": [
-    "https://www.youtube.com/*",
-    "https://m.youtube.com/*"
+    "https://www.youtube.com/*"
   ],
   "background": {
     "service_worker": "service-worker.js"
@@ -39,8 +37,7 @@
   "content_scripts": [
     {
       "matches": [
-        "https://www.youtube.com/*",
-        "https://m.youtube.com/*"
+        "https://www.youtube.com/*"
       ],
       "js": [
         "youtube-main.js"
@@ -50,10 +47,10 @@
     },
     {
       "matches": [
-        "https://www.youtube.com/*",
-        "https://m.youtube.com/*"
+        "https://www.youtube.com/*"
       ],
       "js": [
+        "surface/shared.js",
         "utils/text.js",
         "utils/stats.js",
         "utils/dom.js",

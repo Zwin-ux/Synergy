@@ -1,0 +1,284 @@
+.landing-main {
+  display: grid;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.landing-panel {
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  background: var(--paper);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow);
+}
+
+.hero,
+.spec-card,
+.privacy-band {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(255, 246, 236, 0.92)),
+    var(--paper);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+  gap: 24px;
+  padding: 28px;
+}
+
+.hero-copy {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.hero-copy h1,
+.section-intro h2,
+.spec-card h2,
+.privacy-copy h2 {
+  font-size: clamp(2.2rem, 5vw, 4.2rem);
+}
+
+.hero-copy h1 {
+  max-width: 11ch;
+}
+
+.hero-copy p,
+.section-intro p,
+.feature-card p,
+.surface-card p,
+.privacy-copy p,
+.spec-list dd {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.hero-points {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.hero-points li {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hero-shot,
+.surface-card {
+  margin: 0;
+}
+
+.hero-shot {
+  display: grid;
+  gap: 12px;
+}
+
+.hero-shot figcaption,
+.surface-card figcaption {
+  display: grid;
+  gap: 6px;
+}
+
+.hero-shot strong,
+.surface-card strong,
+.feature-card h3 {
+  font-size: 24px;
+  font-family: "Fraunces", Georgia, serif;
+  line-height: 1.08;
+}
+
+.hero-shot figcaption span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.shot-frame {
+  overflow: hidden;
+  border: 1px solid rgba(56, 43, 30, 0.18);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 16px 34px rgba(56, 38, 24, 0.08);
+}
+
+.shot-frame img {
+  width: 100%;
+  height: 100%;
+}
+
+.shot-frame-wide {
+  aspect-ratio: 16 / 10;
+}
+
+.shot-frame-wide img {
+  object-fit: cover;
+  object-position: center top;
+}
+
+.surface-section {
+  padding: 28px;
+}
+
+.section-intro {
+  display: grid;
+  gap: 8px;
+  max-width: 680px;
+  margin-bottom: 18px;
+}
+
+.surface-grid,
+.spec-layout {
+  display: grid;
+  gap: 18px;
+}
+
+.surface-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.surface-card {
+  display: grid;
+  gap: 14px;
+  padding: 0;
+}
+
+.surface-card .shot-frame {
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+.surface-card figcaption {
+  padding: 0 2px;
+}
+
+.surface-card p {
+  margin-top: 2px;
+}
+
+.spec-layout {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+}
+
+.feature-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.feature-card,
+.spec-card {
+  padding: 24px;
+}
+
+.feature-card {
+  display: grid;
+  gap: 10px;
+}
+
+.feature-card:nth-child(2) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(232, 244, 237, 0.84));
+}
+
+.feature-card:nth-child(3) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 241, 227, 0.84));
+}
+
+.spec-card {
+  display: grid;
+  gap: 16px;
+}
+
+.spec-list {
+  display: grid;
+  gap: 12px;
+}
+
+.spec-list div {
+  display: grid;
+  grid-template-columns: minmax(124px, 160px) minmax(0, 1fr);
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.spec-list div:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.spec-list dt {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.spec-list dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.privacy-band {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 26px 28px;
+}
+
+.privacy-copy {
+  display: grid;
+  gap: 8px;
+  max-width: 720px;
+}
+
+@media (max-width: 980px) {
+  .hero,
+  .spec-layout,
+  .privacy-band {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .surface-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .spec-list div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero,
+  .surface-section,
+  .feature-card,
+  .spec-card,
+  .privacy-band {
+    padding: 20px;
+    border-radius: 24px;
+  }
+
+  .hero-actions {
+    width: 100%;
+  }
+
+  .hero-actions .button {
+    width: 100%;
+  }
+}
