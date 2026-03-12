@@ -51,7 +51,9 @@
       ],
       "js": [
         "utils/debug.js",
+        "shared/contracts.js",
         "surface/shared.js",
+        "surface/inline-state.js",
         "utils/text.js",
         "utils/stats.js",
         "utils/dom.js",

@@ -1,5 +1,6 @@
 const http = require("http");
 const { resolveTranscriptRequest, DEFAULT_TOTAL_TIMEOUT_MS } = require("./resolve");
+const Contracts = require("../shared/contracts");
 const Policy = require("../transcript/policy");
 const packageManifest = require("../package.json");
 
@@ -50,6 +51,9 @@ function createBackendServer(options = {}) {
     if (request.method !== "POST" || normalizedPath !== "/transcript/resolve") {
       writeJson(response, 404, {
         ok: false,
+        contractVersion: Contracts.CONTRACT_VERSION,
+        failureCategory:
+          Contracts.resolveFailureCategory("not_found") || Contracts.FAILURE_CATEGORIES.request,
         errorCode: "not_found",
         errorMessage: "Unsupported route."
       });
@@ -236,6 +240,10 @@ function logBackendFailure(requestBody, result) {
     url: String(requestBody?.url || "").trim(),
     videoId: String(requestBody?.videoId || "").trim(),
     errorCode: result.errorCode || null,
+    failureCategory:
+      result.failureCategory ||
+      Contracts.resolveFailureCategory(result.errorCode || result.winnerReason) ||
+      null,
     winnerReason: result.winnerReason || null,
     stageTelemetry: summarizeStageTelemetryForLog(result.stageTelemetry)
   };
@@ -362,6 +370,7 @@ function createBackendMetadata(runtimeConfig) {
   return {
     service: "scriptlens-backend",
     version: packageManifest.version || "0.0.0",
+    contractVersion: Contracts.CONTRACT_VERSION,
     asrEnabled: Boolean(runtimeConfig.enableAutomaticAsr),
     authenticatedModeEnabled: Boolean(runtimeConfig.authenticatedModeEnabled)
   };
@@ -898,6 +907,10 @@ function withCacheTelemetry(payload) {
 function buildBackendFailureResponse(input) {
   return {
     ok: false,
+    contractVersion: Contracts.CONTRACT_VERSION,
+    failureCategory:
+      Contracts.resolveFailureCategory(input.errorCode || input.winnerReason) ||
+      Contracts.FAILURE_CATEGORIES.server,
     providerClass: "backend",
     strategy: input.strategy || "backend-transcript",
     sourceLabel: "Backend transcript unavailable",

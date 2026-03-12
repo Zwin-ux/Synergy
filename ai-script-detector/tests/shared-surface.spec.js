@@ -37,6 +37,7 @@ test.describe("ScriptLens shared surface helpers", () => {
     expect(viewModel.qualityLabel).toBe("Usable transcript");
     expect(viewModel.privacyDisclosure).toContain("video ID and requested language");
     expect(viewModel.confidenceLabel).toBe("Medium");
+    expect(viewModel.contractVersion).toBe("2026-03-11");
   });
 
   test("maps title and description fallback to consumer inline copy", () => {
@@ -164,16 +165,21 @@ test.describe("ScriptLens shared surface helpers", () => {
 });
 
 function loadSurfaceModule() {
+  const contractsPath = path.join(__dirname, "..", "shared", "contracts.js");
   const sourcePath = path.join(__dirname, "..", "surface", "shared.js");
-  const code = fs.readFileSync(sourcePath, "utf8");
   const context = { globalThis: {} };
   vm.createContext(context);
+  vm.runInContext(fs.readFileSync(contractsPath, "utf8"), context, {
+    filename: contractsPath
+  });
+  const code = fs.readFileSync(sourcePath, "utf8");
   vm.runInContext(code, context, { filename: sourcePath });
   return context.globalThis.ScriptLensSurface;
 }
 
 function createReport(overrides = {}) {
   return {
+    contractVersion: "2026-03-11",
     acquisition: {
       kind: "transcript",
       providerClass: "local",

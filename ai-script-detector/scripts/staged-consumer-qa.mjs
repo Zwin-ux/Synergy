@@ -1,10 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
+const Contracts = require(path.join(__dirname, "..", "shared", "contracts.js"));
 const ROOT_DIR = path.resolve(__dirname, "..");
 const DEFAULT_MATRIX_PATH = path.join(ROOT_DIR, "release", "staging-video-matrix.json");
 const DEFAULT_EXTENSION_PATH = path.join(ROOT_DIR, "dist", "chrome-unpacked");
@@ -133,12 +136,17 @@ async function runBackendMatrix(entries, options) {
       results.push({
         id: entry.id,
         ok: Boolean(body.ok),
+        contractVersion: body.contractVersion || Contracts.CONTRACT_VERSION,
         latencyMs: Date.now() - startedAt,
         originKind: body.originKind || "unavailable",
         recoveryTier: body.recoveryTier || null,
         sourceTrustTier: body.sourceTrustTier || null,
         winnerReason: body.winnerReason || body.errorCode || "unknown",
         errorCode: body.errorCode || null,
+        failureCategory:
+          body.failureCategory ||
+          Contracts.resolveFailureCategory(body) ||
+          null,
         authenticatedAcquisitionUsed: Boolean(body.authenticatedAcquisitionUsed),
         acquisitionPathUsed: body.acquisitionPathUsed || null,
         qualityGate: body.qualityGate || null,
@@ -150,12 +158,16 @@ async function runBackendMatrix(entries, options) {
       results.push({
         id: entry.id,
         ok: false,
+        contractVersion: Contracts.CONTRACT_VERSION,
         latencyMs: Date.now() - startedAt,
         originKind: "transport-error",
         recoveryTier: null,
         sourceTrustTier: null,
         winnerReason: "transport_error",
         errorCode: "transport_error",
+        failureCategory:
+          Contracts.resolveFailureCategory("transport_error") ||
+          Contracts.FAILURE_CATEGORIES.transport,
         authenticatedAcquisitionUsed: false,
         acquisitionPathUsed: null,
         qualityGate: null,
@@ -558,6 +570,9 @@ function buildSummary(results) {
   const inlineSuccess = results.filter((entry) => entry.inline?.outcome === "success").length;
   const inlineMeasured = results.filter((entry) => entry.inline).length;
   const inlineCompact = results.filter((entry) => entry.inline?.compactInline).length;
+  const backendGoodInlineErrors = results.filter(
+    (entry) => entry.backend?.ok && entry.inline && entry.inline.outcome !== "success"
+  ).length;
   const canaryMismatches = results
     .filter((entry) => entry.canary)
     .filter((entry) => entry.backend?.meetsExpectation === false)
@@ -569,6 +584,7 @@ function buildSummary(results) {
     inlineSuccess,
     inlineMeasured,
     inlineCompact,
+    backendGoodInlineErrors,
     canaryMismatches
   };
 }
@@ -589,6 +605,9 @@ function buildMarkdownReport(report) {
     report.inlineClientInstanceId
       ? `Inline compact runs: ${report.summary.inlineCompact}/${report.summary.inlineMeasured}`
       : "Inline compact runs: skipped",
+    report.inlineClientInstanceId
+      ? `Backend-good inline errors: ${report.summary.backendGoodInlineErrors}`
+      : "Backend-good inline errors: skipped",
     ""
   ];
 
@@ -599,13 +618,13 @@ function buildMarkdownReport(report) {
   }
 
   lines.push(
-    "| Video | Categories | Backend | Origin | Recovery | Trust | Winner | Latency (ms) | Inline | Compact | Workspace |",
-    "| --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- |"
+    "| Video | Categories | Backend | Failure Category | Origin | Recovery | Trust | Winner | Latency (ms) | Inline | Compact | Workspace |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- |"
   );
 
   report.matrix.forEach((entry) => {
     lines.push(
-      `| ${entry.label} | ${entry.categories.join(", ")} | ${entry.backend?.ok ? "success" : `fail (${entry.backend?.errorCode || entry.backend?.winnerReason || "n/a"})`} | ${entry.backend?.originKind || "n/a"} | ${entry.backend?.recoveryTier || "n/a"} | ${entry.backend?.sourceTrustTier || "n/a"} | ${entry.backend?.winnerReason || "n/a"} | ${entry.backend?.latencyMs ?? ""} | ${entry.inline ? `${entry.inline.outcome}${entry.inline.understandable ? "" : " (unclear)"}` : "skipped"} | ${entry.inline ? (entry.inline.compactInline ? "yes" : "no") : "skipped"} | ${entry.inline ? (entry.inline.workspaceHandoffWorks ? "yes" : "no") : "skipped"} |`
+      `| ${entry.label} | ${entry.categories.join(", ")} | ${entry.backend?.ok ? "success" : `fail (${entry.backend?.errorCode || entry.backend?.winnerReason || "n/a"})`} | ${entry.backend?.failureCategory || "n/a"} | ${entry.backend?.originKind || "n/a"} | ${entry.backend?.recoveryTier || "n/a"} | ${entry.backend?.sourceTrustTier || "n/a"} | ${entry.backend?.winnerReason || "n/a"} | ${entry.backend?.latencyMs ?? ""} | ${entry.inline ? `${entry.inline.outcome}${entry.inline.understandable ? "" : " (unclear)"}` : "skipped"} | ${entry.inline ? (entry.inline.compactInline ? "yes" : "no") : "skipped"} | ${entry.inline ? (entry.inline.workspaceHandoffWorks ? "yes" : "no") : "skipped"} |`
     );
   });
 

@@ -59,6 +59,10 @@ For Google Cloud Run deployment, use `release/CLOUD_RUN.md`.
 
 For staged consumer QA and daily canary checks, use `release/STAGING_QA.md`.
 
+For shared runtime and report contracts, use `release/CONTRACTS.md`.
+
+For release gates, cookie rotation, and canary promotion rules, use `release/OPERATIONS.md`.
+
 ## Windows self-host setup
 
 1. Install `yt-dlp` for your user profile:

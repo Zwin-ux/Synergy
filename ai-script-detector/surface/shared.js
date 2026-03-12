@@ -1,5 +1,6 @@
 (function (root) {
   const Surface = (root.ScriptLensSurface = root.ScriptLensSurface || {});
+  const Contracts = root.ScriptLensContracts || {};
 
   Surface.buildPageContextViewModel = buildPageContextViewModel;
   Surface.buildReportViewModel = buildReportViewModel;
@@ -120,6 +121,11 @@
     }
 
     return {
+      contractVersion: report.contractVersion || Contracts.CONTRACT_VERSION || "2026-03-11",
+      failureCategory:
+        report.failureCategory ||
+        Contracts.resolveFailureCategory?.(report) ||
+        null,
       score,
       scoreDisplay: notScored ? "Not scored" : String(score),
       verdict,
@@ -226,6 +232,11 @@
       .join(" - ");
 
     return {
+      contractVersion: report.contractVersion || Contracts.CONTRACT_VERSION || "2026-03-11",
+      failureCategory:
+        report.failureCategory ||
+        Contracts.resolveFailureCategory?.(report) ||
+        null,
       score,
       scoreClass,
       verdict,

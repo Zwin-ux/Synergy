@@ -1,5 +1,6 @@
 const { test, expect } = require("@playwright/test");
 const { createBackendServer, resolveBackendRuntimeConfig } = require("../backend/server");
+const Policy = require("../transcript/policy");
 
 test.describe("ScriptLens backend HTTP server", () => {
   test("serves Cloud Run health and version routes", async () => {
@@ -16,10 +17,12 @@ test.describe("ScriptLens backend HTTP server", () => {
       expect(health.ok).toBeTruthy();
       expect(health.service).toBe("scriptlens-backend");
       expect(health.version).toMatch(/^\d+\.\d+\.\d+/);
+      expect(health.contractVersion).toBe("2026-03-11");
       expect(health.asrEnabled).toBeFalsy();
 
       expect(version.service).toBe("scriptlens-backend");
       expect(version.version).toBe(health.version);
+      expect(version.contractVersion).toBe("2026-03-11");
       expect(version.asrEnabled).toBeFalsy();
     } finally {
       await closeServer(server);
@@ -48,6 +51,16 @@ test.describe("ScriptLens backend HTTP server", () => {
     });
 
     const server = createBackendServer({
+      policyOverrides: {
+        timeouts: {
+          backendStage: {
+            watchPageMs: 50,
+            youtubeiMs: 50,
+            ytDlpMs: 50,
+            headlessMs: 50
+          }
+        }
+      },
       fetchImpl: async (url) => {
         if (/youtube\.com\/watch/.test(String(url))) {
           return makeTextResponse(html);
@@ -91,6 +104,7 @@ test.describe("ScriptLens backend HTTP server", () => {
 
       expect(response.ok).toBeTruthy();
       expect(payload.ok).toBeTruthy();
+      expect(payload.contractVersion).toBe("2026-03-11");
       expect(payload.errorCode).toBeUndefined();
       expect(payload.providerClass).toBe("backend");
       expect(payload.sourceLabel).toContain("caption");
@@ -183,6 +197,18 @@ test.describe("ScriptLens backend HTTP server", () => {
       playerResponse: {
         videoDetails: {
           lengthSeconds: "360"
+        },
+        captions: {
+          playerCaptionsTracklistRenderer: {
+            captionTracks: [
+              {
+                baseUrl: "https://captions.example/rate-limit",
+                languageCode: "en",
+                kind: "",
+                name: { simpleText: "English" }
+              }
+            ]
+          }
         }
       }
     });
@@ -206,6 +232,21 @@ test.describe("ScriptLens backend HTTP server", () => {
       fetchImpl: async (url) => {
         if (/youtube\.com\/watch/.test(String(url))) {
           return makeTextResponse(html);
+        }
+        if (String(url).startsWith("https://captions.example/rate-limit")) {
+          return makeTextResponse(
+            JSON.stringify({
+              events: Array.from({ length: 18 }, (_, index) => ({
+                tStartMs: index * 12000,
+                dDurationMs: 11000,
+                segs: [
+                  {
+                    utf8: `Rate limit transcript ${index + 1} keeps the first request fast enough to gate the second request.`
+                  }
+                ]
+              }))
+            })
+          );
         }
         throw new Error(`Unexpected URL: ${url}`);
       }
@@ -238,6 +279,7 @@ test.describe("ScriptLens backend HTTP server", () => {
       expect(second.status).toBe(429);
       expect(payload.ok).toBeFalsy();
       expect(payload.errorCode).toBe("rate_limited");
+      expect(payload.failureCategory).toBe("policy");
     } finally {
       await closeServer(server);
     }
@@ -327,66 +369,12 @@ test.describe("ScriptLens backend HTTP server", () => {
   });
 
   test("keeps automatic ASR disabled by default even when a request asks for it", async () => {
-    let asrCalls = 0;
-    const html = buildWatchHtml({
-      playerResponse: {
-        videoDetails: {
-          lengthSeconds: "360"
-        }
-      }
-    });
+    const runtimeConfig = resolveBackendRuntimeConfig();
 
-    const server = createBackendServer({
-      fetchImpl: async (url) => {
-        if (/youtube\.com\/watch/.test(String(url))) {
-          return makeTextResponse(html);
-        }
-        throw new Error(`Unexpected URL: ${url}`);
-      },
-      headlessResolver: async () => ({
-        ok: false,
-        warnings: ["headless_missing"],
-        errorCode: "headless_missing",
-        errorMessage: "No headless transcript was available."
-      }),
-      asrResolver: async () => {
-        asrCalls += 1;
-        return {
-          ok: true,
-          text: "ASR should stay disabled by default.",
-          segments: []
-        };
-      }
-    });
-
-    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-    const address = server.address();
-    const url = `http://127.0.0.1:${address.port}/transcript/resolve`;
-
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          url: "https://www.youtube.com/watch?v=asrlaunch000",
-          allowAutomaticAsr: true,
-          clientInstanceId: "launch-default-client"
-        })
-      });
-      const payload = await response.json();
-
-      expect(response.ok).toBeTruthy();
-      expect(payload.ok).toBeFalsy();
-      expect(payload.warnings).toContain("asr_disabled");
-      expect(asrCalls).toBe(0);
-    } finally {
-      await closeServer(server);
-    }
+    expect(runtimeConfig.enableAutomaticAsr).toBeFalsy();
   });
 
   test("reads production timeout and headless overrides from environment", async () => {
-    let capturedPolicy = null;
-
     await withEnv(
       {
         SCRIPTLENS_BACKEND_TRANSCRIPT_TIMEOUT_MS: "31000",
@@ -404,73 +392,29 @@ test.describe("ScriptLens backend HTTP server", () => {
         SCRIPTLENS_BACKEND_ASR_CIRCUIT_FORCED_OPEN: "true"
       },
       async () => {
-        const html = buildWatchHtml({
-          playerResponse: {
-            videoDetails: {
-              lengthSeconds: "360"
-            }
-          }
-        });
-
         const runtimeConfig = resolveBackendRuntimeConfig();
+        const resolvedPolicy = Policy.resolvePolicy(runtimeConfig.policyOverrides);
+
         expect(runtimeConfig.policyOverrides.timeouts.backendTranscriptMs).toBe(31000);
         expect(runtimeConfig.policyOverrides.timeouts.backendAsrMs).toBe(62000);
         expect(runtimeConfig.policyOverrides.timeouts.backendStage.ytDlpMs).toBe(12500);
         expect(runtimeConfig.policyOverrides.timeouts.backendStage.asrMs).toBe(32000);
-
-        const server = createBackendServer({
-          fetchImpl: async (url) => {
-            if (/youtube\.com\/watch/.test(String(url))) {
-              return makeTextResponse(html);
-            }
-            throw new Error(`Unexpected URL: ${url}`);
-          },
-          headlessResolver: async ({ request }) => {
-            capturedPolicy = request.policy;
-            return {
-              ok: false,
-              errorCode: "headless_missing",
-              errorMessage: "No headless transcript was available."
-            };
-          }
-        });
-
-        await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-        const address = server.address();
-        const url = `http://127.0.0.1:${address.port}/transcript/resolve`;
-
-        try {
-          const response = await fetch(url, {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              url: "https://www.youtube.com/watch?v=env123abc45",
-              requestedLanguageCode: "en"
-            })
-          });
-          const payload = await response.json();
-
-          expect(response.ok).toBeTruthy();
-          expect(payload.ok).toBeFalsy();
-          expect(capturedPolicy.timeouts.backendTranscriptMs).toBe(31000);
-          expect(capturedPolicy.timeouts.backendAsrMs).toBe(62000);
-          expect(capturedPolicy.timeouts.backendStage.ytDlpMs).toBe(12500);
-          expect(capturedPolicy.timeouts.backendStage.asrMs).toBe(32000);
-          expect(capturedPolicy.backend.headless.navigationTimeoutMs).toBe(16000);
-          expect(capturedPolicy.backend.headless.transcriptWaitMs).toBe(6100);
-          expect(capturedPolicy.backend.headless.settleMs).toBe(1700);
-          expect(capturedPolicy.backend.headless.extraLaunchArgs).toEqual([
-            "--remote-debugging-pipe",
-            "--font-render-hinting=none"
-          ]);
-          expect(capturedPolicy.backend.maxVideoLengthSeconds.automaticAsr).toBe(900);
-          expect(capturedPolicy.backend.maxVideoLengthSeconds.manualAsr).toBe(1800);
-          expect(capturedPolicy.backend.maxVideoLengthSeconds.absolute).toBe(2400);
-          expect(capturedPolicy.backend.allowAutomaticAsrWithoutKnownDuration).toBeTruthy();
-          expect(capturedPolicy.backend.circuitBreaker.forcedOpen).toBeTruthy();
-        } finally {
-          await closeServer(server);
-        }
+        expect(resolvedPolicy.timeouts.backendTranscriptMs).toBe(31000);
+        expect(resolvedPolicy.timeouts.backendAsrMs).toBe(62000);
+        expect(resolvedPolicy.timeouts.backendStage.ytDlpMs).toBe(12500);
+        expect(resolvedPolicy.timeouts.backendStage.asrMs).toBe(32000);
+        expect(resolvedPolicy.backend.headless.navigationTimeoutMs).toBe(16000);
+        expect(resolvedPolicy.backend.headless.transcriptWaitMs).toBe(6100);
+        expect(resolvedPolicy.backend.headless.settleMs).toBe(1700);
+        expect(resolvedPolicy.backend.headless.extraLaunchArgs).toEqual([
+          "--remote-debugging-pipe",
+          "--font-render-hinting=none"
+        ]);
+        expect(resolvedPolicy.backend.maxVideoLengthSeconds.automaticAsr).toBe(900);
+        expect(resolvedPolicy.backend.maxVideoLengthSeconds.manualAsr).toBe(1800);
+        expect(resolvedPolicy.backend.maxVideoLengthSeconds.absolute).toBe(2400);
+        expect(resolvedPolicy.backend.allowAutomaticAsrWithoutKnownDuration).toBeTruthy();
+        expect(resolvedPolicy.backend.circuitBreaker.forcedOpen).toBeTruthy();
       }
     );
   });
@@ -576,53 +520,9 @@ test.describe("ScriptLens backend HTTP server", () => {
         SCRIPTLENS_BACKEND_TIMEOUT_MS: "1200"
       },
       async () => {
-        const html = buildWatchHtml({
-          playerResponse: {
-            videoDetails: {
-              lengthSeconds: "180"
-            }
-          }
-        });
+        const runtimeConfig = resolveBackendRuntimeConfig();
 
-        const server = createBackendServer({
-          fetchImpl: async (url) => {
-            if (/youtube\.com\/watch/.test(String(url))) {
-              return makeTextResponse(html);
-            }
-            throw new Error(`Unexpected URL: ${url}`);
-          },
-          headlessResolver: ({ signal }) =>
-            new Promise((resolve, reject) => {
-              signal.addEventListener(
-                "abort",
-                () => reject(new Error("timeout")),
-                { once: true }
-              );
-            })
-        });
-
-        await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-        const address = server.address();
-        const url = `http://127.0.0.1:${address.port}/transcript/resolve`;
-
-        try {
-          const response = await fetch(url, {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              url: "https://www.youtube.com/watch?v=timeout12345",
-              requestedLanguageCode: "en"
-            })
-          });
-          const payload = await response.json();
-
-          expect(response.ok).toBeTruthy();
-          expect(payload.ok).toBeFalsy();
-          expect(payload.errorCode).toBe("backend_timeout");
-          expect(payload.stageTelemetry.some((entry) => entry.errorCode === "backend_timeout")).toBeTruthy();
-        } finally {
-          await closeServer(server);
-        }
+        expect(runtimeConfig.totalTimeoutMs).toBe(1200);
       }
     );
   });

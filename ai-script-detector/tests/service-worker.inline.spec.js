@@ -5,6 +5,8 @@ const { test, expect } = require("@playwright/test");
 
 const ROOT_DIR = path.join(__dirname, "..");
 const SERVICE_WORKER_PATH = path.join(ROOT_DIR, "service-worker.js");
+const CONTRACTS_PATH = path.join(ROOT_DIR, "shared", "contracts.js");
+const SERVICE_WORKER_REPORT_PATH = path.join(ROOT_DIR, "shared", "service-worker-report.js");
 
 test.describe("ScriptLens inline runtime routing", () => {
   test("inline init prefers sender.tab over an explicit tabId", async () => {
@@ -298,6 +300,7 @@ test.describe("ScriptLens inline runtime routing", () => {
 
     expect(result.ok).toBeTruthy();
     expect(result.report.scoringStatus).toBe("insufficient-input");
+    expect(result.report.contractVersion).toBe("2026-03-11");
     expect(result.report.verdict).toBe("Not enough spoken text");
     expect(result.report.score).toBeNull();
     expect(result.report.scoringSummary).toContain("does not contain enough spoken text");
@@ -468,9 +471,15 @@ function loadServiceWorkerSandbox(options = {}) {
 
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(CONTRACTS_PATH, "utf8"), sandbox, {
+    filename: CONTRACTS_PATH
+  });
   const policyPath = path.join(ROOT_DIR, "transcript", "policy.js");
   vm.runInContext(fs.readFileSync(policyPath, "utf8"), sandbox, {
     filename: policyPath
+  });
+  vm.runInContext(fs.readFileSync(SERVICE_WORKER_REPORT_PATH, "utf8"), sandbox, {
+    filename: SERVICE_WORKER_REPORT_PATH
   });
   vm.runInContext(fs.readFileSync(SERVICE_WORKER_PATH, "utf8"), sandbox, {
     filename: SERVICE_WORKER_PATH

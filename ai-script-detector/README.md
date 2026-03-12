@@ -79,6 +79,8 @@ You can also use `SCRIPTLENS_YTDLP_PYTHONPATH` and `SCRIPTLENS_YTDLP_PYTHON` ins
 
 More backend notes live in `release/README.md`.
 Cloud Run deployment steps live in `release/CLOUD_RUN.md`.
+Shared interface notes live in `release/CONTRACTS.md`.
+Release and auth runbooks live in `release/OPERATIONS.md`.
 
 ## Development commands
 
@@ -92,6 +94,10 @@ Cloud Run deployment steps live in `release/CLOUD_RUN.md`.
   - `npm.cmd run test:e2e`
 - Run the YouTube smoke suite:
   - `npm.cmd run test:e2e:youtube`
+- Run the deterministic CI gate locally:
+  - `npm.cmd run ci:fast`
+- Run the smoke gate locally:
+  - `npm.cmd run ci:smoke`
 - Build an unpacked release staging directory:
   - `npm.cmd run build:extension`
 - Build the Chrome Web Store zip:
@@ -123,3 +129,4 @@ The public site is intended to be served from Railway. Set `SCRIPTLENS_PUBLIC_SI
 - Fallback text is labeled honestly and only used when explicitly enabled
 - The release zip contains only extension runtime assets
 - Privacy/support docs match the shipped behavior exactly
+- Backend-good results should always map to inline-good results before any release candidate is promoted

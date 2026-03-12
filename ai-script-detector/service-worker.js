@@ -1,6 +1,7 @@
 importScripts(
   "runtime-config.js",
   "utils/debug.js",
+  "shared/contracts.js",
   "utils/text.js",
   "utils/stats.js",
   "detector/patterns.js",
@@ -18,10 +19,13 @@ importScripts(
   "transcript/providers/youtubeResolver.js",
   "transcript/providers/backendResolver.js",
   "transcript/providers/nativeHelper.js",
-  "transcript/acquire.js"
+  "transcript/acquire.js",
+  "shared/service-worker-report.js"
 );
 
 const Debug = globalThis.ScriptLensDebug || {};
+const Contracts = globalThis.ScriptLensContracts || {};
+const ServiceWorkerReport = globalThis.ScriptLensServiceWorkerReport || {};
 const RuntimeConfig = globalThis.ScriptLensRuntimeConfig || {};
 const TranscriptPolicy = globalThis.ScriptLens?.transcript?.policy || {};
 const RECOVERY_POLICY = TranscriptPolicy.resolvePolicy
@@ -393,6 +397,12 @@ async function handleAnalyze(message, options = {}) {
     return {
       ok: false,
       error: analysis.error,
+      failureCategory:
+        Contracts.resolveFailureCategory?.({
+          errorCode: analysis.acquisition?.errorCode,
+          failureReason: analysis.acquisition?.failureReason,
+          winnerReason: analysis.acquisition?.winnerReason
+        }) || null,
       acquisition: analysis.acquisition || null,
       settings,
       pageContext
@@ -939,6 +949,11 @@ function resolveFallbackSources(includeSources, adapter, allowFallbackText) {
 }
 
 function buildAnalysisReport(input) {
+  if (ServiceWorkerReport.buildAnalysisReport) {
+    return ServiceWorkerReport.buildAnalysisReport(input, {
+      disclaimer: DISCLAIMER
+    });
+  }
   const acquisition = input.acquisition;
   const detection = input.detection;
   const legacyReport = input.legacyReport || {};
@@ -1008,6 +1023,11 @@ function buildAnalysisReport(input) {
 }
 
 function buildInsufficientInputReport(input) {
+  if (ServiceWorkerReport.buildInsufficientInputReport) {
+    return ServiceWorkerReport.buildInsufficientInputReport(input, {
+      disclaimer: DISCLAIMER
+    });
+  }
   if (
     input?.acquisition?.kind !== "transcript" ||
     !isInsufficientInputError(input?.detectionError)
@@ -1237,6 +1257,9 @@ function buildSourceInfo(acquisition) {
 }
 
 function buildAcquisitionFailureMessage(acquisition) {
+  if (ServiceWorkerReport.buildAcquisitionFailureMessage) {
+    return ServiceWorkerReport.buildAcquisitionFailureMessage(acquisition);
+  }
   if (!acquisition) {
     return "No usable text could be extracted.";
   }
@@ -1251,6 +1274,9 @@ function buildAcquisitionFailureMessage(acquisition) {
 }
 
 function buildTranscriptUnavailableMessage(acquisition) {
+  if (ServiceWorkerReport.buildTranscriptUnavailableMessage) {
+    return ServiceWorkerReport.buildTranscriptUnavailableMessage(acquisition);
+  }
   const failureReason = String(acquisition?.failureReason || "").trim();
   const warnings = Array.isArray(acquisition?.warnings) ? acquisition.warnings : [];
   const hasCode = (code) => failureReason === code || warnings.includes(code);
@@ -1279,6 +1305,9 @@ function buildTranscriptUnavailableMessage(acquisition) {
 }
 
 function buildDirectSourceLabel(sourceMeta) {
+  if (ServiceWorkerReport.buildDirectSourceLabel) {
+    return ServiceWorkerReport.buildDirectSourceLabel(sourceMeta);
+  }
   return buildAnalysisDisplaySource(
     {
       kind: mapDirectKind(sourceMeta),
@@ -1293,6 +1322,9 @@ function buildYouTubeSourceLabel(title, acquisition) {
 }
 
 function buildAnalysisDisplaySource(acquisition, title) {
+  if (ServiceWorkerReport.buildAnalysisDisplaySource) {
+    return ServiceWorkerReport.buildAnalysisDisplaySource(acquisition, title);
+  }
   const safeTitle = String(title || "").trim();
 
   if (acquisition.kind === "transcript") {
@@ -1315,6 +1347,9 @@ function buildAnalysisDisplaySource(acquisition, title) {
 }
 
 function mapDirectKind(sourceMeta) {
+  if (ServiceWorkerReport.mapDirectKind) {
+    return ServiceWorkerReport.mapDirectKind(sourceMeta);
+  }
   const sourceType = String(
     sourceMeta?.kind || sourceMeta?.sourceType || ""
   ).toLowerCase();

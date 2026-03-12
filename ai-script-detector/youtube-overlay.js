@@ -6,6 +6,7 @@
   globalThis.__scriptLensYouTubeOverlayLoaded = true;
 
   const Surface = globalThis.ScriptLensSurface || {};
+  const InlineState = globalThis.ScriptLensInlineState || {};
   const Debug = globalThis.ScriptLensDebug || {};
   const logger = Debug.createLogger
     ? Debug.createLogger("youtube-overlay")
@@ -16,7 +17,7 @@
   const ROOT_ID = "scriptlens-youtube-cta-root";
   const INLINE_INIT_TIMEOUT_MS = 8000;
   const INLINE_ANALYZE_TIMEOUT_MS = 35000;
-  const DEFAULT_SELECTION = {
+  const DEFAULT_SELECTION = InlineState.DEFAULT_SELECTION || {
     includeSources: ["transcript"],
     trackBaseUrl: "",
     allowFallbackText: false
@@ -689,6 +690,16 @@
   }
 
   function syncVideoSelection(preserveCurrentSelection) {
+    if (InlineState.syncVideoSelection) {
+      state.videoSelection = InlineState.syncVideoSelection({
+        context: state.context,
+        currentSelection: state.videoSelection,
+        defaultSelection: DEFAULT_SELECTION,
+        preserveCurrentSelection
+      });
+      return;
+    }
+
     const video = state.context?.video;
     if (!video) {
       state.videoSelection = { ...DEFAULT_SELECTION };
@@ -787,10 +798,12 @@
   }
 
   function summarizeContext(context) {
+    if (InlineState.summarizeContext) {
+      return InlineState.summarizeContext(context);
+    }
     if (!context) {
       return null;
     }
-
     return {
       supported: Boolean(context.supported),
       isYouTubeVideo: Boolean(context.isYouTubeVideo),
@@ -809,6 +822,9 @@
   }
 
   function summarizeError(error) {
+    if (InlineState.summarizeError) {
+      return InlineState.summarizeError(error);
+    }
     if (!error) {
       return null;
     }
@@ -820,6 +836,9 @@
   }
 
   function buildInlineRuntimeError(error, phase) {
+    if (InlineState.buildInlineRuntimeError) {
+      return InlineState.buildInlineRuntimeError(error, phase);
+    }
     const message = String(error?.message || "");
     if (/timed out/i.test(message)) {
       return phase === "init"

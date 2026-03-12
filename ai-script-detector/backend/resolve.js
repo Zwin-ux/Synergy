@@ -3,7 +3,10 @@ const { spawn } = require("node:child_process");
 const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
+const Contracts = require("../shared/contracts");
 const Policy = require("../transcript/policy");
+const Auth = require("./auth");
+const Telemetry = require("./telemetry");
 
 const RECOVERY_POLICY = Policy.resolvePolicy();
 const DEFAULT_TOTAL_TIMEOUT_MS =
@@ -1649,6 +1652,8 @@ function buildSuccessPayload(input) {
 
   return {
     ok: true,
+    contractVersion: Contracts.CONTRACT_VERSION,
+    failureCategory: null,
     providerClass: "backend",
     strategy: input.strategy || "backend-transcript",
     sourceLabel: input.sourceLabel || "Backend transcript",
@@ -1695,6 +1700,10 @@ function buildFailurePayload(input) {
   });
   return {
     ok: false,
+    contractVersion: Contracts.CONTRACT_VERSION,
+    failureCategory:
+      Contracts.resolveFailureCategory(input.errorCode || input.winnerReason) ||
+      Contracts.FAILURE_CATEGORIES.unknown,
     providerClass: "backend",
     strategy: input.strategy || "backend-transcript",
     sourceLabel: "Backend transcript unavailable",
@@ -1952,206 +1961,39 @@ function resolveOperationalPolicy(overrides) {
 }
 
 function resolveBackendAuthConfig(policy) {
-  const auth = policy?.backend?.auth || {};
-  const mode = normalizeAuthenticatedMode(auth.mode);
-  const cookieFilePath = String(auth.cookieFilePath || "").trim();
-  return {
-    mode,
-    enabled: mode !== "disabled" && Boolean(cookieFilePath),
-    cookieFilePath,
-    useForYtDlp: auth.useForYtDlp !== false,
-    useForBrowserSession: auth.useForBrowserSession !== false
-  };
+  return Auth.resolveBackendAuthConfig(policy);
 }
 
 function normalizeAuthenticatedMode(value) {
-  const normalized = String(value || "").trim().toLowerCase();
-  if (!normalized) {
-    return "disabled";
-  }
-  if (["1", "true", "yes", "on", "enabled", "cookie-file", "cookies"].includes(normalized)) {
-    return "cookie-file";
-  }
-  if (["0", "false", "no", "off", "disabled"].includes(normalized)) {
-    return "disabled";
-  }
-  return normalized;
+  return Auth.normalizeAuthenticatedMode(value);
 }
 
 function resolveAuthenticationMetadata(input = {}) {
-  const authConfig = resolveBackendAuthConfig(input.policy);
-  const stageTelemetry = Array.isArray(input.stageTelemetry) ? input.stageTelemetry : [];
-  const authenticatedAcquisitionUsed =
-    typeof input.authenticatedAcquisitionUsed === "boolean"
-      ? input.authenticatedAcquisitionUsed
-      : stageTelemetry.some((event) => eventUsesAuthenticatedAcquisition(event));
-  const acquisitionPathUsed =
-    input.acquisitionPathUsed || inferAcquisitionPathUsed(stageTelemetry) || null;
-  return {
-    authenticatedModeEnabled:
-      typeof input.authenticatedModeEnabled === "boolean"
-        ? input.authenticatedModeEnabled
-        : authConfig.enabled,
-    authenticatedAcquisitionUsed,
-    acquisitionPathUsed
-  };
+  return Auth.resolveAuthenticationMetadata(input);
 }
 
 function eventUsesAuthenticatedAcquisition(event) {
-  if (!event || typeof event !== "object") {
-    return false;
-  }
-  if (event.authenticatedAcquisitionUsed === true) {
-    return true;
-  }
-  if (event.candidate?.authenticatedAcquisitionUsed === true) {
-    return true;
-  }
-  if (event.detail?.authenticatedAcquisitionUsed === true) {
-    return true;
-  }
-  if (event.detail?.authentication?.authenticatedAcquisitionUsed === true) {
-    return true;
-  }
-  if (Array.isArray(event.detail?.attempts)) {
-    return event.detail.attempts.some((attempt) => attempt?.authenticatedAcquisitionUsed === true);
-  }
-  return false;
+  return Auth.eventUsesAuthenticatedAcquisition(event);
 }
 
 function inferAcquisitionPathUsed(stageTelemetry) {
-  const events = Array.isArray(stageTelemetry) ? stageTelemetry.slice().reverse() : [];
-  for (const event of events) {
-    if (event?.acquisitionPathUsed) {
-      return event.acquisitionPathUsed;
-    }
-    if (event?.candidate?.acquisitionPathUsed) {
-      return event.candidate.acquisitionPathUsed;
-    }
-    if (event?.detail?.acquisitionPathUsed) {
-      return event.detail.acquisitionPathUsed;
-    }
-    if (event?.detail?.authentication?.acquisitionPathUsed) {
-      return event.detail.authentication.acquisitionPathUsed;
-    }
-    if (Array.isArray(event?.detail?.attempts)) {
-      const authenticatedAttempt = event.detail.attempts.find(
-        (attempt) => attempt?.authenticatedAcquisitionUsed === true && attempt?.acquisitionPathUsed
-      );
-      if (authenticatedAttempt?.acquisitionPathUsed) {
-        return authenticatedAttempt.acquisitionPathUsed;
-      }
-    }
-  }
-  return null;
+  return Auth.inferAcquisitionPathUsed(stageTelemetry);
 }
 
 function emitStageEvent(events, callback, event) {
-  const detail = normalizeTelemetryDetail(event.detail);
-  const normalizedEvent = {
-    traceId: event.traceId || "",
-    type: event.type || "stage",
-    stage: event.stage || "",
-    outcome: event.outcome || "unknown",
-    startedAt: toFiniteNumber(event.startedAt),
-    endedAt: toFiniteNumber(event.endedAt),
-    durationMs: toFiniteNumber(event.durationMs),
-    cacheStatus: event.cacheStatus || null,
-    errorCode: event.errorCode || null,
-    warnings: Array.isArray(event.warnings) ? event.warnings.slice(0, 8) : [],
-    circuitState: event.circuitState || null,
-    warning: event.warning || null,
-    videoDurationSeconds: toFiniteNumber(event.videoDurationSeconds),
-    candidate: event.candidate || null,
-    winnerReason: event.winnerReason || event.candidate?.winnerReason || null,
-    authenticatedModeEnabled:
-      typeof event.authenticatedModeEnabled === "boolean"
-        ? event.authenticatedModeEnabled
-        : event.candidate?.authenticatedModeEnabled ??
-          detail?.authenticatedModeEnabled ??
-          detail?.authentication?.authenticatedModeEnabled ??
-          null,
-    authenticatedAcquisitionUsed:
-      typeof event.authenticatedAcquisitionUsed === "boolean"
-        ? event.authenticatedAcquisitionUsed
-        : event.candidate?.authenticatedAcquisitionUsed ??
-          detail?.authenticatedAcquisitionUsed ??
-          detail?.authentication?.authenticatedAcquisitionUsed ??
-          (Array.isArray(detail?.attempts)
-            ? detail.attempts.some((attempt) => attempt?.authenticatedAcquisitionUsed === true)
-            : null),
-    acquisitionPathUsed:
-      event.acquisitionPathUsed ||
-      event.candidate?.acquisitionPathUsed ||
-      detail?.acquisitionPathUsed ||
-      detail?.authentication?.acquisitionPathUsed ||
-      (Array.isArray(detail?.attempts)
-        ? detail.attempts.find(
-            (attempt) => attempt?.authenticatedAcquisitionUsed === true && attempt?.acquisitionPathUsed
-          )?.acquisitionPathUsed || null
-        : null),
-    detail
-  };
-  events.push(normalizedEvent);
-  if (typeof callback === "function") {
-    callback(normalizedEvent);
-  }
+  return Telemetry.emitStageEvent(events, callback, event);
 }
 
 function normalizeTelemetryDetail(detail) {
-  if (detail === undefined || detail === null) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(JSON.stringify(detail));
-  } catch (error) {
-    return {
-      value: truncateText(String(detail || ""), 400)
-    };
-  }
+  return Telemetry.normalizeTelemetryDetail(detail);
 }
 
 function summarizeError(error) {
-  if (!error) {
-    return null;
-  }
-  return {
-    name: error.name || "Error",
-    message: truncateText(error.message || String(error), 400)
-  };
+  return Telemetry.summarizeError(error);
 }
 
 function summarizeTelemetryCandidate(candidate) {
-  if (!candidate) {
-    return null;
-  }
-  return {
-    strategy: candidate.strategy || null,
-    quality: candidate.quality || null,
-    originKind: candidate.originKind || null,
-    recoveryTier: candidate.recoveryTier || null,
-    sourceTrustTier: candidate.sourceTrustTier || null,
-    sourceConfidence: candidate.sourceConfidence || null,
-    winnerReason: candidate.winnerReason || null,
-    qualityGate: candidate.qualityGate || null,
-    authenticatedModeEnabled:
-      typeof candidate.authenticatedModeEnabled === "boolean"
-        ? candidate.authenticatedModeEnabled
-        : null,
-    authenticatedAcquisitionUsed:
-      typeof candidate.authenticatedAcquisitionUsed === "boolean"
-        ? candidate.authenticatedAcquisitionUsed
-        : null,
-    acquisitionPathUsed: candidate.acquisitionPathUsed || null,
-    coverageRatio:
-      typeof candidate.coverageRatio === "number" ? candidate.coverageRatio : null,
-    segmentCount: Array.isArray(candidate.segments)
-      ? candidate.segments.length
-      : candidate.segmentCount || 0,
-    languageCode: candidate.languageCode || null,
-    originalLanguageCode: candidate.originalLanguageCode || null
-  };
+  return Telemetry.summarizeTelemetryCandidate(candidate);
 }
 
 function resolveOriginKind(input) {

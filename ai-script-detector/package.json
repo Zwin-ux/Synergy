@@ -9,6 +9,8 @@
     "backend:smoke": "node scripts/smoke-backend.mjs",
     "backend:smoke:asr": "node scripts/smoke-backend.mjs --allow-automatic-asr",
     "build:extension": "node scripts/build-extension.mjs",
+    "ci:fast": "playwright test tests/contracts.spec.js tests/inline-state.spec.js tests/service-worker-report.spec.js tests/backend-module.spec.js tests/release-build.spec.js tests/shared-surface.spec.js tests/service-worker.inline.spec.js tests/backend-server.spec.js tests/transcript-resolver.spec.js tests/content.youtube.spec.js --reporter=line",
+    "ci:smoke": "playwright test tests/youtube.smoke.spec.js --reporter=line",
     "package:extension": "node scripts/package-extension.mjs",
     "qa:staging": "node scripts/staged-consumer-qa.mjs",
     "qa:canary": "node scripts/staged-consumer-qa.mjs --backend-only --canary-only --require-canary --report-json release/staged-canary-report.json --report-markdown release/staged-canary-report.md",

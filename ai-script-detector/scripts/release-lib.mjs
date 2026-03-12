@@ -23,6 +23,7 @@ export const RUNTIME_PATHS = [
   "sidepanel.css",
   "sidepanel.js",
   "icons",
+  "shared",
   "surface",
   "transcript",
   "detector",
@@ -224,7 +225,8 @@ function writeRuntimeConfig(targetPath, runtimeConfig) {
       runtimeConfig.defaultBackendTranscriptEndpoint || ""
     )},
     allowBackendTranscriptFallbackByDefault: ${runtimeConfig.allowBackendTranscriptFallbackByDefault ? "true" : "false"},
-    backendPermissionMode: ${JSON.stringify(runtimeConfig.backendPermissionMode)}
+    backendPermissionMode: ${JSON.stringify(runtimeConfig.backendPermissionMode)},
+    publicSiteOrigin: ${JSON.stringify(runtimeConfig.publicSiteOrigin || "")}
   };
 })(globalThis);
 `;
