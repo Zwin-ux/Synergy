@@ -250,4 +250,158 @@ test.describe("ScriptLens popup rendering contracts", () => {
       "real transcript source"
     );
   });
+
+  test("renders recovered-but-unscored transcripts without falling back to 0", async ({
+    context,
+    extensionId
+  }) => {
+    const popupPage = await context.newPage();
+    await popupPage.addInitScript(() => {
+      globalThis.chrome = globalThis.chrome || {};
+      globalThis.chrome.runtime = globalThis.chrome.runtime || {};
+      const initResponse = {
+        ok: true,
+        settings: {
+          sensitivity: "medium",
+          maxTextLength: 18000,
+          debugMode: false,
+          allowBackendTranscriptFallback: true
+        },
+        recentReports: [],
+        pageContext: {
+          supported: true,
+          title: "Short transcript page",
+          hostname: "youtube.com",
+          selectionAvailable: false,
+          pageAvailable: false,
+          isYouTubeVideo: true,
+          transcriptAvailable: true,
+          recommendedRequest: {
+            mode: "youtube",
+            includeSources: ["transcript"],
+            trackBaseUrl: "",
+            requireTranscript: true,
+            allowFallbackText: false
+          },
+          video: {
+            availableSources: {
+              transcript: true,
+              description: true,
+              title: true
+            },
+            transcriptTracks: []
+          }
+        }
+      };
+      const analyzeResponse = {
+        ok: true,
+        report: {
+          source: "YouTube video - Short transcript page - Recovered transcript",
+          score: null,
+          verdict: "Not enough spoken text",
+          explanation:
+            "ScriptLens recovered a transcript, but this video does not contain enough spoken text for a reliable score.",
+          scoringStatus: "insufficient-input",
+          scoringSummary:
+            "ScriptLens recovered a transcript, but this video does not contain enough spoken text for a reliable score.",
+          disclaimer: "This score reflects AI-like writing patterns, not proof of authorship.",
+          detection: {
+            aiScore: null,
+            detectorConfidence: "not scored",
+            verdict: "Not enough spoken text",
+            reasons: [
+              "ScriptLens recovered transcript text for this video.",
+              "The text is too short for a useful heuristic read. Try at least 40 words or 180 characters."
+            ],
+            categoryScores: {},
+            triggeredPatterns: [],
+            flaggedSentences: [],
+            explanation:
+              "ScriptLens recovered a transcript, but this video does not contain enough spoken text for a reliable score.",
+            scoringStatus: "insufficient-input",
+            scoringSummary:
+              "ScriptLens recovered a transcript, but this video does not contain enough spoken text for a reliable score."
+          },
+          acquisition: {
+            kind: "transcript",
+            provider: "backendResolver",
+            providerClass: "backend",
+            strategy: "backend-transcript",
+            sourceLabel: "Recovered transcript",
+            sourceConfidence: "high",
+            quality: "strong-transcript",
+            acquisitionState: "transcript-acquired",
+            transcriptRequiredSatisfied: true,
+            languageCode: "en",
+            originalLanguageCode: "en",
+            transcriptSpanSeconds: 19,
+            coverageRatio: 1,
+            segmentCount: 4,
+            warnings: ["insufficient_scoring_input"],
+            errors: [],
+            resolverAttempts: [],
+            resolverPath: ["backendResolver:backend-transcript"],
+            winnerSelectedBy: ["quality-eligible:manual_caption_track"],
+            winnerReason: "quality-eligible:manual_caption_track",
+            text: "Short transcript text."
+          },
+          inputQuality: {
+            label: "Strong input",
+            summary: "The transcript is clean, but there is not enough spoken text to score it safely.",
+            reasons: []
+          },
+          interpretation: {
+            means: "The score reflects the available transcript slice only.",
+            notMeans: "This is not proof of authorship.",
+            falsePositives: [],
+            trustMore: ["Use longer spoken samples when possible."]
+          },
+          metadata: {
+            wordCount: 39,
+            sentenceCount: 2,
+            sensitivity: "medium"
+          },
+          topReasons: [
+            "ScriptLens recovered transcript text for this video.",
+            "The text is too short for a useful heuristic read. Try at least 40 words or 180 characters."
+          ],
+          categoryScores: {},
+          flaggedSentences: []
+        },
+        settings: initResponse.settings,
+        recentReports: [],
+        pageContext: initResponse.pageContext,
+        uiHints: {}
+      };
+
+      Object.defineProperty(chrome.runtime, "sendMessage", {
+        configurable: true,
+        value(message) {
+          if (message?.type === "popup:init") {
+            return Promise.resolve(initResponse);
+          }
+          if (message?.type === "popup:analyze") {
+            return Promise.resolve(analyzeResponse);
+          }
+          return Promise.resolve({
+            ok: false,
+            error: "Unexpected message in popup render test."
+          });
+        }
+      });
+    });
+
+    await popupPage.goto(`chrome-extension://${extensionId}/popup.html`, {
+      waitUntil: "domcontentloaded"
+    });
+
+    await popupPage.locator("#recommendedActionButton").click();
+
+    await expect(popupPage.locator("#resultContent")).toBeVisible({ timeout: 15000 });
+    await expect(popupPage.locator("#scoreValue")).toHaveText("Not scored");
+    await expect(popupPage.locator("#verdictBadge")).toContainText("Not enough spoken text");
+    await expect(popupPage.locator("#reportExplanation")).toContainText(
+      "does not contain enough spoken text"
+    );
+  });
 });

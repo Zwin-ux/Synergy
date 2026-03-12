@@ -1,4 +1,5 @@
 importScripts(
+  "runtime-config.js",
   "utils/debug.js",
   "utils/text.js",
   "utils/stats.js",
@@ -7,6 +8,7 @@ importScripts(
   "detector/scoring.js",
   "detector/analyze.js",
   "detector/detect.js",
+  "transcript/policy.js",
   "transcript/normalize.js",
   "transcript/strategies/youtubei.js",
   "transcript/strategies/captionTrack.js",
@@ -20,6 +22,11 @@ importScripts(
 );
 
 const Debug = globalThis.ScriptLensDebug || {};
+const RuntimeConfig = globalThis.ScriptLensRuntimeConfig || {};
+const TranscriptPolicy = globalThis.ScriptLens?.transcript?.policy || {};
+const RECOVERY_POLICY = TranscriptPolicy.resolvePolicy
+  ? TranscriptPolicy.resolvePolicy()
+  : null;
 const logger = Debug.createLogger
   ? Debug.createLogger("service-worker")
   : console;
@@ -39,6 +46,14 @@ const SESSION_KEYS = {
   panelLaunchRequest: "panelLaunchRequest"
 };
 
+const DEFAULT_BACKEND_ENDPOINT =
+  typeof RuntimeConfig.defaultBackendTranscriptEndpoint === "string"
+    ? RuntimeConfig.defaultBackendTranscriptEndpoint.trim()
+    : "";
+const DEFAULT_BACKEND_RECOVERY_ENABLED =
+  Boolean(DEFAULT_BACKEND_ENDPOINT) &&
+  RuntimeConfig.allowBackendTranscriptFallbackByDefault !== false;
+
 const DEFAULT_SETTINGS = {
   sensitivity: "medium",
   maxTextLength: 18000,
@@ -46,8 +61,9 @@ const DEFAULT_SETTINGS = {
   minWords: 40,
   recentReportsLimit: 5,
   debugMode: false,
-  allowBackendTranscriptFallback: true,
-  backendTranscriptEndpoint: "http://127.0.0.1:4317/transcript/resolve"
+  allowBackendTranscriptFallback: DEFAULT_BACKEND_RECOVERY_ENABLED,
+  backendTranscriptEndpoint: DEFAULT_BACKEND_ENDPOINT,
+  clientInstanceId: ""
 };
 
 const DEFAULT_UI_HINTS = {
@@ -235,21 +251,6 @@ async function openWorkspace(message, sender) {
   const shouldOpenPanel = !message?.skipOpen;
   const gestureTab = sender?.tab?.id ? sender.tab : null;
 
-  if (shouldOpenPanel) {
-    const windowId = gestureTab?.windowId ?? Number(message?.windowId);
-    if (!Number.isFinite(windowId)) {
-      return {
-        ok: false,
-        error: "A user-driven browser tab is required to open the workspace."
-      };
-    }
-
-    await openSidePanel(windowId);
-    logger.info("workspace opened", {
-      windowId
-    });
-  }
-
   const tab = await resolveTabForLaunch(message, sender);
   if (!tab?.id) {
     return {
@@ -278,6 +279,40 @@ async function openWorkspace(message, sender) {
     tabId: tab.id,
     request: summarizeRequest(normalizedRequest)
   });
+
+  if (shouldOpenPanel) {
+    const windowId =
+      gestureTab?.windowId ?? tab?.windowId ?? Number(message?.windowId);
+    if (!Number.isFinite(windowId)) {
+      return {
+        ok: false,
+        error: "A user-driven browser tab is required to open the workspace.",
+        pageContext,
+        launchRequest: normalizedRequest
+      };
+    }
+
+    try {
+      await openSidePanel(windowId);
+      logger.info("workspace opened", {
+        windowId
+      });
+    } catch (error) {
+      logger.warn("workspace open failed", {
+        windowId,
+        tabId: tab.id,
+        request: summarizeRequest(normalizedRequest),
+        error: serializeError(error)
+      });
+      return {
+        ok: false,
+        error:
+          "ScriptLens prepared the workspace, but Chrome blocked the side panel from opening. Use the toolbar icon to open it.",
+        pageContext,
+        launchRequest: normalizedRequest
+      };
+    }
+  }
 
   return {
     ok: true,
@@ -434,7 +469,9 @@ async function analyzeDirectText(text, settings, sourceMeta) {
       blockCount: sourceMeta?.blockCount
     },
     {
-      maxTextLength: settings.maxTextLength
+      maxTextLength: settings.maxTextLength,
+      analysisMode:
+        TranscriptPolicy.ANALYSIS_MODES?.genericText || "generic-text"
     }
   );
 
@@ -560,6 +597,27 @@ async function analyzeYouTube(tab, request, settings, traceId, options = {}) {
   });
 
   if (!detectionResult.ok) {
+    const insufficientInputReport = buildInsufficientInputReport({
+      acquisition,
+      detectionError: detectionResult.error,
+      title: adapter.title,
+      sourceLabel,
+      settings,
+      sourceType: "youtube"
+    });
+    if (insufficientInputReport) {
+      logger.info("youtube analysis returned unscored transcript report", {
+        traceId,
+        tabId: tab?.id || null,
+        acquisition: summarizeAcquisition(acquisition),
+        scoringStatus: insufficientInputReport.scoringStatus,
+        scoringError: insufficientInputReport.scoringError || ""
+      });
+      return {
+        ok: true,
+        report: insufficientInputReport
+      };
+    }
     logger.warn("youtube detection failed", {
       traceId,
       tabId: tab?.id || null,
@@ -608,6 +666,12 @@ async function resolveYouTubeAcquisition(
 ) {
   const includeSources = normalizeVideoSources(request.includeSources);
   const transcriptRequested = includeSources.includes("transcript");
+  const analysisMode = transcriptRequested
+    ? TranscriptPolicy.ANALYSIS_MODES?.youtubeTranscriptFirst || "youtube-transcript-first"
+    : TranscriptPolicy.ANALYSIS_MODES?.genericText || "generic-text";
+  const requestedLanguageCode = transcriptRequested
+    ? resolveRequestedTranscriptLanguageCode(adapter, request)
+    : null;
   const requireTranscript = request.requireTranscript !== false;
   const allowFallbackText = Boolean(request.allowFallbackText) || !transcriptRequested;
   const allowDomTranscriptLoader = options.allowDomTranscriptLoader !== false;
@@ -618,6 +682,8 @@ async function resolveYouTubeAcquisition(
     tabId: tabId || null,
     surface: options.surface || "unknown",
     includeSources,
+    analysisMode,
+    requestedLanguageCode,
     requireTranscript,
     allowFallbackText,
     allowDomTranscriptLoader,
@@ -628,10 +694,15 @@ async function resolveYouTubeAcquisition(
     acquisition = await globalThis.ScriptLens.transcript.acquire.resolveBestTranscript({
       adapter,
       maxTextLength: settings.maxTextLength,
-      requestedLanguageCode: null,
+      requestedLanguageCode,
       transcriptBias: request.transcriptBias || "manual-en",
       preferredTrackBaseUrl: request.trackBaseUrl || "",
       signal,
+      analysisMode,
+      surface: options.surface || "unknown",
+      clientInstanceId: settings.clientInstanceId || "",
+      allowAutomaticAsr: transcriptRequested,
+      maxAutomaticAsrDurationSeconds: selectAutomaticAsrDurationLimit(options.surface),
       allowBackendTranscriptFallback: Boolean(settings.allowBackendTranscriptFallback),
       backendEndpoint: settings.backendTranscriptEndpoint || "",
       extensionVersion: chrome.runtime.getManifest()?.version || "0.1.0",
@@ -668,7 +739,7 @@ async function resolveYouTubeAcquisition(
         providerClass: "local",
         strategy: "transcript-unavailable",
         sourceLabel: "Transcript unavailable",
-        requestedLanguageCode: null,
+        requestedLanguageCode,
         videoDurationSeconds: adapter.videoDurationSeconds || null,
         warnings: ["transcript_required"],
         errors: acquisition?.errors || [],
@@ -680,7 +751,12 @@ async function resolveYouTubeAcquisition(
   }
 
   const fallbackSources = resolveFallbackSources(includeSources, adapter, allowFallbackText);
-  const fallback = buildWeakFallbackAcquisition(adapter, fallbackSources, settings.maxTextLength);
+  const fallback = buildWeakFallbackAcquisition(
+    adapter,
+    fallbackSources,
+    settings.maxTextLength,
+    requestedLanguageCode
+  );
   logger.info("youtube fallback candidate built", {
     traceId,
     tabId: tabId || null,
@@ -710,7 +786,12 @@ async function resolveYouTubeAcquisition(
   return acquisition || fallback;
 }
 
-function buildWeakFallbackAcquisition(adapter, includeSources, maxTextLength) {
+function buildWeakFallbackAcquisition(
+  adapter,
+  includeSources,
+  maxTextLength,
+  requestedLanguageCode
+) {
   const useDescription = includeSources.includes("description") && adapter.description;
   const useTitle = includeSources.includes("title") && adapter.title;
 
@@ -720,7 +801,7 @@ function buildWeakFallbackAcquisition(adapter, includeSources, maxTextLength) {
       providerClass: "local",
       strategy: "title-description",
       sourceLabel: "Transcript unavailable",
-      requestedLanguageCode: null,
+      requestedLanguageCode: requestedLanguageCode || null,
       videoDurationSeconds: adapter.videoDurationSeconds || null,
       warnings: ["transcript_unavailable"],
       errors: [],
@@ -754,10 +835,12 @@ function buildWeakFallbackAcquisition(adapter, includeSources, maxTextLength) {
         provider: "youtubeResolver",
         providerClass: "local",
         strategy: "title-description",
+        analysisMode:
+          TranscriptPolicy.ANALYSIS_MODES?.genericText || "generic-text",
         sourceLabel,
         languageCode: adapter.bootstrapSnapshot?.hl || null,
         originalLanguageCode: adapter.bootstrapSnapshot?.hl || null,
-        requestedLanguageCode: null,
+        requestedLanguageCode: requestedLanguageCode || null,
         isGenerated: null,
         isTranslated: false,
         isMachineTranslated: false,
@@ -766,9 +849,72 @@ function buildWeakFallbackAcquisition(adapter, includeSources, maxTextLength) {
         text: parts.join("\n\n"),
         warnings: ["fallback_source", "weak_evidence", "user_fallback_override"]
       },
-      { maxTextLength }
+      {
+        maxTextLength,
+        analysisMode:
+          TranscriptPolicy.ANALYSIS_MODES?.genericText || "generic-text"
+      }
     )
   );
+}
+
+function resolveRequestedTranscriptLanguageCode(adapter, request) {
+  const explicitRequestCode = normalizeLanguageCode(
+    request?.requestedLanguageCode || request?.languageCode || ""
+  );
+  if (explicitRequestCode) {
+    return explicitRequestCode;
+  }
+
+  const preferredTrackBaseUrl = String(request?.trackBaseUrl || "").trim();
+  if (preferredTrackBaseUrl === "visible-dom-transcript") {
+    return (
+      normalizeLanguageCode(adapter?.domTranscriptLanguageCode || "") ||
+      normalizeLanguageCode(adapter?.bootstrapSnapshot?.hl || "")
+    );
+  }
+  if (preferredTrackBaseUrl === "description-transcript") {
+    return normalizeLanguageCode(adapter?.bootstrapSnapshot?.hl || "");
+  }
+
+  const captionTracks = Array.isArray(adapter?.bootstrapSnapshot?.captionTracks)
+    ? adapter.bootstrapSnapshot.captionTracks
+    : [];
+  const preferredTrackPicker =
+    globalThis.ScriptLens?.transcript?.strategies?.captionTrack?.pickPreferredTrack;
+  const preferredTrack =
+    typeof preferredTrackPicker === "function"
+      ? preferredTrackPicker(captionTracks, {
+          requestedLanguageCode: null,
+          preferredTrackBaseUrl,
+          preferredBias: request?.transcriptBias || "manual-en"
+        })
+      : null;
+  const preferredTrackCode = normalizeLanguageCode(preferredTrack?.languageCode || "");
+  if (preferredTrackCode) {
+    return preferredTrackCode;
+  }
+
+  const transcriptBias = String(request?.transcriptBias || "").toLowerCase();
+  if (/^(manual|auto)[-_]en$/.test(transcriptBias)) {
+    return "en";
+  }
+
+  return null;
+}
+
+function normalizeLanguageCode(value) {
+  const text = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (!text) {
+    return null;
+  }
+  const [base, region] = text.split(/[-_]/);
+  if (!base) {
+    return null;
+  }
+  return region ? `${base}-${region}` : base;
 }
 
 function resolveFallbackSources(includeSources, adapter, allowFallbackText) {
@@ -803,6 +949,12 @@ function buildAnalysisReport(input) {
   return {
     acquisition,
     detection,
+    analysisMode:
+      acquisition?.analysisMode ||
+      input.directMeta?.analysisMode ||
+      (input.directMeta?.sourceType === "youtube"
+        ? TranscriptPolicy.ANALYSIS_MODES?.youtubeTranscriptFirst || "youtube-transcript-first"
+        : TranscriptPolicy.ANALYSIS_MODES?.genericText || "generic-text"),
     inputQuality,
     interpretation,
     metadata: {
@@ -812,13 +964,16 @@ function buildAnalysisReport(input) {
     disclaimer: DISCLAIMER,
     source: input.sourceLabel,
     sourceInfo,
-    score: detection.aiScore,
+    score: detection.aiScore ?? null,
     verdict: detection.verdict,
     explanation: detection.explanation,
     topReasons: detection.reasons,
     categoryScores: detection.categoryScores,
     triggeredPatterns: detection.triggeredPatterns,
     flaggedSentences: detection.flaggedSentences,
+    scoringStatus: detection.scoringStatus || "scored",
+    scoringError: detection.scoringError || "",
+    scoringSummary: detection.scoringSummary || "",
     quality: {
       label: inputQuality.label,
       summary: inputQuality.summary,
@@ -838,23 +993,100 @@ function buildAnalysisReport(input) {
       acquisitionState: acquisition?.acquisitionState || null,
       transcriptRequiredSatisfied: acquisition?.transcriptRequiredSatisfied ?? true,
       failureReason: acquisition?.failureReason || null,
+      recoveryTier: acquisition?.recoveryTier || "local",
+      originKind: acquisition?.originKind || null,
+      sourceTrustTier: acquisition?.sourceTrustTier || null,
+      winnerReason: acquisition?.winnerReason || null,
       languageCode: acquisition?.languageCode || null,
+      originalLanguageCode: acquisition?.originalLanguageCode || null,
       segmentCount: acquisition?.segmentCount || 0,
       coverageRatio: acquisition?.coverageRatio ?? null,
-      transcriptSpanSeconds: acquisition?.transcriptSpanSeconds ?? null
+      transcriptSpanSeconds: acquisition?.transcriptSpanSeconds ?? null,
+      qualityGate: acquisition?.qualityGate || null
     }
   };
 }
 
+function buildInsufficientInputReport(input) {
+  if (
+    input?.acquisition?.kind !== "transcript" ||
+    !isInsufficientInputError(input?.detectionError)
+  ) {
+    return null;
+  }
+
+  const textApi = globalThis.AIScriptDetector?.text;
+  const normalizedText = textApi?.sanitizeInput
+    ? textApi.sanitizeInput(input.acquisition.text || "")
+    : String(input.acquisition.text || "").trim();
+  const wordCount = textApi?.countWords ? textApi.countWords(normalizedText) : 0;
+  const sentenceCount = textApi?.splitSentences
+    ? textApi.splitSentences(normalizedText).length
+    : 0;
+  const scoringSummary =
+    "ScriptLens recovered a transcript, but this video does not contain enough spoken text for a reliable score.";
+
+  return buildAnalysisReport({
+    title: input.title,
+    sourceLabel: input.sourceLabel,
+    acquisition: {
+      ...input.acquisition,
+      warnings: Array.isArray(input.acquisition.warnings)
+        ? Array.from(new Set([...input.acquisition.warnings, "insufficient_scoring_input"]))
+        : ["insufficient_scoring_input"]
+    },
+    directMeta: {
+      sourceType: input.sourceType || "youtube"
+    },
+    detection: {
+      aiScore: null,
+      detectorConfidence: "not scored",
+      verdict: "Not enough spoken text",
+      explanation: scoringSummary,
+      reasons: [
+        "ScriptLens recovered transcript text for this video.",
+        input.detectionError
+      ].filter(Boolean),
+      categoryScores: {},
+      triggeredPatterns: [],
+      flaggedSentences: [],
+      scoringStatus: "insufficient-input",
+      scoringError: input.detectionError || "",
+      scoringSummary
+    },
+    legacyReport: {
+      metadata: {
+        wordCount,
+        sentenceCount
+      }
+    },
+    settings: input.settings
+  });
+}
+
+function isInsufficientInputError(value) {
+  const message = String(value || "").trim();
+  return (
+    message === "The text is too short for a useful heuristic read. Try at least 40 words or 180 characters." ||
+    message === "Add a few more complete sentences for a reliable score."
+  );
+}
+
 function buildInputQuality(acquisition, metadata) {
+  const reducedTrustAudio = acquisition?.sourceTrustTier === "audio-derived";
+  const reducedTrustHeadless = acquisition?.sourceTrustTier === "headless-derived";
   if (acquisition.quality === "strong-transcript") {
     return {
       label: "Strong input",
       summary:
         acquisition.kind === "transcript"
-          ? acquisition.providerClass === "backend"
-            ? "This analysis is grounded in a strong transcript resolved through the backend fallback because the local path needed help."
-            : "This analysis is grounded in a strong transcript source with meaningful coverage."
+          ? reducedTrustAudio
+            ? "This analysis is grounded in an audio-derived transcript that passed quality checks, but it still carries reduced trust compared with caption or direct transcript sources."
+            : reducedTrustHeadless
+              ? "This analysis is grounded in a transcript recovered through a headless path, so trust is lower than a direct YouTube transcript or manual captions."
+              : acquisition.providerClass === "backend"
+                ? "This analysis is grounded in a strong recovered transcript because the local path needed help."
+                : "This analysis is grounded in a strong transcript source with meaningful coverage."
           : "This analysis uses a relatively clean and substantive direct content source.",
       reasons: buildAcquisitionReasons(acquisition)
     };
@@ -865,9 +1097,13 @@ function buildInputQuality(acquisition, metadata) {
       label: "Useful input",
       summary:
         acquisition.kind === "transcript"
-          ? acquisition.providerClass === "backend"
-            ? "This analysis uses recovered transcript material because the on-page transcript path was incomplete."
-            : "This analysis uses transcript material, but coverage or segment quality is still limited."
+          ? reducedTrustAudio
+            ? "This analysis uses audio-derived transcript recovery. Treat it as reduced trust even though ScriptLens had enough material to score it."
+            : reducedTrustHeadless
+              ? "This analysis uses transcript material recovered through a headless path, so trust is lower than direct transcript or manual caption recovery."
+              : acquisition.providerClass === "backend"
+                ? "This analysis uses recovered transcript material because the on-page transcript path was incomplete."
+                : "This analysis uses transcript material, but coverage or segment quality is still limited."
           : "This analysis uses useful local content, but source cleanliness and sample size still shape the score.",
       reasons: buildAcquisitionReasons(acquisition)
     };
@@ -891,6 +1127,12 @@ function buildAcquisitionReasons(acquisition) {
   const reasons = [];
   reasons.push(`${capitalize(formatSourceKind(acquisition.kind))}: ${acquisition.sourceLabel}.`);
   reasons.push(`Source confidence: ${capitalize(acquisition.sourceConfidence)}.`);
+  if (acquisition.originKind) {
+    reasons.push(`Recovery tier: ${acquisition.recoveryTier || "local"} via ${acquisition.originKind}.`);
+  }
+  if (acquisition.winnerReason) {
+    reasons.push(`Winner reason: ${acquisition.winnerReason}.`);
+  }
 
   if (typeof acquisition.coverageRatio === "number") {
     reasons.push(`Coverage ratio: ${Math.round(acquisition.coverageRatio * 100)}%.`);
@@ -900,6 +1142,12 @@ function buildAcquisitionReasons(acquisition) {
   }
   if (acquisition.providerClass === "backend") {
     reasons.push("Recovered transcript text was used after the on-page transcript path came back weak or unavailable.");
+  }
+  if (acquisition.sourceTrustTier === "audio-derived") {
+    reasons.push("Audio-derived transcript recovery always carries reduced trust compared with caption or direct transcript sources.");
+  }
+  if (acquisition.sourceTrustTier === "headless-derived") {
+    reasons.push("Headless transcript recovery is treated as weaker than direct transcript and manual caption sources.");
   }
   if (acquisition.isGenerated === true) {
     reasons.push("The winning source uses generated captions.");
@@ -964,6 +1212,7 @@ function buildInterpretation(acquisition, inputQuality) {
 function buildSourceInfo(acquisition) {
   return {
     kind: acquisition.kind || null,
+    analysisMode: acquisition.analysisMode || null,
     sourceLabel: acquisition.sourceLabel,
     sourceConfidence: acquisition.sourceConfidence,
     quality: acquisition.quality,
@@ -973,12 +1222,17 @@ function buildSourceInfo(acquisition) {
     acquisitionState: acquisition.acquisitionState || null,
     transcriptRequiredSatisfied: acquisition.transcriptRequiredSatisfied ?? true,
     failureReason: acquisition.failureReason || null,
+    recoveryTier: acquisition.recoveryTier || "local",
+    originKind: acquisition.originKind || null,
+    sourceTrustTier: acquisition.sourceTrustTier || null,
+    winnerReason: acquisition.winnerReason || null,
     languageCode: acquisition.languageCode,
     originalLanguageCode: acquisition.originalLanguageCode,
     isGenerated: acquisition.isGenerated,
     isTranslated: acquisition.isTranslated,
     warnings: acquisition.warnings || [],
-    requestShapeValidation: acquisition.requestShapeValidation || null
+    requestShapeValidation: acquisition.requestShapeValidation || null,
+    qualityGate: acquisition.qualityGate || null
   };
 }
 
@@ -1011,6 +1265,14 @@ function buildTranscriptUnavailableMessage(acquisition) {
 
   if (hasCode("backend_timeout")) {
     return "ScriptLens found transcript info for this video, but the optional recovery step did not finish in time.";
+  }
+
+  if (hasCode("language_mismatch") || hasCode("language_requested_mismatch")) {
+    return "ScriptLens found transcript material, but it did not match the requested language closely enough to score safely.";
+  }
+
+  if (hasCode("quality_gate_rejected")) {
+    return "ScriptLens found transcript material, but it was too weak or degraded to score safely.";
   }
 
   return "ScriptLens could not retrieve a usable transcript for this video right now.";
@@ -1282,7 +1544,13 @@ function resolveRequestedAction(pageContext, request) {
 
 async function loadSettings() {
   const { settings } = await localGet([STORAGE_KEYS.settings]);
-  return normalizeSettings(settings || {});
+  const normalized = normalizeSettings(settings || {});
+  if (!normalized.clientInstanceId || normalized.clientInstanceId !== settings?.clientInstanceId) {
+    await localSet({
+      [STORAGE_KEYS.settings]: normalized
+    });
+  }
+  return normalized;
 }
 
 async function saveSettings(nextSettings) {
@@ -1353,12 +1621,17 @@ async function persistDebugReport(report) {
     winningProvider: report.acquisition?.provider || null,
     winningProviderClass: report.acquisition?.providerClass || "local",
     winningStrategy: report.acquisition?.strategy || null,
+    winnerReason: report.acquisition?.winnerReason || null,
     winnerSelectedBy: report.acquisition?.winnerSelectedBy || [],
+    recoveryTier: report.acquisition?.recoveryTier || null,
+    originKind: report.acquisition?.originKind || null,
+    sourceTrustTier: report.acquisition?.sourceTrustTier || null,
     normalizedTextSlice: report.acquisition?.text || "",
     languageCode: report.acquisition?.languageCode || null,
     originalLanguageCode: report.acquisition?.originalLanguageCode || null,
     segmentCount: report.acquisition?.segmentCount || 0,
     coverageRatio: report.acquisition?.coverageRatio ?? null,
+    qualityGate: report.acquisition?.qualityGate || null,
     warnings: report.acquisition?.warnings || [],
     errors: report.acquisition?.errors || [],
     resolverAttempts: report.acquisition?.resolverAttempts || [],
@@ -1445,10 +1718,22 @@ function normalizeSettings(input) {
   const sensitivity = ["low", "medium", "high"].includes(input.sensitivity)
     ? input.sensitivity
     : DEFAULT_SETTINGS.sensitivity;
+  const clientInstanceId =
+    typeof input.clientInstanceId === "string" && input.clientInstanceId.trim()
+      ? input.clientInstanceId.trim()
+      : buildClientInstanceId();
+
+  const backendTranscriptEndpoint =
+    typeof input.backendTranscriptEndpoint === "string" &&
+    input.backendTranscriptEndpoint.trim()
+      ? input.backendTranscriptEndpoint.trim()
+      : DEFAULT_SETTINGS.backendTranscriptEndpoint;
+  const backendRecoveryConfigured = Boolean(backendTranscriptEndpoint);
 
   return {
     ...DEFAULT_SETTINGS,
     sensitivity,
+    clientInstanceId,
     maxTextLength: clampNumber(
       input.maxTextLength,
       4000,
@@ -1457,15 +1742,17 @@ function normalizeSettings(input) {
     ),
     debugMode: Boolean(input.debugMode),
     allowBackendTranscriptFallback:
+      backendRecoveryConfigured &&
       typeof input.allowBackendTranscriptFallback === "boolean"
         ? input.allowBackendTranscriptFallback
         : DEFAULT_SETTINGS.allowBackendTranscriptFallback,
-    backendTranscriptEndpoint:
-      typeof input.backendTranscriptEndpoint === "string" &&
-      input.backendTranscriptEndpoint.trim()
-        ? input.backendTranscriptEndpoint.trim()
-        : DEFAULT_SETTINGS.backendTranscriptEndpoint
+    backendTranscriptEndpoint
   };
+}
+
+function buildClientInstanceId() {
+  const token = Math.random().toString(16).slice(2, 10);
+  return `client-${Date.now()}-${token}`;
 }
 
 function normalizeVideoSources(value) {
@@ -1473,6 +1760,14 @@ function normalizeVideoSources(value) {
   const list = Array.isArray(value) ? value : [];
   const normalized = list.filter((source) => allowed.has(source));
   return normalized.length ? normalized : ["transcript"];
+}
+
+function selectAutomaticAsrDurationLimit(surface) {
+  const maxVideoLength = RECOVERY_POLICY?.backend?.maxVideoLengthSeconds || {};
+  if (surface === "inline") {
+    return maxVideoLength.automaticAsr || null;
+  }
+  return maxVideoLength.manualAsr || maxVideoLength.absolute || null;
 }
 
 async function getCurrentHost() {
@@ -1802,13 +2097,19 @@ function summarizeAcquisition(acquisition) {
   return {
     ok: Boolean(acquisition.ok),
     kind: acquisition.kind || null,
+    analysisMode: acquisition.analysisMode || null,
     provider: acquisition.provider || null,
     providerClass: acquisition.providerClass || null,
     strategy: acquisition.strategy || null,
+    recoveryTier: acquisition.recoveryTier || null,
+    originKind: acquisition.originKind || null,
+    sourceTrustTier: acquisition.sourceTrustTier || null,
+    winnerReason: acquisition.winnerReason || null,
     sourceLabel: acquisition.sourceLabel || null,
     sourceConfidence: acquisition.sourceConfidence || null,
     quality: acquisition.quality || null,
     acquisitionState: acquisition.acquisitionState || null,
+    qualityGate: acquisition.qualityGate || null,
     warnings: Array.isArray(acquisition.warnings) ? acquisition.warnings.slice(0, 8) : [],
     failureReason: acquisition.failureReason || null,
     resolverPath: Array.isArray(acquisition.resolverPath)

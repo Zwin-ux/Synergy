@@ -22,31 +22,35 @@ ScriptLens keeps the default experience simple:
 
 - one click on the YouTube page
 - transcript-first analysis
-- fallback text only when you explicitly allow it
+- compact inline results
 
 For advanced users, ScriptLens also includes:
 
 - a toolbar popup with transcript controls and settings
 - a side-panel workspace with detailed signal breakdowns
-- an optional local helper for harder transcript recovery cases
+- optional transcript recovery through a compatible hosted or self-hosted backend
 
-Scoring runs inside the extension with deterministic heuristics. The optional helper is local-only and is not required for normal extension use.
+Scoring runs inside the extension with deterministic heuristics. When local YouTube transcript paths are weak or unavailable, ScriptLens can use a configured transcript recovery service before giving up. That backend path is optional and can be ScriptLens-hosted or self-hosted.
 
 ## Single-purpose statement
 
-ScriptLens has one purpose: analyze the writing style of YouTube video transcripts, titles, and descriptions for AI-like patterns on desktop YouTube watch pages.
+ScriptLens has one purpose: analyze the writing style of YouTube video transcripts for AI-like patterns on desktop YouTube watch pages.
 
 ## Privacy disclosure snippet
 
-ScriptLens processes scoring locally by default. If you enable the optional local transcript helper and ScriptLens needs it, the extension shares only the YouTube video ID and requested language with that helper.
+ScriptLens processes scoring locally by default. If a configured transcript recovery service is enabled and ScriptLens needs it, the extension shares only the YouTube video ID and requested language with that service.
 
 ## Support URL
 
-https://zwin-ux.github.io/Synergy/support.html
+Set this to your Railway public site URL before submission, for example:
+
+https://your-scriptlens-site.example/support.html
 
 ## Privacy URL
 
-https://zwin-ux.github.io/Synergy/privacy.html
+Set this to your Railway public site URL before submission, for example:
+
+https://your-scriptlens-site.example/privacy.html
 
 ## Public support route
 

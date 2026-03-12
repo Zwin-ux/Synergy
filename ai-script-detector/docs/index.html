@@ -40,7 +40,7 @@
             <ul class="hero-points">
               <li>Transcript-first by default</li>
               <li>Verdict, score, explanation, and transcript quality in one view</li>
-              <li>Local scoring with an optional localhost helper for harder transcript recovery</li>
+              <li>Local scoring with optional recovery through a ScriptLens or self-hosted backend</li>
             </ul>
             <div class="hero-actions">
               <a class="button button-primary" href="#product">See the product</a>
@@ -102,10 +102,10 @@
             </article>
 
             <article class="landing-panel feature-card">
-              <span class="eyebrow">Local by default</span>
-              <h3>No cloud scoring in the normal flow.</h3>
+              <span class="eyebrow">Local scoring</span>
+              <h3>No cloud scoring in the normal path.</h3>
               <p>
-                Scoring runs inside the extension. The optional helper is local-only and receives just the YouTube video ID and selected language.
+                Scoring runs inside the extension. If transcript recovery is needed, ScriptLens can call a compatible recovery backend using just the YouTube video ID and selected language.
               </p>
             </article>
 
@@ -143,8 +143,8 @@
                 <dd><code>storage</code>, <code>sidePanel</code>, and YouTube host access</dd>
               </div>
               <div>
-                <dt>Optional helper</dt>
-                <dd>Local transcript recovery at <code>http://127.0.0.1:4317/transcript/resolve</code></dd>
+                <dt>Recovery backend</dt>
+                <dd>Hosted ScriptLens recovery or a compatible self-hosted backend</dd>
               </div>
               <div>
                 <dt>Not included</dt>
@@ -159,7 +159,7 @@
             <span class="eyebrow">Privacy posture</span>
             <h2>Transcript text stays on-device in the normal path.</h2>
             <p>
-              ScriptLens scores locally by default. If the optional helper is enabled, the extension shares only a YouTube video ID and selected language with a process running on the same machine.
+              ScriptLens scores locally by default. If transcript recovery is enabled, the extension shares only the YouTube video ID and selected language with the configured recovery backend, which may be hosted by ScriptLens or self-hosted by the user.
             </p>
           </div>
           <a class="button button-secondary" href="./support.html">Support and setup</a>

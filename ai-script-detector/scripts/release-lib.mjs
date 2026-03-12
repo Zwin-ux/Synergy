@@ -11,6 +11,7 @@ const __dirname = path.dirname(__filename);
 export const ROOT_DIR = path.resolve(__dirname, "..");
 export const RUNTIME_PATHS = [
   "manifest.json",
+  "runtime-config.js",
   "content.js",
   "service-worker.js",
   "youtube-main.js",
@@ -33,7 +34,7 @@ export function loadManifest(rootDir = ROOT_DIR) {
   return JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 }
 
-export function resolveReleasePaths(rootDir = ROOT_DIR) {
+export function resolveReleasePaths(rootDir = ROOT_DIR, options = {}) {
   const distRoot = process.env.SCRIPTLENS_DIST_ROOT
     ? path.resolve(process.env.SCRIPTLENS_DIST_ROOT)
     : path.join(rootDir, "dist");
@@ -41,13 +42,19 @@ export function resolveReleasePaths(rootDir = ROOT_DIR) {
   return {
     rootDir,
     distRoot,
-    stagingDir: path.join(distRoot, "chrome-unpacked"),
-    packageDir: path.join(distRoot, "packages")
+    stagingDir: options.stagingDir
+      ? path.resolve(options.stagingDir)
+      : path.join(distRoot, "chrome-unpacked"),
+    packageDir: options.packageDir
+      ? path.resolve(options.packageDir)
+      : path.join(distRoot, "packages")
   };
 }
 
-export function buildExtension(rootDir = ROOT_DIR) {
-  const { stagingDir } = resolveReleasePaths(rootDir);
+export function buildExtension(rootDir = ROOT_DIR, options = {}) {
+  const { stagingDir } = resolveReleasePaths(rootDir, options);
+  const runtimeConfig = resolveBuildRuntimeConfig();
+  const manifest = loadManifest(rootDir);
 
   resetDirectory(stagingDir);
 
@@ -65,29 +72,56 @@ export function buildExtension(rootDir = ROOT_DIR) {
     });
   }
 
+  writeRuntimeConfig(path.join(stagingDir, "runtime-config.js"), runtimeConfig);
+  writeManifest(
+    path.join(stagingDir, "manifest.json"),
+    buildReleaseManifest(manifest, runtimeConfig)
+  );
+
   return {
-    manifest: loadManifest(rootDir),
+    manifest: buildReleaseManifest(manifest, runtimeConfig),
     stagingDir,
-    runtimePaths: RUNTIME_PATHS.slice()
+    runtimePaths: RUNTIME_PATHS.slice(),
+    runtimeConfig
   };
 }
 
-export async function packageExtension(rootDir = ROOT_DIR) {
-  const build = buildExtension(rootDir);
-  const { packageDir } = resolveReleasePaths(rootDir);
+export async function packageExtension(rootDir = ROOT_DIR, options = {}) {
+  const releasePaths = resolveReleasePaths(rootDir, options);
+  const useTemporaryStage = !options.stagingDir;
+  const packageStagingDir = useTemporaryStage
+    ? path.join(
+        releasePaths.distRoot,
+        `.package-stage-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      )
+    : releasePaths.stagingDir;
+  const build = buildExtension(rootDir, {
+    ...options,
+    stagingDir: packageStagingDir
+  });
+  const { packageDir } = releasePaths;
   const packageName = `scriptlens-youtube-v${build.manifest.version}.zip`;
   const zipPath = path.join(packageDir, packageName);
 
   fs.mkdirSync(packageDir, { recursive: true });
   fs.rmSync(zipPath, { force: true });
 
-  await createZipArchive(build.stagingDir, zipPath);
+  try {
+    await createZipArchive(build.stagingDir, zipPath);
 
-  return {
-    manifest: build.manifest,
-    stagingDir: build.stagingDir,
-    zipPath
-  };
+    return {
+      manifest: build.manifest,
+      stagingDir: build.stagingDir,
+      zipPath
+    };
+  } finally {
+    if (useTemporaryStage) {
+      fs.rmSync(packageStagingDir, {
+        recursive: true,
+        force: true
+      });
+    }
+  }
 }
 
 function resetDirectory(targetDir) {
@@ -125,4 +159,94 @@ async function createZipArchive(sourceDir, zipPath) {
 
 function toPowerShellPath(value) {
   return String(value).replace(/'/g, "''");
+}
+
+export function resolveBuildRuntimeConfig(environment = process.env) {
+  const endpoint = String(environment.SCRIPTLENS_BACKEND_ENDPOINT || "").trim();
+  const backendOrigin = normalizeOrigin(
+    String(environment.SCRIPTLENS_BACKEND_ORIGIN || endpoint || "").trim()
+  );
+  const publicSiteOrigin = normalizeOrigin(
+    String(environment.SCRIPTLENS_PUBLIC_SITE_ORIGIN || environment.SCRIPTLENS_PUBLIC_SITE_URL || "").trim()
+  );
+  const backendPermissionMode =
+    String(environment.SCRIPTLENS_BACKEND_PERMISSION_MODE || "required").trim().toLowerCase() ===
+    "optional"
+      ? "optional"
+      : "required";
+
+  return {
+    defaultBackendTranscriptEndpoint: endpoint,
+    allowBackendTranscriptFallbackByDefault: Boolean(endpoint),
+    backendOrigin,
+    backendPermissionMode,
+    publicSiteOrigin
+  };
+}
+
+function buildReleaseManifest(manifest, runtimeConfig) {
+  const nextManifest = JSON.parse(JSON.stringify(manifest));
+  const backendPattern = runtimeConfig.backendOrigin
+    ? `${runtimeConfig.backendOrigin.replace(/\/$/, "")}/*`
+    : "";
+
+  if (backendPattern) {
+    if (runtimeConfig.backendPermissionMode === "optional") {
+      nextManifest.optional_host_permissions = dedupeList([
+        ...(nextManifest.optional_host_permissions || []),
+        backendPattern
+      ]);
+    } else {
+      nextManifest.host_permissions = dedupeList([
+        ...(nextManifest.host_permissions || []),
+        backendPattern
+      ]);
+    }
+  }
+
+  if (!nextManifest.optional_host_permissions?.length) {
+    delete nextManifest.optional_host_permissions;
+  }
+
+  if (runtimeConfig.publicSiteOrigin) {
+    nextManifest.homepage_url = `${runtimeConfig.publicSiteOrigin.replace(/\/$/, "")}/`;
+  } else {
+    delete nextManifest.homepage_url;
+  }
+
+  return nextManifest;
+}
+
+function writeRuntimeConfig(targetPath, runtimeConfig) {
+  const contents = `(function (root) {
+  root.ScriptLensRuntimeConfig = {
+    defaultBackendTranscriptEndpoint: ${JSON.stringify(
+      runtimeConfig.defaultBackendTranscriptEndpoint || ""
+    )},
+    allowBackendTranscriptFallbackByDefault: ${runtimeConfig.allowBackendTranscriptFallbackByDefault ? "true" : "false"},
+    backendPermissionMode: ${JSON.stringify(runtimeConfig.backendPermissionMode)}
+  };
+})(globalThis);
+`;
+  fs.writeFileSync(targetPath, contents, "utf8");
+}
+
+function writeManifest(targetPath, manifest) {
+  fs.writeFileSync(targetPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+}
+
+function normalizeOrigin(value) {
+  if (!value) {
+    return "";
+  }
+  try {
+    const parsed = new URL(value);
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch (error) {
+    return "";
+  }
+}
+
+function dedupeList(values) {
+  return Array.from(new Set((Array.isArray(values) ? values : []).filter(Boolean)));
 }

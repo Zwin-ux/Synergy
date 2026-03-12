@@ -78,6 +78,89 @@ test.describe("ScriptLens shared surface helpers", () => {
     expect(viewModel.sourceLabel).toBe("YouTube captions");
     expect(viewModel.qualityLabel).toBe("Strong transcript");
   });
+
+  test("surfaces reduced trust for audio-derived transcript recovery", () => {
+    const surface = loadSurfaceModule();
+    const viewModel = surface.buildInlineReportViewModel(
+      createReport({
+        acquisition: {
+          kind: "transcript",
+          providerClass: "backend",
+          strategy: "backend-asr",
+          sourceLabel: "Audio-derived transcript",
+          sourceConfidence: "low",
+          sourceTrustTier: "audio-derived",
+          recoveryTier: "hosted_asr",
+          originKind: "audio_asr",
+          winnerReason: "quality-eligible:audio_asr",
+          acquisitionState: "partial-transcript",
+          coverageRatio: 0.63,
+          segmentCount: 28,
+          transcriptSpanSeconds: 420,
+          languageCode: "en",
+          qualityGate: {
+            eligible: true,
+            rejectedReasons: [],
+            wordCount: 540,
+            sentenceUnits: 18,
+            coverageRatio: 0.63
+          }
+        }
+      })
+    );
+
+    expect(viewModel.sourceLabel).toBe("Recovered transcript");
+    expect(viewModel.reducedTrustLabel).toBe("Audio-derived transcript");
+    expect(viewModel.advancedSourceMeta).toContain("Hosted ASR");
+    expect(viewModel.advancedSourceMeta).toContain("Audio-derived");
+    expect(viewModel.winnerReason).toBe("quality-eligible:audio_asr");
+    expect(viewModel.qualityGateNote).toContain("trust is reduced");
+  });
+
+  test("keeps recovered short transcripts in an unscored inline state", () => {
+    const surface = loadSurfaceModule();
+    const viewModel = surface.buildInlineReportViewModel(
+      createReport({
+        score: null,
+        scoringStatus: "insufficient-input",
+        scoringSummary:
+          "ScriptLens recovered a transcript, but this video does not contain enough spoken text for a reliable score.",
+        detection: {
+          aiScore: null,
+          detectorConfidence: "not scored",
+          verdict: "Not enough spoken text",
+          reasons: [
+            "ScriptLens recovered transcript text for this video.",
+            "The text is too short for a useful heuristic read. Try at least 40 words or 180 characters."
+          ],
+          explanation:
+            "ScriptLens recovered a transcript, but this video does not contain enough spoken text for a reliable score."
+        },
+        acquisition: {
+          kind: "transcript",
+          providerClass: "backend",
+          strategy: "backend-transcript",
+          sourceLabel: "Recovered transcript",
+          sourceConfidence: "high",
+          quality: "strong-transcript",
+          acquisitionState: "transcript-acquired",
+          recoveryTier: "hosted_transcript",
+          originKind: "manual_caption_track",
+          winnerReason: "quality-eligible:manual_caption_track",
+          coverageRatio: 1,
+          segmentCount: 4,
+          transcriptSpanSeconds: 19,
+          languageCode: "en"
+        }
+      })
+    );
+
+    expect(viewModel.verdict).toBe("Not enough spoken text");
+    expect(viewModel.rawScoreText).toBe("Not scored");
+    expect(viewModel.qualityLabel).toBe("Short transcript");
+    expect(viewModel.secondaryBadgeLabel).toBe("Not enough text to score");
+    expect(viewModel.explanation).toContain("does not contain enough spoken text");
+  });
 });
 
 function loadSurfaceModule() {

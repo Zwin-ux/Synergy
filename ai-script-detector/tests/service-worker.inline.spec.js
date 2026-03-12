@@ -100,7 +100,8 @@ test.describe("ScriptLens inline runtime routing", () => {
       {
         maxTextLength: 18000,
         allowBackendTranscriptFallback: true,
-        backendTranscriptEndpoint: "http://127.0.0.1:4317/transcript/resolve"
+        backendTranscriptEndpoint: "http://127.0.0.1:4317/transcript/resolve",
+        clientInstanceId: "client-inline-123"
       },
       new AbortController().signal,
       "trace-inline",
@@ -113,6 +114,51 @@ test.describe("ScriptLens inline runtime routing", () => {
     expect(result.ok).toBeTruthy();
     expect(capturedContext).toBeTruthy();
     expect(capturedContext.domTranscriptLoader).toBeNull();
+    expect(capturedContext.analysisMode).toBe("youtube-transcript-first");
+    expect(capturedContext.clientInstanceId).toBe("client-inline-123");
+    expect(capturedContext.allowAutomaticAsr).toBeTruthy();
+    expect(capturedContext.maxAutomaticAsrDurationSeconds).toBeGreaterThan(0);
+    expect(capturedContext.requestedLanguageCode).toBe("en");
+  });
+
+  test("prefers the selected caption track language for backend transcript recovery", () => {
+    const { sandbox } = loadServiceWorkerSandbox();
+    sandbox.ScriptLens = {
+      transcript: {
+        strategies: {
+          captionTrack: {
+            pickPreferredTrack(tracks, options) {
+              return tracks.find((track) => track.baseUrl === options.preferredTrackBaseUrl) || null;
+            }
+          }
+        }
+      }
+    };
+
+    const result = sandbox.resolveRequestedTranscriptLanguageCode(
+      {
+        bootstrapSnapshot: {
+          captionTracks: [
+            {
+              baseUrl: "https://example.com/es",
+              languageCode: "es",
+              kind: ""
+            },
+            {
+              baseUrl: "https://example.com/en",
+              languageCode: "en",
+              kind: ""
+            }
+          ]
+        }
+      },
+      {
+        trackBaseUrl: "https://example.com/en",
+        transcriptBias: "manual-any"
+      }
+    );
+
+    expect(result).toBe("en");
   });
 
   test("workspace youtube acquisition keeps DOM transcript loading available", async () => {
@@ -171,13 +217,132 @@ test.describe("ScriptLens inline runtime routing", () => {
     expect(capturedContext).toBeTruthy();
     expect(typeof capturedContext.domTranscriptLoader).toBe("function");
   });
+
+  test("returns an unscored transcript report when a recovered transcript is too short to score", async () => {
+    const { sandbox } = loadServiceWorkerSandbox();
+    sandbox.requestTabExtraction = async (_tabId, message) => {
+      if (message?.type === "youtube:page-adapter") {
+        return {
+          ok: true,
+          adapter: {
+            title: "Me at the zoo",
+            videoId: "jNQXAC9IVRw",
+            videoDurationSeconds: 19,
+            bootstrapSnapshot: {
+              captionTracks: [
+                {
+                  baseUrl: "https://example.com/en",
+                  languageCode: "en",
+                  kind: ""
+                }
+              ]
+            }
+          }
+        };
+      }
+      throw new Error(`Unexpected extraction request: ${message?.type || "unknown"}`);
+    };
+    sandbox.getTabById = async () => ({
+      id: 321,
+      url: "https://www.youtube.com/watch?v=jNQXAC9IVRw"
+    });
+    sandbox.resolveYouTubeAcquisition = async () => ({
+      ok: true,
+      kind: "transcript",
+      providerClass: "backend",
+      sourceLabel: "Recovered transcript",
+      sourceConfidence: "high",
+      quality: "strong-transcript",
+      acquisitionState: "transcript-acquired",
+      recoveryTier: "hosted_transcript",
+      originKind: "manual_caption_track",
+      winnerReason: "quality-eligible:manual_caption_track",
+      languageCode: "en",
+      text: "All right, so here we are in front of the elephants, and the cool thing about these guys is that they have really, really, really long trunks, and that's cool, and that's pretty much all there is to say."
+    });
+    sandbox.AIScriptDetector = sandbox.AIScriptDetector || {};
+    sandbox.AIScriptDetector.detect = {
+      runDetection() {
+        return {
+          ok: false,
+          error:
+            "The text is too short for a useful heuristic read. Try at least 40 words or 180 characters."
+        };
+      }
+    };
+
+    const result = await sandbox.analyzeYouTube(
+      {
+        id: 321,
+        url: "https://www.youtube.com/watch?v=jNQXAC9IVRw"
+      },
+      {
+        mode: "youtube",
+        includeSources: ["transcript"],
+        requireTranscript: true,
+        allowFallbackText: false,
+        trackBaseUrl: "https://example.com/en"
+      },
+      {
+        sensitivity: "medium",
+        maxTextLength: 18000,
+        minCharacters: 180,
+        minWords: 40
+      },
+      "trace-inline-short",
+      {
+        surface: "inline",
+        allowDomTranscriptLoader: false
+      }
+    );
+
+    expect(result.ok).toBeTruthy();
+    expect(result.report.scoringStatus).toBe("insufficient-input");
+    expect(result.report.verdict).toBe("Not enough spoken text");
+    expect(result.report.score).toBeNull();
+    expect(result.report.scoringSummary).toContain("does not contain enough spoken text");
+  });
+
+  test("openWorkspace saves the launch request before a blocked side-panel open", async () => {
+    const { sandbox, calls, sessionStorageState } = loadServiceWorkerSandbox({
+      sidePanelOpenError: "The side panel could not be opened."
+    });
+
+    const response = await sandbox.openWorkspace(
+      {
+        request: {
+          mode: "youtube",
+          includeSources: ["transcript"],
+          trackBaseUrl: "",
+          requireTranscript: true,
+          allowFallbackText: false
+        }
+      },
+      {
+        tab: {
+          id: 321,
+          windowId: 7,
+          url: "https://www.youtube.com/watch?v=sender123"
+        }
+      }
+    );
+
+    expect(calls.sidePanelOpens).toBe(1);
+    expect(response.ok).toBeFalsy();
+    expect(response.error).toContain("toolbar icon");
+    expect(response.launchRequest.mode).toBe("youtube");
+    expect(sessionStorageState.panelLaunchRequest).toBeTruthy();
+    expect(sessionStorageState.panelLaunchRequest.tabId).toBe(321);
+    expect(sessionStorageState.panelLaunchRequest.request.mode).toBe("youtube");
+  });
 });
 
-function loadServiceWorkerSandbox() {
+function loadServiceWorkerSandbox(options = {}) {
   const calls = {
     tabQueries: 0,
     tabGets: 0,
-    tabMessages: []
+    tabMessages: [],
+    sidePanelOpens: 0
   };
   const localStorageState = {
     settings: {
@@ -191,11 +356,13 @@ function loadServiceWorkerSandbox() {
       backendTranscriptEndpoint: "http://127.0.0.1:4317/transcript/resolve"
     }
   };
+  const sessionStorageState = {};
 
   const sandbox = {
     console,
     URL,
     URLSearchParams,
+    AbortController,
     setTimeout,
     clearTimeout,
     fetch: async () => {
@@ -227,12 +394,16 @@ function loadServiceWorkerSandbox() {
         },
         session: {
           get(_keys, callback) {
-            callback({});
+            callback(sessionStorageState);
           },
-          set(_value, callback) {
+          set(value, callback) {
+            Object.assign(sessionStorageState, value);
             callback();
           },
-          remove(_keys, callback) {
+          remove(keys, callback) {
+            for (const key of Array.isArray(keys) ? keys : [keys]) {
+              delete sessionStorageState[key];
+            }
             callback();
           }
         }
@@ -279,6 +450,15 @@ function loadServiceWorkerSandbox() {
       },
       sidePanel: {
         open(_options, callback) {
+          calls.sidePanelOpens += 1;
+          if (options.sidePanelOpenError) {
+            sandbox.chrome.runtime.lastError = {
+              message: options.sidePanelOpenError
+            };
+            callback();
+            sandbox.chrome.runtime.lastError = null;
+            return;
+          }
           callback();
         }
       }
@@ -288,9 +468,13 @@ function loadServiceWorkerSandbox() {
 
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
+  const policyPath = path.join(ROOT_DIR, "transcript", "policy.js");
+  vm.runInContext(fs.readFileSync(policyPath, "utf8"), sandbox, {
+    filename: policyPath
+  });
   vm.runInContext(fs.readFileSync(SERVICE_WORKER_PATH, "utf8"), sandbox, {
     filename: SERVICE_WORKER_PATH
   });
 
-  return { sandbox, calls };
+  return { sandbox, calls, sessionStorageState };
 }

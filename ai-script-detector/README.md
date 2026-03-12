@@ -9,7 +9,7 @@ ScriptLens is a Manifest V3 Chrome extension focused on one job: analyze the wri
 - A one-click inline `Analyze video` button on desktop `youtube.com/watch` pages
 - A verdict-first inline result card with score, explanation, transcript quality, and an optional details drawer
 - A toolbar popup and side-panel workspace for advanced transcript controls and deeper report breakdowns
-- Optional local helper support for harder transcript recovery cases
+- Optional transcript recovery through a compatible hosted or self-hosted backend
 
 ## Product scope
 
@@ -26,7 +26,7 @@ ScriptLens is a Manifest V3 Chrome extension focused on one job: analyze the wri
 - Scoring runs inside the extension with deterministic heuristics
 - The extension is transcript-first by default
 - Title and description fallback only happens when the user explicitly allows it
-- If the optional local helper is used, ScriptLens only sends the YouTube video ID and requested language to that helper
+- If transcript recovery is used, ScriptLens sends only the YouTube video ID and requested language to the configured recovery backend
 
 ## Repository layout
 
@@ -57,9 +57,11 @@ ai-script-detector/
 3. Click **Load unpacked**.
 4. Select the `ai-script-detector` folder.
 
-## Optional local helper
+## Optional recovery backend
 
-The helper is advanced and optional. It is not included in the Chrome Web Store package.
+The production build can point at a hosted ScriptLens recovery service. Open-source deployments can also point the extension at a compatible self-hosted backend. The backend is not bundled into the Chrome Web Store package.
+
+Cloud Run deployment notes live in `release/CLOUD_RUN.md`.
 
 ### Windows setup
 
@@ -69,17 +71,23 @@ The helper is advanced and optional. It is not included in the Chrome Web Store 
    - `[Environment]::SetEnvironmentVariable("SCRIPTLENS_YTDLP_COMMAND", "$env:APPDATA\\Python\\Python311\\Scripts\\yt-dlp.exe", "User")`
 3. Open a new terminal and start the helper:
    - `npm.cmd run backend:start`
+4. For a production package, set the hosted recovery endpoint before building:
+   - `$env:SCRIPTLENS_BACKEND_ENDPOINT='https://your-recovery-service.example/transcript/resolve'`
+   - `$env:SCRIPTLENS_BACKEND_ORIGIN='https://your-recovery-service.example'`
 
 You can also use `SCRIPTLENS_YTDLP_PYTHONPATH` and `SCRIPTLENS_YTDLP_PYTHON` instead of `SCRIPTLENS_YTDLP_COMMAND`.
 
-More helper notes live in `release/README.md`.
+More backend notes live in `release/README.md`.
+Cloud Run deployment steps live in `release/CLOUD_RUN.md`.
 
 ## Development commands
 
 - Install dependencies:
   - `npm.cmd install`
-- Start the optional helper:
+- Start the optional self-hosted backend:
   - `npm.cmd run backend:start`
+- Build the backend container locally:
+  - `npm.cmd run backend:docker:build`
 - Run the Playwright suite:
   - `npm.cmd run test:e2e`
 - Run the YouTube smoke suite:
@@ -93,17 +101,20 @@ Release artifacts are written to `dist/chrome-unpacked` and `dist/packages`.
 
 ## Store and release assets
 
-- GitHub Pages overview: `docs/index.html`
+- Public site overview: `docs/index.html`
 - Privacy policy: `docs/privacy.html`
 - Support page: `docs/support.html`
 - Store listing source text: `store-assets/store-listing.md`
 - Screenshot checklist: `store-assets/screenshot-checklist.md`
+
+The public site is intended to be served from Railway. Set `SCRIPTLENS_PUBLIC_SITE_ORIGIN` before packaging a release so `homepage_url` in the built manifest points at the live public site.
 
 ## Permissions
 
 - `storage` for settings and recent report summaries
 - `sidePanel` for the advanced workspace
 - Host access limited to `https://www.youtube.com/*`
+- Production hosted recovery requires a real backend origin during packaging so the build can request the correct host permission
 
 ## Validation focus
 

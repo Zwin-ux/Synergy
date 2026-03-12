@@ -59,16 +59,16 @@
             <li>It does not require an account or cloud login</li>
           </ul>
 
-          <h3>Optional local helper behavior</h3>
+          <h3>Optional transcript recovery service</h3>
           <p>
-            ScriptLens can optionally use a local helper that you run on your own machine to recover transcripts for videos where the page does not expose a usable transcript path. When this helper path is enabled and used, ScriptLens sends only:
+            Some ScriptLens builds can use a configured ScriptLens-hosted or self-hosted recovery backend when local YouTube transcript paths do not return enough usable text. When this recovery path is enabled and used, ScriptLens sends only:
           </p>
           <ul>
             <li>the YouTube video ID</li>
             <li>the requested language, if one is selected</li>
           </ul>
           <p>
-            This helper is optional. The extension works without it. The helper is not bundled into the Chrome Web Store package.
+            The recovery backend may then fetch caption metadata, transcript metadata, or audio when required by its recovery policy. Scoring still runs inside the extension. The backend is optional, is not bundled into the Chrome Web Store package, and may be provided by ScriptLens or self-hosted by advanced users.
           </p>
 
           <h3>Permissions</h3>
@@ -80,14 +80,14 @@
 
           <h3>Support and questions</h3>
           <p>
-            The public support channel for ScriptLens is <a href="https://github.com/Zwin-ux/Synergy/issues">GitHub Issues</a>. If extension behavior changes in a future version, this privacy page will be updated to match the shipped behavior.
+            The public support channel for ScriptLens is <a href="https://github.com/Zwin-ux/Synergy/issues">GitHub Issues</a>. If extension behavior changes in a future version, this privacy page will be updated to match the shipped build and its configured recovery behavior.
           </p>
         </article>
       </section>
 
       <footer class="footer">
         <div class="footer-row">
-          <p>Need help using the extension or optional helper?</p>
+          <p>Need help using the extension or its recovery options?</p>
           <div class="footer-links">
             <a href="./support.html">Support</a>
             <a href="https://github.com/Zwin-ux/Synergy/issues">Report an issue</a>

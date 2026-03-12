@@ -14,6 +14,8 @@
     Debug.installGlobalErrorHandlers("youtube-overlay");
   }
   const ROOT_ID = "scriptlens-youtube-cta-root";
+  const INLINE_INIT_TIMEOUT_MS = 8000;
+  const INLINE_ANALYZE_TIMEOUT_MS = 35000;
   const DEFAULT_SELECTION = {
     includeSources: ["transcript"],
     trackBaseUrl: "",
@@ -29,7 +31,8 @@
     report: null,
     currentVideoId: "",
     videoSelection: { ...DEFAULT_SELECTION },
-    initToken: 0
+    initToken: 0,
+    analysisToken: 0
   };
   let renderTimer = 0;
 
@@ -100,7 +103,7 @@
             href: location.href,
             videoId: getCurrentVideoId()
           });
-          state.error = error?.message || "ScriptLens could not load this video.";
+          state.error = buildInlineRuntimeError(error, "init");
           render();
         }
       });
@@ -151,7 +154,10 @@
     }
 
     const token = ++state.initToken;
-    const response = await chrome.runtime.sendMessage({ type: "inline:init" });
+    const response = await sendRuntimeMessageWithTimeout(
+      { type: "inline:init" },
+      INLINE_INIT_TIMEOUT_MS
+    );
 
     if (token !== state.initToken || getCurrentVideoId() !== currentVideoId) {
       logger.warn("refreshContext dropped stale inline:init response", {
@@ -210,6 +216,7 @@
     state.report = null;
     state.videoSelection = { ...DEFAULT_SELECTION };
     state.currentVideoId = "";
+    state.analysisToken += 1;
   }
 
   function render() {
@@ -354,9 +361,17 @@
               <strong>${escapeHtml(viewModel.detectorConfidence)}</strong>
               <span>ScriptLens caps confidence by transcript quality and sample size.</span>
             </article>
+            <article class="sl-detail-card">
+              <span class="sl-label">Recovery path</span>
+              <strong>${escapeHtml(viewModel.advancedSourceMeta || "On-page retrieval")}</strong>
+              <span>${escapeHtml(viewModel.winnerReason || viewModel.qualityGateNote || "Single candidate")}</span>
+            </article>
           </div>
           ${viewModel.privacyDisclosure
             ? `<p class="sl-privacy">${escapeHtml(viewModel.privacyDisclosure)}</p>`
+            : ""}
+          ${viewModel.qualityGateNote
+            ? `<p class="sl-help">${escapeHtml(viewModel.qualityGateNote)}</p>`
             : ""}
           <div class="sl-settings">
             <div>
@@ -410,7 +425,7 @@
           </div>
           <div class="sl-summary-row">
             <span class="sl-badge">${escapeHtml(viewModel.sourceLabel)}</span>
-            <span class="sl-badge">${escapeHtml(viewModel.confidenceLabel)} transcript quality</span>
+            <span class="sl-badge">${escapeHtml(viewModel.secondaryBadgeLabel)}</span>
           </div>
           <p class="sl-summary">${escapeHtml(viewModel.detailSummary)}</p>
           <div class="sl-actions">
@@ -536,9 +551,11 @@
       return;
     }
 
+    const requestedVideoId = state.currentVideoId || getCurrentVideoId();
+    const analysisToken = ++state.analysisToken;
     logger.info("runAnalysis start", {
       href: location.href,
-      videoId: state.currentVideoId,
+      videoId: requestedVideoId,
       request: getCurrentVideoRequest()
     });
     state.loading = true;
@@ -547,14 +564,27 @@
     render();
 
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: "inline:analyze",
-        request: getCurrentVideoRequest()
-      });
+      const response = await sendRuntimeMessageWithTimeout(
+        {
+          type: "inline:analyze",
+          request: getCurrentVideoRequest()
+        },
+        INLINE_ANALYZE_TIMEOUT_MS
+      );
+
+      if (analysisToken !== state.analysisToken || getCurrentVideoId() !== requestedVideoId) {
+        logger.warn("runAnalysis dropped stale response", {
+          requestedVideoId,
+          currentVideoId: getCurrentVideoId(),
+          analysisToken,
+          activeAnalysisToken: state.analysisToken
+        });
+        return;
+      }
 
       if (!response?.ok) {
         logger.warn("runAnalysis failed", {
-          videoId: state.currentVideoId,
+          videoId: requestedVideoId,
           error: response?.error || "",
           acquisition: response?.acquisition || null
         });
@@ -574,22 +604,31 @@
       state.inlineSettings = response.inlineSettings || state.inlineSettings;
       syncVideoSelection(true);
       logger.info("runAnalysis success", {
-        videoId: state.currentVideoId,
+        videoId: requestedVideoId,
         score: response.report?.score || 0,
         verdict: response.report?.verdict || "",
         acquisition: response.report?.acquisition || null
       });
       render();
     } catch (error) {
+      if (analysisToken !== state.analysisToken || getCurrentVideoId() !== requestedVideoId) {
+        logger.warn("runAnalysis dropped stale error", {
+          requestedVideoId,
+          currentVideoId: getCurrentVideoId(),
+          analysisToken,
+          activeAnalysisToken: state.analysisToken,
+          error: summarizeError(error)
+        });
+        return;
+      }
       state.loading = false;
       state.report = null;
       logger.error("runAnalysis crashed", {
-        videoId: state.currentVideoId,
+        videoId: requestedVideoId,
         error: summarizeError(error)
       });
       await dumpBackgroundHistory("inline-analyze-crashed");
-      state.error =
-        error?.message || "ScriptLens could not finish the transcript check for this video.";
+      state.error = buildInlineRuntimeError(error, "analyze");
       render();
     }
   }
@@ -600,10 +639,20 @@
         videoId: state.currentVideoId,
         request: getCurrentVideoRequest()
       });
-      await chrome.runtime.sendMessage({
-        type: "panel:open",
-        request: getCurrentVideoRequest()
-      });
+      const response = await sendRuntimeMessageWithTimeout(
+        {
+          type: "panel:open",
+          request: getCurrentVideoRequest()
+        },
+        10000
+      );
+      if (!response?.ok) {
+        logger.warn("openWorkspace rejected", {
+          videoId: state.currentVideoId,
+          error: response?.error || ""
+        });
+        await dumpBackgroundHistory("open-workspace-failed");
+      }
     } catch (error) {
       logger.error("openWorkspace failed", {
         videoId: state.currentVideoId,
@@ -768,6 +817,42 @@
       message: error.message || String(error),
       stack: error.stack || ""
     };
+  }
+
+  function buildInlineRuntimeError(error, phase) {
+    const message = String(error?.message || "");
+    if (/timed out/i.test(message)) {
+      return phase === "init"
+        ? "ScriptLens took too long to load this video. Refresh the page and try again."
+        : "ScriptLens took too long to finish the transcript check. Try again on this video.";
+    }
+    return message || "ScriptLens could not finish the transcript check for this video.";
+  }
+
+  function sendRuntimeMessageWithTimeout(message, timeoutMs) {
+    return promiseWithTimeout(
+      Promise.resolve(chrome.runtime.sendMessage(message)),
+      timeoutMs,
+      `ScriptLens request timed out after ${timeoutMs}ms.`
+    );
+  }
+
+  function promiseWithTimeout(promise, timeoutMs, timeoutMessage) {
+    return new Promise((resolve, reject) => {
+      const timer = window.setTimeout(() => {
+        reject(new Error(timeoutMessage));
+      }, Math.max(1, Number(timeoutMs) || 1));
+
+      Promise.resolve(promise)
+        .then((value) => {
+          window.clearTimeout(timer);
+          resolve(value);
+        })
+        .catch((error) => {
+          window.clearTimeout(timer);
+          reject(error);
+        });
+    });
   }
 
   async function dumpBackgroundHistory(reason) {

@@ -7,7 +7,12 @@ It analyzes YouTube video transcripts, titles, and descriptions for AI-like writ
 ## Repository layout
 
 - `ai-script-detector/` - the Chrome extension source, docs, tests, packaging scripts, and store assets
-- `.github/workflows/pages.yml` - GitHub Pages deployment for the public docs in `ai-script-detector/docs`
+- `server.js` + `package.json` - Railway entrypoint for the public docs in `ai-script-detector/docs`
+
+## Deployment split
+
+- Public website and docs: Railway
+- Transcript recovery backend: Cloud Run
 
 ## Quick start
 

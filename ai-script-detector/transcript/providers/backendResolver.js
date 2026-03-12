@@ -1,13 +1,16 @@
 (function (root) {
   const ScriptLens = (root.ScriptLens = root.ScriptLens || {});
   const Transcript = (ScriptLens.transcript = ScriptLens.transcript || {});
+  const PolicyApi = Transcript.policy || {};
   const Providers = (Transcript.providers = Transcript.providers || {});
   const Debug = root.ScriptLensDebug || {};
   const logger = Debug.createLogger
     ? Debug.createLogger("backend-resolver")
     : console;
 
-  const DEFAULT_TIMEOUT_MS = 7000;
+  const POLICY = PolicyApi.resolvePolicy ? PolicyApi.resolvePolicy() : null;
+  const DEFAULT_TIMEOUT_MS = POLICY?.timeouts?.backendTranscriptMs || 7000;
+  const DEFAULT_ASR_TIMEOUT_MS = POLICY?.timeouts?.backendAsrMs || 30000;
 
   Providers.backendResolver = {
     resolve
@@ -19,7 +22,9 @@
       traceId: context?.traceId || "",
       endpoint,
       videoId: context?.adapter?.videoId || "",
-      requestedLanguageCode: context?.requestedLanguageCode || null
+      requestedLanguageCode: context?.requestedLanguageCode || null,
+      analysisMode: context?.analysisMode || "youtube-transcript-first",
+      surface: context?.surface || "unknown"
     });
     if (!endpoint) {
       logger.warn("resolve:missingEndpoint", {
@@ -27,7 +32,7 @@
       });
       return buildFailure(
         "backend_endpoint_missing",
-        "Backend transcript fallback is enabled, but no endpoint is configured.",
+        "Transcript recovery is enabled, but no recovery endpoint is configured.",
         context,
         true
       );
@@ -39,8 +44,13 @@
     const timeoutMs = Math.max(
       1,
       Math.min(
-        Number(context?.backendTimeoutMs) || DEFAULT_TIMEOUT_MS,
-        Math.max(1, Number(context?.remainingEndToEndMs) || DEFAULT_TIMEOUT_MS)
+        Number(context?.backendTimeoutMs) ||
+          (context?.allowAutomaticAsr !== false ? DEFAULT_ASR_TIMEOUT_MS : DEFAULT_TIMEOUT_MS),
+        Math.max(
+          1,
+          Number(context?.remainingEndToEndMs) ||
+            (context?.allowAutomaticAsr !== false ? DEFAULT_ASR_TIMEOUT_MS : DEFAULT_TIMEOUT_MS)
+        )
       )
     );
 
@@ -56,6 +66,12 @@
             videoId: context?.adapter?.videoId || "",
             url: context?.adapter?.url || "",
             requestedLanguageCode: context?.requestedLanguageCode || null,
+            analysisMode: context?.analysisMode || "youtube-transcript-first",
+            surface: context?.surface || "unknown",
+            clientInstanceId: context?.clientInstanceId || "",
+            allowAutomaticAsr: context?.allowAutomaticAsr !== false,
+            maxAutomaticAsrDurationSeconds:
+              Number(context?.maxAutomaticAsrDurationSeconds) || null,
             includeTimestamps: true,
             extensionVersion: context?.extensionVersion || "0.0.0",
             traceId: context?.traceId || ""
@@ -74,7 +90,7 @@
       if (!response.ok) {
         return buildFailure(
           `backend_http_${response.status}`,
-          `The backend transcript resolver returned ${response.status}.`,
+          `The transcript recovery service returned ${response.status}.`,
           context,
           false,
           Date.now() - startedAt
@@ -87,6 +103,9 @@
         ok: Boolean(payload?.ok),
         strategy: payload?.strategy || "",
         sourceLabel: payload?.sourceLabel || "",
+        originKind: payload?.originKind || "",
+        recoveryTier: payload?.recoveryTier || "",
+        winnerReason: payload?.winnerReason || "",
         warnings: Array.isArray(payload?.warnings) ? payload.warnings.slice(0, 6) : [],
         textLength: String(payload?.text || "").length,
         segmentCount: Array.isArray(payload?.segments) ? payload.segments.length : 0
@@ -94,7 +113,7 @@
       if (!payload?.ok || !payload?.text) {
         return buildFailure(
           payload?.errorCode || "backend_empty",
-          payload?.errorMessage || "The backend transcript resolver returned no transcript text.",
+          payload?.errorMessage || "The transcript recovery service returned no transcript text.",
           context,
           false,
           Date.now() - startedAt,
@@ -108,9 +127,13 @@
           provider: "backendResolver",
           providerClass: "backend",
           strategy: payload.strategy || "backend-transcript",
-          sourceLabel: payload.sourceLabel || "Backend transcript fallback",
+          sourceLabel: payload.sourceLabel || "Recovered transcript",
           sourceConfidence: payload.sourceConfidence || "high",
           quality: payload.quality || null,
+          recoveryTier: payload.recoveryTier || null,
+          originKind: payload.originKind || null,
+          sourceTrustTier: payload.sourceTrustTier || null,
+          winnerReason: payload.winnerReason || "backend-success",
           languageCode: payload.languageCode || null,
           originalLanguageCode: payload.originalLanguageCode || payload.languageCode || null,
           requestedLanguageCode: context?.requestedLanguageCode || null,
@@ -123,6 +146,7 @@
           segmentQualityScore: payload.segmentQualityScore || null,
           segments: Array.isArray(payload.segments) ? payload.segments : [],
           text: payload.text,
+          qualityGate: payload.qualityGate || null,
           warnings: []
             .concat(payload.warnings || [])
             .concat(["backend_fallback_used"]),
@@ -138,11 +162,12 @@
             )
           ],
           resolverPath: [`backendResolver:${payload.strategy || "backend-transcript"}`],
-          winnerSelectedBy: ["backend-success"]
+          winnerSelectedBy: [payload.winnerReason || "backend-success"]
         },
         {
           maxTextLength: context?.maxTextLength || 18000,
-          requestedLanguageCode: context?.requestedLanguageCode || null
+          requestedLanguageCode: context?.requestedLanguageCode || null,
+          analysisMode: context?.analysisMode || "youtube-transcript-first"
         }
       );
 
@@ -165,8 +190,8 @@
       return buildFailure(
         code,
         code === "backend_timeout"
-          ? "The backend transcript resolver timed out."
-          : error?.message || "The backend transcript resolver failed.",
+          ? "The transcript recovery service timed out."
+          : error?.message || "The transcript recovery service failed.",
         context,
         false,
         Date.now() - startedAt
@@ -179,8 +204,9 @@
       provider: "backendResolver",
       providerClass: "backend",
       strategy: "backend-transcript",
-      sourceLabel: "Backend transcript unavailable",
+      sourceLabel: "Recovered transcript unavailable",
       sourceConfidence: "low",
+      recoveryTier: "hosted_transcript",
       requestedLanguageCode: context?.requestedLanguageCode || null,
       videoDurationSeconds: context?.adapter?.videoDurationSeconds || null,
       warnings: warningCodes || [],
@@ -204,6 +230,7 @@
         )
       ],
       resolverPath: skipped ? [] : ["backendResolver:backend-transcript"],
+      winnerReason: skipped ? "backend-skipped" : code,
       winnerSelectedBy: ["backend-unavailable"],
       failureReason: code
     });
@@ -280,6 +307,9 @@
       ok: Boolean(candidate.ok),
       strategy: candidate.strategy || "",
       quality: candidate.quality || null,
+      originKind: candidate.originKind || null,
+      sourceTrustTier: candidate.sourceTrustTier || null,
+      winnerReason: candidate.winnerReason || null,
       sourceConfidence: candidate.sourceConfidence || null,
       warnings: Array.isArray(candidate.warnings) ? candidate.warnings.slice(0, 6) : [],
       segmentCount: candidate.segmentCount || 0,

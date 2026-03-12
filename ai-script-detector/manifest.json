@@ -8,7 +8,6 @@
     "sidePanel",
     "storage"
   ],
-  "homepage_url": "https://zwin-ux.github.io/Synergy/",
   "host_permissions": [
     "https://www.youtube.com/*"
   ],

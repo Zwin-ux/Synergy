@@ -9,6 +9,7 @@
   const Text = App.text;
   const Dom = App.dom;
   const Debug = globalThis.ScriptLensDebug || {};
+  const TestApi = (globalThis.ScriptLensContent = globalThis.ScriptLensContent || {});
   const logger = Debug.createLogger
     ? Debug.createLogger("content")
     : console;
@@ -215,7 +216,10 @@
       });
     }
 
-    const defaultCaptionTrack = pickDefaultCaptionTrack(transcriptTracks);
+    const defaultCaptionTrack = pickDefaultCaptionTrack(
+      transcriptTracks,
+      adapter.bootstrapSnapshot?.hl || ""
+    );
 
     return {
       title: adapter.title,
@@ -438,18 +442,66 @@
     return name ? `${name} captions` : "Caption track";
   }
 
-  function pickDefaultCaptionTrack(tracks) {
+  function pickDefaultCaptionTrack(tracks, preferredLanguageCode) {
     const list = Array.isArray(tracks) ? tracks.slice() : [];
-    const manualCaption = list.find(
-      (track) =>
-        track.kind !== "asr" &&
-        track.kind !== "visible" &&
-        track.kind !== "description-transcript"
+    const preferredBaseLanguage = normalizeBaseLanguageCode(preferredLanguageCode);
+    const standardTracks = list.filter(
+      (track) => track.kind !== "visible" && track.kind !== "description-transcript"
     );
-    const generatedCaption = list.find((track) => track.kind === "asr");
+    const manualCaption = standardTracks.find((track) => track.kind !== "asr");
+    const generatedCaption = standardTracks.find((track) => track.kind === "asr");
     const visibleTrack = list.find((track) => track.kind === "visible");
     const descriptionTrack = list.find((track) => track.kind === "description-transcript");
-    return manualCaption || generatedCaption || visibleTrack || descriptionTrack || list[0] || null;
+    const preferredManual = findCaptionTrackByLanguage(
+      standardTracks,
+      preferredBaseLanguage,
+      (track) => track.kind !== "asr"
+    );
+    const preferredGenerated = findCaptionTrackByLanguage(
+      standardTracks,
+      preferredBaseLanguage,
+      (track) => track.kind === "asr"
+    );
+    const englishManual =
+      preferredBaseLanguage === "en"
+        ? null
+        : findCaptionTrackByLanguage(standardTracks, "en", (track) => track.kind !== "asr");
+    const englishGenerated =
+      preferredBaseLanguage === "en"
+        ? null
+        : findCaptionTrackByLanguage(standardTracks, "en", (track) => track.kind === "asr");
+    return (
+      preferredManual ||
+      preferredGenerated ||
+      englishManual ||
+      englishGenerated ||
+      manualCaption ||
+      generatedCaption ||
+      visibleTrack ||
+      descriptionTrack ||
+      list[0] ||
+      null
+    );
+  }
+
+  function normalizeBaseLanguageCode(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .split(/[-_]/)[0];
+  }
+
+  function findCaptionTrackByLanguage(tracks, languageCode, predicate) {
+    const baseLanguage = normalizeBaseLanguageCode(languageCode);
+    if (!baseLanguage) {
+      return null;
+    }
+    return (tracks || []).find((track) => {
+      if (typeof predicate === "function" && !predicate(track)) {
+        return false;
+      }
+      return normalizeBaseLanguageCode(track?.languageCode) === baseLanguage;
+    }) || null;
   }
 
   function getVideoDurationSecondsFromDom() {
@@ -1038,4 +1090,7 @@
       hasTimelinePanelElement: Boolean(findTimelinePanelElement())
     };
   }
+
+  TestApi.pickDefaultCaptionTrack = pickDefaultCaptionTrack;
+  TestApi.buildVideoContextFromAdapter = buildVideoContextFromAdapter;
 })();

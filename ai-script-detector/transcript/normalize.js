@@ -1,17 +1,22 @@
 (function (root) {
   const ScriptLens = (root.ScriptLens = root.ScriptLens || {});
   const Transcript = (ScriptLens.transcript = ScriptLens.transcript || {});
+  const PolicyApi = Transcript.policy || {};
   const Text = (root.AIScriptDetector || {}).text;
   const Stats = (root.AIScriptDetector || {}).stats;
 
+  const POLICY = PolicyApi.resolvePolicy ? PolicyApi.resolvePolicy() : buildFallbackPolicy();
+
   const STRATEGY_PRIORITY = {
-    "caption-track": 1,
-    "dom-transcript": 2,
-    "youtubei-transcript": 3,
-    "description-transcript": 4,
-    "title-description": 5,
-    "local-whisper": 6,
-    "backend-transcript": 7
+    "youtubei-transcript": 1,
+    "caption-track": 2,
+    "dom-transcript": 3,
+    "backend-transcript": 4,
+    "backend-headless-transcript": 5,
+    "backend-asr": 6,
+    "description-transcript": 7,
+    "title-description": 8,
+    "local-whisper": 9
   };
 
   const CONFIDENCE_RANK = {
@@ -39,24 +44,16 @@
     "youtubei-transcript",
     "caption-track",
     "dom-transcript",
-    "backend-transcript"
+    "backend-transcript",
+    "backend-headless-transcript",
+    "backend-asr"
   ]);
 
-  const BACKEND_ESCALATION_FAILURE_CODES = new Set([
-    "youtubei_failed_precondition",
-    "youtubei_params_missing",
-    "youtubei_bootstrap_incomplete",
-    "youtubei_empty",
-    "caption_tracks_missing",
-    "caption_track_unavailable",
-    "caption_fetch_failed"
-  ]);
-
-  const BACKEND_IMPROVEMENT_THRESHOLDS = {
-    coverageRatio: 0.15,
-    transcriptSpanSeconds: 90,
-    segmentQualityScore: 10
-  };
+  const ESCALATION_FAILURE_CODES = new Set(
+    Array.isArray(PolicyApi.ESCALATION_FAILURE_CODES)
+      ? PolicyApi.ESCALATION_FAILURE_CODES
+      : []
+  );
 
   Transcript.normalize = {
     STRATEGY_PRIORITY,
@@ -71,6 +68,7 @@
     isTranscriptStrategy,
     isTranscriptClassQuality,
     isRealTranscriptSource,
+    isEligibleTranscriptCandidate,
     mapTranscriptAcquisitionState,
     shouldEscalateToBackend,
     getFailureCodes
@@ -79,18 +77,30 @@
   function normalizeCandidate(rawCandidate, options) {
     const safeOptions = {
       maxTextLength: Number(options?.maxTextLength) || 18000,
-      requestedLanguageCode: options?.requestedLanguageCode || null
+      requestedLanguageCode: options?.requestedLanguageCode || null,
+      analysisMode:
+        options?.analysisMode ||
+        rawCandidate?.analysisMode ||
+        PolicyApi.ANALYSIS_MODES?.youtubeTranscriptFirst ||
+        "youtube-transcript-first"
     };
 
     const strategy = rawCandidate?.strategy || "title-description";
     const provider = rawCandidate?.provider || "youtubeResolver";
     const providerClass = deriveProviderClass(rawCandidate?.providerClass, provider);
-    const sourceLabel = buildSourceLabel(strategy, rawCandidate);
+    const requestedLanguageCode = normalizeLanguage(
+      rawCandidate?.requestedLanguageCode || safeOptions.requestedLanguageCode || null
+    );
+    const originKind = deriveOriginKind(rawCandidate, strategy);
+    const sourceTrustTier = deriveSourceTrustTier(originKind);
+    const recoveryTier = deriveRecoveryTier(rawCandidate, providerClass, originKind);
+    const sourceLabel = buildSourceLabel(strategy, rawCandidate, originKind);
     const segments = normalizeSegments(rawCandidate?.segments || [], strategy);
     const rawText = buildCandidateText(rawCandidate, segments, strategy);
     const truncated = Text.smartTruncate(rawText, safeOptions.maxTextLength);
     const text = truncated.text;
     const wordCount = Text.countWords(text);
+    const sentenceUnits = Text.splitSentences(text).length;
     const originalLanguageCode = normalizeLanguage(
       rawCandidate?.originalLanguageCode || rawCandidate?.languageCode || null
     );
@@ -123,20 +133,49 @@
             ),
             1
           );
-    const sourceConfidence =
-      normalizeConfidence(rawCandidate?.sourceConfidence) ||
-      deriveSourceConfidence(strategy, isGenerated, providerClass);
     const segmentQualityScore =
       toFiniteNumber(rawCandidate?.segmentQualityScore) ??
       (strategy === "title-description" ? 0 : computeSegmentQualityScore(segments));
-    const usableTranscript = isUsableTranscript({
+    const uniqueSegmentRatio =
+      strategy === "title-description" ? null : computeUniqueSegmentRatio(segments);
+    const averageWordsPerSegment =
+      strategy === "title-description" ? null : computeAverageWordsPerSegment(segments);
+    const nonLetterCharacterRatio = computeNonLetterCharacterRatio(text);
+    const languageDecision = evaluateLanguageDecision({
+      requestedLanguageCode,
+      languageCode,
+      originalLanguageCode,
+      isTranslated,
+      isMachineTranslated
+    });
+
+    let sourceConfidence =
+      normalizeConfidence(rawCandidate?.sourceConfidence) ||
+      deriveSourceConfidence(strategy, isGenerated, providerClass, originKind);
+    if (languageDecision.status === "downgrade") {
+      sourceConfidence = downgradeConfidence(sourceConfidence);
+    }
+    if (sourceTrustTier === "audio-derived") {
+      sourceConfidence = downgradeConfidence(sourceConfidence);
+    }
+
+    const qualityGate = buildTranscriptQualityGate({
       strategy,
       text,
       wordCount,
+      sentenceUnits,
       segmentCount: segments.length,
+      coverageRatio,
+      videoDurationSeconds,
       transcriptSpanSeconds,
-      coverageRatio
+      uniqueSegmentRatio,
+      averageWordsPerSegment,
+      nonLetterCharacterRatio,
+      originKind,
+      sourceTrustTier,
+      languageDecision
     });
+    const usableTranscript = isUsableTranscript(strategy, qualityGate);
     const computedQuality = deriveQuality({
       strategy,
       text,
@@ -156,9 +195,14 @@
         .concat(isGenerated ? ["generated_captions"] : [])
         .concat(isTranslated ? ["translated_text"] : [])
         .concat(providerClass === "backend" ? ["backend_fallback_used"] : [])
+        .concat(sourceTrustTier === "audio-derived" ? ["audio_derived_reduced_trust"] : [])
+        .concat(sourceTrustTier === "headless-derived" ? ["headless_recovery"] : [])
+        .concat(languageDecision.warningCodes)
         .concat(
-          TRANSCRIPT_STRATEGIES.has(strategy) && text && !usableTranscript
-            ? ["below_usable_threshold"]
+          qualityGate && !qualityGate.eligible
+            ? ["quality_gate_rejected"].concat(
+                qualityGate.rejectedReasons.map((reason) => `quality_gate:${reason}`)
+              )
             : []
         )
     );
@@ -166,11 +210,17 @@
     const ok = Boolean(text);
     const errors = Array.isArray(rawCandidate?.errors) ? rawCandidate.errors.slice() : [];
     const failureReason =
-      rawCandidate?.failureReason || (!ok ? deriveFailureReason(rawCandidate, errors) : null);
+      rawCandidate?.failureReason ||
+      (!ok ? deriveFailureReason(rawCandidate, errors) : null);
+    const winnerReason =
+      String(rawCandidate?.winnerReason || "").trim() ||
+      firstListValue(rawCandidate?.winnerSelectedBy) ||
+      null;
 
     return {
       ok,
       kind: "transcript",
+      analysisMode: safeOptions.analysisMode,
       provider,
       providerClass,
       strategy,
@@ -178,13 +228,15 @@
       sourceConfidence,
       quality,
       acquisitionState: mapTranscriptAcquisitionState(quality, ok),
-      transcriptRequiredSatisfied: isTranscriptClassQuality(quality),
+      transcriptRequiredSatisfied: usableTranscript,
       failureReason,
+      recoveryTier,
+      originKind,
+      sourceTrustTier,
+      winnerReason,
       languageCode,
       originalLanguageCode,
-      requestedLanguageCode: normalizeLanguage(
-        rawCandidate?.requestedLanguageCode || safeOptions.requestedLanguageCode || null
-      ),
+      requestedLanguageCode,
       isGenerated,
       isTranslated,
       isMachineTranslated,
@@ -206,10 +258,15 @@
         ? rawCandidate.winnerSelectedBy.slice()
         : [],
       requestShapeValidation: rawCandidate?.requestShapeValidation || null,
+      qualityGate,
       text,
       segments,
       __segmentQualityScore: segmentQualityScore,
       __wordCount: wordCount,
+      __sentenceUnits: sentenceUnits,
+      __uniqueSegmentRatio: uniqueSegmentRatio,
+      __averageWordsPerSegment: averageWordsPerSegment,
+      __nonLetterCharacterRatio: nonLetterCharacterRatio,
       __usableTranscript: usableTranscript,
       __priorityRank: STRATEGY_PRIORITY[strategy] || 99
     };
@@ -217,7 +274,11 @@
 
   function normalizeDirectAcquisition(rawCandidate, options) {
     const safeOptions = {
-      maxTextLength: Number(options?.maxTextLength) || 18000
+      maxTextLength: Number(options?.maxTextLength) || 18000,
+      analysisMode:
+        options?.analysisMode ||
+        PolicyApi.ANALYSIS_MODES?.genericText ||
+        "generic-text"
     };
     const kind = normalizeDirectKind(rawCandidate?.kind || rawCandidate?.sourceType);
     const rawText = Text.sanitizeInput(rawCandidate?.text || "");
@@ -259,6 +320,7 @@
     return {
       ok: Boolean(text),
       kind,
+      analysisMode: safeOptions.analysisMode,
       provider: null,
       providerClass: "local",
       strategy: null,
@@ -268,6 +330,10 @@
       acquisitionState: null,
       transcriptRequiredSatisfied: true,
       failureReason: null,
+      recoveryTier: "local",
+      originKind: null,
+      sourceTrustTier: null,
+      winnerReason: null,
       languageCode: normalizeLanguage(rawCandidate?.languageCode || null),
       originalLanguageCode: normalizeLanguage(rawCandidate?.originalLanguageCode || null),
       requestedLanguageCode: null,
@@ -291,6 +357,7 @@
         ? rawCandidate.winnerSelectedBy.slice()
         : [],
       requestShapeValidation: null,
+      qualityGate: null,
       text,
       segments: [],
       __wordCount: wordCount,
@@ -318,10 +385,20 @@
         .concat(input?.warnings || [])
         .concat(input?.helperUnavailable ? ["enhanced_extraction_unavailable"] : [])
     );
+    const winnerReason =
+      String(input?.winnerReason || "").trim() ||
+      firstListValue(input?.winnerSelectedBy) ||
+      "no-usable-candidate";
+    const failureReason =
+      input?.failureReason || deriveFailureReason(input, errors) || "resolver_exhausted";
 
     return {
       ok: false,
       kind: "transcript",
+      analysisMode:
+        input?.analysisMode ||
+        PolicyApi.ANALYSIS_MODES?.youtubeTranscriptFirst ||
+        "youtube-transcript-first",
       provider: input?.provider || "youtubeResolver",
       providerClass: input?.providerClass || "local",
       strategy: input?.strategy || "transcript-unavailable",
@@ -330,8 +407,11 @@
       quality: "enhanced-extraction-unavailable",
       acquisitionState: "transcript-unavailable",
       transcriptRequiredSatisfied: false,
-      failureReason:
-        input?.failureReason || deriveFailureReason(input, errors) || "resolver_exhausted",
+      failureReason,
+      recoveryTier: input?.recoveryTier || deriveFailureRecoveryTier(input),
+      originKind: "unavailable",
+      sourceTrustTier: "unavailable",
+      winnerReason,
       languageCode: null,
       originalLanguageCode: null,
       requestedLanguageCode: normalizeLanguage(input?.requestedLanguageCode || null),
@@ -353,6 +433,13 @@
         ? input.winnerSelectedBy.slice()
         : [],
       requestShapeValidation: input?.requestShapeValidation || null,
+      qualityGate: {
+        eligible: false,
+        rejectedReasons: [failureReason],
+        wordCount: 0,
+        sentenceUnits: 0,
+        coverageRatio: null
+      },
       text: "",
       segments: []
     };
@@ -389,87 +476,116 @@
       return transcriptPriorityWinner;
     }
 
-    const reasons = [];
-    const confidenceDelta =
-      (CONFIDENCE_RANK[left.sourceConfidence] || 0) -
-      (CONFIDENCE_RANK[right.sourceConfidence] || 0);
-    if (confidenceDelta !== 0) {
-      const winner = confidenceDelta > 0 ? left : right;
-      const loser = confidenceDelta > 0 ? right : left;
-      reasons.push(`confidence:${winner.sourceConfidence}>${loser.sourceConfidence}`);
-      return { winner, loser, reasons };
+    const leftEligible = isEligibleTranscriptCandidate(left);
+    const rightEligible = isEligibleTranscriptCandidate(right);
+    if (leftEligible !== rightEligible) {
+      const winner = leftEligible ? left : right;
+      const loser = winner === left ? right : left;
+      return {
+        winner,
+        loser,
+        reasons: [`quality-gate:${winner.strategy}`]
+      };
     }
 
+    const trustDelta = compareTrustOrder(left, right);
+    if (trustDelta !== 0) {
+      const winner = trustDelta < 0 ? left : right;
+      const loser = winner === left ? right : left;
+      return {
+        winner,
+        loser,
+        reasons: [
+          `trust-tier:${winner.sourceTrustTier || "unknown"}>${loser.sourceTrustTier || "unknown"}`
+        ]
+      };
+    }
+
+    const leftManual = left.isGenerated === false;
+    const rightManual = right.isGenerated === false;
     const leftCoverage = normalizeComparableNumber(left.coverageRatio);
     const rightCoverage = normalizeComparableNumber(right.coverageRatio);
     const coverageGap = Math.abs(leftCoverage - rightCoverage);
-    const leftManual = left.isGenerated === false;
-    const rightManual = right.isGenerated === false;
 
-    if (coverageGap <= 0.15 && leftManual !== rightManual) {
+    if (
+      coverageGap <= POLICY.comparison.coverageManualBiasGap &&
+      leftManual !== rightManual
+    ) {
       const winner = leftManual ? left : right;
-      const loser = leftManual ? right : left;
-      reasons.push("manual-over-generated");
-      return { winner, loser, reasons };
+      const loser = winner === left ? right : left;
+      return {
+        winner,
+        loser,
+        reasons: ["manual-over-generated"]
+      };
     }
 
-    const leftIsOriginal = isCanonicalLanguageCandidate(left);
-    const rightIsOriginal = isCanonicalLanguageCandidate(right);
-    if (leftIsOriginal !== rightIsOriginal) {
-      const winner = leftIsOriginal ? left : right;
-      const loser = leftIsOriginal ? right : left;
-      reasons.push(`original-language:${leftIsOriginal}>${rightIsOriginal}`);
-      return { winner, loser, reasons };
+    const languageWinner = compareLanguagePreference(left, right);
+    if (languageWinner) {
+      return languageWinner;
     }
 
-    if (coverageGap > 0.02) {
+    if (coverageGap > POLICY.comparison.coverageTieGap) {
       const winner = leftCoverage > rightCoverage ? left : right;
-      const loser = leftCoverage > rightCoverage ? right : left;
-      reasons.push(
-        `coverage:${formatComparableNumber(
-          winner.coverageRatio
-        )}>${formatComparableNumber(loser.coverageRatio)}`
-      );
-      return { winner, loser, reasons };
+      const loser = winner === left ? right : left;
+      return {
+        winner,
+        loser,
+        reasons: [
+          `coverage:${formatComparableNumber(winner.coverageRatio)}>${formatComparableNumber(loser.coverageRatio)}`
+        ]
+      };
     }
 
     const segmentQualityGap = Math.abs(
       (left.__segmentQualityScore || 0) - (right.__segmentQualityScore || 0)
     );
-    if (segmentQualityGap > 3) {
+    if (segmentQualityGap > POLICY.comparison.segmentQualityGap) {
       const winner =
         (left.__segmentQualityScore || 0) > (right.__segmentQualityScore || 0)
           ? left
           : right;
       const loser = winner === left ? right : left;
-      reasons.push(
-        `segment-quality:${Math.round(winner.__segmentQualityScore || 0)}>${Math.round(
-          loser.__segmentQualityScore || 0
-        )}`
-      );
-      return { winner, loser, reasons };
+      return {
+        winner,
+        loser,
+        reasons: [
+          `segment-quality:${Math.round(winner.__segmentQualityScore || 0)}>${Math.round(
+            loser.__segmentQualityScore || 0
+          )}`
+        ]
+      };
     }
 
     const leftVolume = calculateUsableVolume(left);
     const rightVolume = calculateUsableVolume(right);
-    if (Math.abs(leftVolume - rightVolume) > 20) {
+    if (Math.abs(leftVolume - rightVolume) > POLICY.comparison.usableVolumeGap) {
       const winner = leftVolume > rightVolume ? left : right;
       const loser = winner === left ? right : left;
-      reasons.push(`usable-volume:${Math.round(leftVolume)}>${Math.round(rightVolume)}`);
-      return { winner, loser, reasons };
+      return {
+        winner,
+        loser,
+        reasons: [`usable-volume:${Math.round(leftVolume)}>${Math.round(rightVolume)}`]
+      };
     }
 
     if (left.providerClass !== right.providerClass) {
       const winner = left.providerClass === "local" ? left : right;
       const loser = winner === left ? right : left;
-      reasons.push("privacy-tiebreaker:local");
-      return { winner, loser, reasons };
+      return {
+        winner,
+        loser,
+        reasons: ["privacy-tiebreaker:local"]
+      };
     }
 
     const winner = (left.__priorityRank || 99) <= (right.__priorityRank || 99) ? left : right;
     const loser = winner === left ? right : left;
-    reasons.push(`priority-tiebreaker:${winner.strategy}>${loser.strategy}`);
-    return { winner, loser, reasons };
+    return {
+      winner,
+      loser,
+      reasons: [`priority-tiebreaker:${winner.strategy}>${loser.strategy}`]
+    };
   }
 
   function isTranscriptStrategy(strategy) {
@@ -480,12 +596,18 @@
     return quality === "strong-transcript" || quality === "partial-transcript";
   }
 
-  function isRealTranscriptSource(candidate) {
+  function isEligibleTranscriptCandidate(candidate) {
     return Boolean(
       candidate &&
         candidate.kind === "transcript" &&
-        isTranscriptClassQuality(candidate.quality)
+        isTranscriptClassQuality(candidate.quality) &&
+        candidate.qualityGate &&
+        candidate.qualityGate.eligible === true
     );
+  }
+
+  function isRealTranscriptSource(candidate) {
+    return isEligibleTranscriptCandidate(candidate);
   }
 
   function mapTranscriptAcquisitionState(quality, ok) {
@@ -510,10 +632,10 @@
       };
     }
 
-    if (failureCodes.some((code) => BACKEND_ESCALATION_FAILURE_CODES.has(code))) {
+    if (failureCodes.some((code) => ESCALATION_FAILURE_CODES.has(code))) {
       return {
         shouldEscalate: true,
-        reason: failureCodes.find((code) => BACKEND_ESCALATION_FAILURE_CODES.has(code))
+        reason: failureCodes.find((code) => ESCALATION_FAILURE_CODES.has(code))
       };
     }
 
@@ -531,37 +653,16 @@
       };
     }
 
-    if (candidate.quality !== "strong-transcript") {
+    if (!candidate.qualityGate?.eligible) {
       return {
         shouldEscalate: true,
-        reason: "quality_below_threshold"
-      };
-    }
-
-    if ((candidate.coverageRatio || 0) < 0.45) {
-      return {
-        shouldEscalate: true,
-        reason: "coverage_below_threshold"
-      };
-    }
-
-    if ((candidate.transcriptSpanSeconds || 0) < 120) {
-      return {
-        shouldEscalate: true,
-        reason: "span_below_threshold"
-      };
-    }
-
-    if ((candidate.segmentQualityScore || candidate.__segmentQualityScore || 0) < 60) {
-      return {
-        shouldEscalate: true,
-        reason: "segment_quality_below_threshold"
+        reason: firstListValue(candidate.qualityGate?.rejectedReasons) || "quality_gate_rejected"
       };
     }
 
     return {
       shouldEscalate: false,
-      reason: "local_strong_transcript"
+      reason: "local_transcript_eligible"
     };
   }
 
@@ -592,7 +693,7 @@
     const rightRealTranscript = isRealTranscriptSource(right);
     if (leftRealTranscript !== rightRealTranscript) {
       const winner = leftRealTranscript ? left : right;
-      const loser = leftRealTranscript ? right : left;
+      const loser = winner === left ? right : left;
       return {
         winner,
         loser,
@@ -600,97 +701,170 @@
       };
     }
 
-    if (left.providerClass === right.providerClass) {
-      return null;
-    }
+    return null;
+  }
 
-    const local = left.providerClass === "local" ? left : right;
-    const backend = local === left ? right : left;
-
-    if (local.quality === "strong-transcript") {
+  function compareLanguagePreference(left, right) {
+    const leftDecision = left.qualityGate?.languageDecision || "ok";
+    const rightDecision = right.qualityGate?.languageDecision || "ok";
+    if (leftDecision !== rightDecision) {
+      const winner = leftDecision === "ok" ? left : right;
+      const loser = winner === left ? right : left;
       return {
-        winner: local,
-        loser: backend,
-        reasons: ["local-strong-transcript-over-backend"]
+        winner,
+        loser,
+        reasons: [`language-preference:${winner.languageCode || "unknown"}`]
       };
     }
 
-    if (local.quality === "weak-fallback" || !local.ok) {
+    const leftOriginal = isCanonicalLanguageCandidate(left);
+    const rightOriginal = isCanonicalLanguageCandidate(right);
+    if (leftOriginal !== rightOriginal) {
+      const winner = leftOriginal ? left : right;
+      const loser = winner === left ? right : left;
       return {
-        winner: backend,
-        loser: local,
-        reasons: ["backend-over-local-weak"]
-      };
-    }
-
-    if (backend.quality === "strong-transcript" && local.quality === "partial-transcript") {
-      return {
-        winner: backend,
-        loser: local,
-        reasons: ["backend-strong-over-local-partial"]
-      };
-    }
-
-    if (local.quality === "partial-transcript") {
-      const backendConfidence = CONFIDENCE_RANK[backend.sourceConfidence] || 0;
-      const localConfidence = CONFIDENCE_RANK[local.sourceConfidence] || 0;
-
-      if (backendConfidence >= localConfidence) {
-        const backendQualityRank = QUALITY_RANK[backend.quality] || 0;
-        const localQualityRank = QUALITY_RANK[local.quality] || 0;
-
-        if (backendQualityRank > localQualityRank) {
-          return {
-            winner: backend,
-            loser: local,
-            reasons: ["backend-materially-better:quality"]
-          };
-        }
-
-        if (
-          normalizedNumber(backend.coverageRatio) >=
-          normalizedNumber(local.coverageRatio) + BACKEND_IMPROVEMENT_THRESHOLDS.coverageRatio
-        ) {
-          return {
-            winner: backend,
-            loser: local,
-            reasons: ["backend-materially-better:coverage"]
-          };
-        }
-
-        if (
-          normalizedNumber(backend.transcriptSpanSeconds) >=
-          normalizedNumber(local.transcriptSpanSeconds) +
-            BACKEND_IMPROVEMENT_THRESHOLDS.transcriptSpanSeconds
-        ) {
-          return {
-            winner: backend,
-            loser: local,
-            reasons: ["backend-materially-better:span"]
-          };
-        }
-
-        if (
-          normalizedNumber(backend.segmentQualityScore || backend.__segmentQualityScore) >=
-          normalizedNumber(local.segmentQualityScore || local.__segmentQualityScore) +
-            BACKEND_IMPROVEMENT_THRESHOLDS.segmentQualityScore
-        ) {
-          return {
-            winner: backend,
-            loser: local,
-            reasons: ["backend-materially-better:segment-quality"]
-          };
-        }
-      }
-
-      return {
-        winner: local,
-        loser: backend,
-        reasons: ["local-privacy-tiebreaker"]
+        winner,
+        loser,
+        reasons: [`original-language:${leftOriginal}>${rightOriginal}`]
       };
     }
 
     return null;
+  }
+
+  function buildTranscriptQualityGate(input) {
+    if (!TRANSCRIPT_STRATEGIES.has(input.strategy)) {
+      return null;
+    }
+
+    const rejectedReasons = [];
+    const thresholds = POLICY.thresholds;
+    const effectiveThresholds = resolveAdaptiveTranscriptThresholds(
+      thresholds,
+      input.videoDurationSeconds,
+      input.transcriptSpanSeconds
+    );
+    const coverageThreshold =
+      input.originKind === "audio_asr"
+        ? effectiveThresholds.minCoverageRatioAudio
+        : effectiveThresholds.minCoverageRatioTranscript;
+
+    if (!input.text || input.wordCount < effectiveThresholds.minWordCount) {
+      rejectedReasons.push("word_count_below_threshold");
+    }
+    if ((input.sentenceUnits || 0) < effectiveThresholds.minSentenceUnits) {
+      rejectedReasons.push("sentence_structure_below_threshold");
+    }
+    if (
+      typeof input.coverageRatio === "number" &&
+      input.coverageRatio < coverageThreshold
+    ) {
+      rejectedReasons.push("coverage_below_threshold");
+    }
+    if (
+      typeof input.uniqueSegmentRatio === "number" &&
+      input.uniqueSegmentRatio < thresholds.minUniqueSegmentRatio
+    ) {
+      rejectedReasons.push("repetition_detected");
+    }
+    if (
+      input.segmentCount >= thresholds.minAverageWordsPerSegmentCount &&
+      typeof input.averageWordsPerSegment === "number" &&
+      input.averageWordsPerSegment < thresholds.minAverageWordsPerSegment
+    ) {
+      rejectedReasons.push("segments_too_sparse");
+    }
+    if (
+      typeof input.nonLetterCharacterRatio === "number" &&
+      input.nonLetterCharacterRatio > thresholds.maxNonLetterCharacterRatio
+    ) {
+      rejectedReasons.push("non_letter_noise");
+    }
+    if (input.languageDecision.status === "reject") {
+      rejectedReasons.push("language_mismatch");
+    }
+
+    return {
+      eligible: rejectedReasons.length === 0,
+      rejectedReasons,
+      wordCount: input.wordCount,
+      sentenceUnits: input.sentenceUnits,
+      coverageRatio:
+        typeof input.coverageRatio === "number" ? input.coverageRatio : null,
+      effectiveMinWordCount: effectiveThresholds.minWordCount,
+      effectiveMinSentenceUnits: effectiveThresholds.minSentenceUnits,
+      languageDecision: input.languageDecision.status
+    };
+  }
+
+  function resolveAdaptiveTranscriptThresholds(thresholds, videoDurationSeconds, transcriptSpanSeconds) {
+    const durationSeconds =
+      toFiniteNumber(videoDurationSeconds) ||
+      toFiniteNumber(transcriptSpanSeconds) ||
+      null;
+    if (!durationSeconds || durationSeconds >= 90) {
+      return thresholds;
+    }
+
+    return {
+      ...thresholds,
+      minWordCount: Math.min(
+        thresholds.minWordCount,
+        Math.max(30, Math.ceil(durationSeconds * 1.5))
+      ),
+      minSentenceUnits: Math.min(
+        thresholds.minSentenceUnits,
+        Math.max(1, Math.ceil(durationSeconds / 30))
+      )
+    };
+  }
+
+  function evaluateLanguageDecision(input) {
+    const requestedBase = baseLanguage(input.requestedLanguageCode);
+    const languageBase = baseLanguage(input.languageCode);
+    const originalBase = baseLanguage(input.originalLanguageCode);
+
+    if (requestedBase) {
+      const languageMatchesRequested = languageBase === requestedBase;
+      const originalMatchesRequested = originalBase === requestedBase;
+
+      if (!languageMatchesRequested && !originalMatchesRequested) {
+        return {
+          status: "reject",
+          warningCodes: ["language_requested_mismatch"]
+        };
+      }
+
+      if (
+        !languageMatchesRequested &&
+        originalMatchesRequested &&
+        (input.isTranslated || input.isMachineTranslated)
+      ) {
+        return {
+          status: "downgrade",
+          warningCodes: ["translated_requested_language"]
+        };
+      }
+    }
+
+    if (!requestedBase) {
+      if (
+        (input.isTranslated || input.isMachineTranslated) &&
+        languageBase &&
+        originalBase &&
+        languageBase !== originalBase
+      ) {
+        return {
+          status: "downgrade",
+          warningCodes: ["language_mismatch_downgrade", "translated_text"]
+        };
+      }
+    }
+
+    return {
+      status: "ok",
+      warningCodes: []
+    };
   }
 
   function buildCandidateText(rawCandidate, segments, strategy) {
@@ -736,7 +910,13 @@
     return /backend/i.test(String(provider || "")) ? "backend" : "local";
   }
 
-  function deriveSourceConfidence(strategy, isGenerated, providerClass) {
+  function deriveSourceConfidence(strategy, isGenerated, providerClass, originKind) {
+    if (originKind === "audio_asr") {
+      return "low";
+    }
+    if (originKind === "headless_transcript") {
+      return "medium";
+    }
     if (providerClass === "backend" && strategy === "backend-transcript") {
       return "high";
     }
@@ -806,6 +986,7 @@
 
     if (
       TRANSCRIPT_STRATEGIES.has(input.strategy) &&
+      input.usableTranscript &&
       input.sourceConfidence === "high" &&
       (((input.coverageRatio || 0) >= 0.45) || ((input.transcriptSpanSeconds || 0) >= 120)) &&
       input.segmentQualityScore >= 60
@@ -837,20 +1018,11 @@
     return "weak-fallback";
   }
 
-  function isUsableTranscript(input) {
-    if (!TRANSCRIPT_STRATEGIES.has(input.strategy)) {
+  function isUsableTranscript(strategy, qualityGate) {
+    if (!TRANSCRIPT_STRATEGIES.has(strategy)) {
       return false;
     }
-
-    if (!input.text || input.text.length < 220 || input.wordCount < 50) {
-      return false;
-    }
-
-    return (
-      input.segmentCount >= 8 ||
-      (input.transcriptSpanSeconds || 0) >= 45 ||
-      (input.coverageRatio || 0) >= 0.18
-    );
+    return Boolean(qualityGate?.eligible);
   }
 
   function computeCoverageRatio(input) {
@@ -938,15 +1110,54 @@
     return monotonicPairs / Math.max(1, values.length - 1);
   }
 
+  function computeUniqueSegmentRatio(segments) {
+    if (!Array.isArray(segments) || !segments.length) {
+      return null;
+    }
+    const unique = new Set(
+      segments
+        .map((segment) => Text.sanitizeInput(segment.text || "").toLowerCase())
+        .filter(Boolean)
+    );
+    return roundTo(unique.size / Math.max(1, segments.length), 3);
+  }
+
+  function computeAverageWordsPerSegment(segments) {
+    if (!Array.isArray(segments) || !segments.length) {
+      return null;
+    }
+    return roundTo(
+      average(
+        segments.map((segment) => Math.max(0, Text.countWords(segment.text || "")))
+      ),
+      2
+    );
+  }
+
+  function computeNonLetterCharacterRatio(text) {
+    const source = String(text || "").replace(/\s+/g, "");
+    if (!source) {
+      return 0;
+    }
+    const nonLetterCount = source.replace(/[A-Za-z0-9]/g, "").length;
+    return roundTo(nonLetterCount / Math.max(1, source.length), 3);
+  }
+
   function calculateUsableVolume(candidate) {
     const span = normalizeComparableNumber(candidate.transcriptSpanSeconds) * 120;
     const words = normalizeComparableNumber(candidate.__wordCount || 0);
     return span + words;
   }
 
-  function buildSourceLabel(strategy, rawCandidate) {
+  function buildSourceLabel(strategy, rawCandidate, originKind) {
     if (rawCandidate?.sourceLabel) {
       return rawCandidate.sourceLabel;
+    }
+    if (originKind === "audio_asr") {
+      return "Audio-derived transcript";
+    }
+    if (originKind === "headless_transcript") {
+      return "Headless transcript recovery";
     }
     if (strategy === "youtubei-transcript") {
       return rawCandidate?.trackLabel || "YouTube transcript";
@@ -958,7 +1169,13 @@
       return "Visible transcript";
     }
     if (strategy === "backend-transcript") {
-      return "Backend transcript";
+      return "Recovered transcript";
+    }
+    if (strategy === "backend-headless-transcript") {
+      return "Recovered transcript";
+    }
+    if (strategy === "backend-asr") {
+      return "Audio-derived transcript";
     }
     if (strategy === "description-transcript") {
       return "Description transcript";
@@ -967,7 +1184,7 @@
       return "Title + description fallback";
     }
     if (strategy === "local-whisper") {
-      return "Local helper transcript";
+      return "Recovered transcript";
     }
     return "Transcript source";
   }
@@ -996,7 +1213,7 @@
     if (!candidate.languageCode || !candidate.originalLanguageCode) {
       return true;
     }
-    return candidate.languageCode === candidate.originalLanguageCode;
+    return baseLanguage(candidate.languageCode) === baseLanguage(candidate.originalLanguageCode);
   }
 
   function deriveFailureReason(rawCandidate, errors) {
@@ -1018,12 +1235,79 @@
     return null;
   }
 
-  function normalizeComparableNumber(value) {
-    return isFiniteNumber(value) ? Number(value) : -1;
+  function deriveOriginKind(rawCandidate, strategy) {
+    if (PolicyApi.getOriginKind) {
+      const value = PolicyApi.getOriginKind({
+        ...rawCandidate,
+        strategy
+      });
+      if (value && value !== "unavailable") {
+        return value;
+      }
+    }
+    if (strategy === "title-description" || strategy === "description-transcript") {
+      return "fallback_text";
+    }
+    return "unavailable";
   }
 
-  function normalizedNumber(value) {
-    return isFiniteNumber(value) ? Number(value) : 0;
+  function deriveSourceTrustTier(originKind) {
+    if (PolicyApi.getSourceTrustTier) {
+      return PolicyApi.getSourceTrustTier(originKind);
+    }
+    return originKind || "unavailable";
+  }
+
+  function deriveRecoveryTier(rawCandidate, providerClass, originKind) {
+    if (rawCandidate?.recoveryTier) {
+      return rawCandidate.recoveryTier;
+    }
+    if (originKind === "audio_asr") {
+      return "hosted_asr";
+    }
+    if (providerClass === "backend") {
+      return "hosted_transcript";
+    }
+    return "local";
+  }
+
+  function deriveFailureRecoveryTier(input) {
+    if (String(input?.strategy || "").includes("backend")) {
+      return "hosted_transcript";
+    }
+    return input?.providerClass === "backend" ? "hosted_transcript" : "local";
+  }
+
+  function compareTrustOrder(left, right) {
+    const leftRank = PolicyApi.getTrustRank
+      ? PolicyApi.getTrustRank(left.originKind)
+      : 99;
+    const rightRank = PolicyApi.getTrustRank
+      ? PolicyApi.getTrustRank(right.originKind)
+      : 99;
+    return leftRank - rightRank;
+  }
+
+  function downgradeConfidence(value) {
+    if (value === "high") {
+      return "medium";
+    }
+    if (value === "medium") {
+      return "low";
+    }
+    return "low";
+  }
+
+  function baseLanguage(value) {
+    if (PolicyApi.getBaseLanguage) {
+      return PolicyApi.getBaseLanguage(value);
+    }
+    const normalized = normalizeLanguage(value);
+    return normalized ? normalized.split("-")[0] : null;
+  }
+
+  function normalizeComparableNumber(value) {
+    return isFiniteNumber(value) ? Number(value) : -1;
   }
 
   function formatComparableNumber(value) {
@@ -1031,8 +1315,10 @@
   }
 
   function normalizeLanguage(value) {
-    const text = String(value || "").trim().toLowerCase();
-    return text || null;
+    const normalized = PolicyApi.normalizeLanguageCode
+      ? PolicyApi.normalizeLanguageCode(value)
+      : String(value || "").trim().toLowerCase();
+    return normalized || null;
   }
 
   function normalizeConfidence(value) {
@@ -1047,10 +1333,7 @@
 
   function normalizeDirectKind(value) {
     const text = String(value || "").trim().toLowerCase();
-    if (
-      text === "manual-input" ||
-      text === "manual"
-    ) {
+    if (text === "manual-input" || text === "manual") {
       return "manual-input";
     }
     if (text === "selection") {
@@ -1060,6 +1343,10 @@
       return "article-content";
     }
     return "page-content";
+  }
+
+  function firstListValue(values) {
+    return Array.isArray(values) && values.length ? String(values[0] || "").trim() : "";
   }
 
   function toFiniteNumber(value) {
@@ -1096,5 +1383,26 @@
       seen.add(key);
       return true;
     });
+  }
+
+  function buildFallbackPolicy() {
+    return {
+      thresholds: {
+        minWordCount: 120,
+        minSentenceUnits: 3,
+        minCoverageRatioTranscript: 0.2,
+        minCoverageRatioAudio: 0.25,
+        minUniqueSegmentRatio: 0.55,
+        minAverageWordsPerSegment: 2.5,
+        minAverageWordsPerSegmentCount: 20,
+        maxNonLetterCharacterRatio: 0.35
+      },
+      comparison: {
+        coverageTieGap: 0.02,
+        coverageManualBiasGap: 0.15,
+        segmentQualityGap: 3,
+        usableVolumeGap: 20
+      }
+    };
   }
 })(globalThis);

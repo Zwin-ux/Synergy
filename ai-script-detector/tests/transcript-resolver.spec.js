@@ -12,6 +12,7 @@ const FILES = [
   "detector/scoring.js",
   "detector/analyze.js",
   "detector/detect.js",
+  "transcript/policy.js",
   "transcript/normalize.js",
   "transcript/strategies/youtubei.js",
   "transcript/strategies/captionTrack.js",
@@ -104,7 +105,29 @@ test.describe("ScriptLens transcript resolver contracts", () => {
     const comparison = normalize.compareCandidates(original, translated);
     expect(comparison.winner.languageCode).toBe("en");
     expect(comparison.winner.originalLanguageCode).toBe("en");
-    expect(comparison.reasons[0]).toMatch(/^original-language:/);
+    expect(comparison.reasons[0]).toMatch(/^language-preference:/);
+  });
+
+  test("rejects transcript candidates when the requested language materially mismatches", () => {
+    const sandbox = loadSandbox();
+    const normalize = sandbox.ScriptLens.transcript.normalize;
+
+    const mismatched = normalize.normalizeCandidate(
+      buildCaptionCandidate({
+        requestedLanguageCode: "en",
+        languageCode: "fr",
+        originalLanguageCode: "fr",
+        isTranslated: false,
+        isMachineTranslated: false
+      }),
+      {
+        maxTextLength: 18000,
+        requestedLanguageCode: "en"
+      }
+    );
+
+    expect(mismatched.qualityGate.eligible).toBeFalsy();
+    expect(mismatched.qualityGate.rejectedReasons).toContain("language_mismatch");
   });
 
   test("prefers manual caption tracks over generated ones when selecting a track", () => {
@@ -503,7 +526,7 @@ test.describe("ScriptLens transcript resolver contracts", () => {
     expect(result.errors.some((error) => error.code === "navigation_changed")).toBeTruthy();
   });
 
-  test("backend strong transcript beats local partial transcript when materially better", () => {
+  test("eligible backend transcript beats a local candidate that fails the transcript quality gate", () => {
     const sandbox = loadSandbox();
     const normalize = sandbox.ScriptLens.transcript.normalize;
 
@@ -535,42 +558,68 @@ test.describe("ScriptLens transcript resolver contracts", () => {
 
     const comparison = normalize.compareCandidates(localPartial, backendStrong);
     expect(comparison.winner.providerClass).toBe("backend");
-    expect(comparison.reasons[0]).toContain("backend");
+    expect(comparison.reasons[0]).toMatch(/^(transcript-over-fallback|quality-gate:)/);
   });
 
-  test("local partial transcript survives marginal backend improvements", () => {
+  test("eligible manual captions beat a weaker headless transcript candidate on trust order", () => {
     const sandbox = loadSandbox();
     const normalize = sandbox.ScriptLens.transcript.normalize;
 
-    const localPartial = normalize.normalizeCandidate(
+    const localManual = normalize.normalizeCandidate(
       buildCaptionCandidate({
         providerClass: "local",
-        sourceConfidence: "medium",
-        segments: Array.from({ length: 10 }, (_, index) => ({
+        sourceConfidence: "high",
+        segments: Array.from({ length: 12 }, (_, index) => ({
           startMs: index * 12000,
           durationMs: 11000,
-          text: `Local segment ${index + 1} keeps enough transcript context to stay usable.`
+          text: `Local segment ${index + 1} keeps enough spoken detail to remain a strong manual caption source for the comparison.`
         })),
         videoDurationSeconds: 240
       }),
       { maxTextLength: 18000 }
     );
-    const backendMarginal = normalize.normalizeCandidate(
+    const backendHeadless = normalize.normalizeCandidate(
       buildBackendCandidate({
         sourceConfidence: "medium",
-        segments: Array.from({ length: 10 }, (_, index) => ({
+        strategy: "backend-headless-transcript",
+        sourceLabel: "Headless transcript panel",
+        segments: Array.from({ length: 12 }, (_, index) => ({
           startMs: index * 12000,
           durationMs: 11000,
-          text: `Backend segment ${index + 1} is only slightly different from the local transcript candidate.`
+          text: `Headless segment ${index + 1} is usable, but it still comes from a weaker recovery path than direct or manual transcript sources.`
         })),
         videoDurationSeconds: 240
       }),
       { maxTextLength: 18000 }
     );
 
-    const comparison = normalize.compareCandidates(localPartial, backendMarginal);
+    const comparison = normalize.compareCandidates(localManual, backendHeadless);
     expect(comparison.winner.providerClass).toBe("local");
-    expect(comparison.reasons[0]).toBe("local-privacy-tiebreaker");
+    expect(comparison.reasons[0]).toBe("trust-tier:caption-derived>headless-derived");
+  });
+
+  test("marks audio-derived transcripts as reduced-trust even when they pass quality checks", () => {
+    const sandbox = loadSandbox();
+    const normalize = sandbox.ScriptLens.transcript.normalize;
+
+    const audioDerived = normalize.normalizeCandidate(
+      buildBackendCandidate({
+        strategy: "backend-asr",
+        sourceLabel: "Audio-derived transcript",
+        sourceConfidence: "medium",
+        segments: Array.from({ length: 14 }, (_, index) => ({
+          startMs: index * 10000,
+          durationMs: 9000,
+          text: `Audio transcript segment ${index + 1} carries enough lexical detail to pass the transcript quality gate despite reduced trust.`
+        })),
+        videoDurationSeconds: 210
+      }),
+      { maxTextLength: 18000 }
+    );
+
+    expect(audioDerived.sourceTrustTier).toBe("audio-derived");
+    expect(audioDerived.warnings).toContain("audio_derived_reduced_trust");
+    expect(audioDerived.qualityGate.eligible).toBeTruthy();
   });
 
   test("caps detector confidence by source confidence", () => {

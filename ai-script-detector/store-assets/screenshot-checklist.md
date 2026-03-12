@@ -16,7 +16,7 @@ Use the final extension build and keep every screenshot aligned with the current
 - Keep the extension title and inline button readable without zooming
 - Make sure the screenshots reflect the exact copy currently shipped
 - Do not show DevTools, test harness chrome, or placeholder debug text
-- If the helper path is shown, keep the copy consistent with the privacy policy
+- If recovery-service details are shown, keep the copy consistent with the privacy policy
 
 ## Assets already in repo
 

@@ -40,13 +40,13 @@
             <li>Reload the extension from <code>chrome://extensions</code> and refresh the YouTube tab</li>
             <li>Confirm you are on a desktop YouTube watch page, not Shorts or <code>m.youtube.com</code></li>
             <li>Try the inline button first, then use the workspace if you need more detail</li>
-            <li>If the issue involves transcript recovery, confirm whether the optional local helper is enabled</li>
+            <li>If the issue involves transcript recovery, confirm whether this build has a recovery service configured and enabled</li>
           </ul>
 
           <h3>Common questions</h3>
           <h3>Why does the extension say the transcript is unavailable?</h3>
           <p>
-            Some videos expose limited transcript data or block transcript text on the page. ScriptLens treats that honestly. You can allow a title and description fallback, or optionally use the local helper for harder transcript recovery cases.
+            Some videos expose limited transcript data or block transcript text on the page. ScriptLens keeps the inline experience transcript-first. If local transcript recovery fails, the extension can use a configured recovery backend before it reports that the transcript is unavailable.
           </p>
 
           <h3>Does ScriptLens work outside YouTube?</h3>
@@ -58,13 +58,13 @@
           <ul>
             <li>The exact YouTube URL</li>
             <li>Whether the issue appears in the inline widget, popup, or side panel</li>
-            <li>Whether fallback text or the optional local helper was enabled</li>
+            <li>Whether transcript recovery service was enabled for this build</li>
             <li>Any visible error text from ScriptLens</li>
           </ul>
 
-          <h3>Optional local helper</h3>
+          <h3>Optional recovery backend</h3>
           <p>
-            The helper is optional and is not part of the store package. If you want transcript recovery help for blocked videos, see the backend helper notes in the repository and make sure <code>yt-dlp</code> is configured before you start the helper.
+            The recovery backend is optional and is not part of the store package. ScriptLens can use a compatible hosted or self-hosted backend for stronger transcript recovery on harder videos. See the backend notes in the repository if you want to run your own service.
           </p>
         </article>
       </section>

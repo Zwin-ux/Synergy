@@ -3,7 +3,8 @@
     sensitivity: "medium",
     maxTextLength: 18000,
     debugMode: false,
-    allowBackendTranscriptFallback: true
+    allowBackendTranscriptFallback: false,
+    backendTranscriptEndpoint: ""
   };
   const DEFAULT_SELECTION = {
     includeSources: ["transcript"],
@@ -78,6 +79,7 @@
     elements.allowBackendTranscriptFallbackInput = document.getElementById(
       "allowBackendTranscriptFallbackInput"
     );
+    elements.backendRecoveryNote = document.getElementById("backendRecoveryNote");
     elements.saveSettingsButton = document.getElementById("saveSettingsButton");
     elements.resultPanel = document.getElementById("resultPanel");
     elements.resultEmpty = document.getElementById("resultEmpty");
@@ -237,7 +239,7 @@
     elements.resultEmpty.classList.add("hidden");
     elements.resultContent.classList.remove("hidden");
 
-    elements.scoreValue.textContent = String(viewModel.score);
+    elements.scoreValue.textContent = viewModel.scoreDisplay || String(viewModel.score);
     elements.verdictBadge.textContent = viewModel.verdict;
     elements.verdictBadge.className = `badge verdict-badge ${viewModel.verdictClass}`;
     elements.acquisitionQualityBadge.textContent = viewModel.acquisitionQuality;
@@ -482,12 +484,16 @@
   }
 
   function applySettings() {
+    const backendRecoveryConfigured = Boolean(state.settings.backendTranscriptEndpoint);
     elements.sensitivitySelect.value = state.settings.sensitivity;
     elements.maxTextLengthInput.value = state.settings.maxTextLength;
     elements.debugModeInput.checked = Boolean(state.settings.debugMode);
-    elements.allowBackendTranscriptFallbackInput.checked = Boolean(
-      state.settings.allowBackendTranscriptFallback
-    );
+    elements.allowBackendTranscriptFallbackInput.checked =
+      backendRecoveryConfigured && Boolean(state.settings.allowBackendTranscriptFallback);
+    elements.allowBackendTranscriptFallbackInput.disabled = !backendRecoveryConfigured;
+    elements.backendRecoveryNote.textContent = backendRecoveryConfigured
+      ? "This build can call a transcript recovery service when local YouTube transcript paths fail."
+      : "No transcript recovery service is configured in this build. Local transcript paths only.";
   }
 
   function getRecommendedRequest() {
