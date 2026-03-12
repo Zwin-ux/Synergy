@@ -3,6 +3,13 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
+import {
+  buildSummary,
+  formatInlineCompact,
+  formatInlineOutcome,
+  formatWorkspaceHandoff,
+  isRetryableInlineTransportError
+} from "./staged-consumer-qa-lib.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,11 +46,15 @@ const backendClientInstanceId =
   args.clientInstanceId || `staging-backend-${runId}`;
 const inlineClientInstanceId =
   args.inlineClientInstanceId || `staging-inline-${runId}`;
+const isDirectRun =
+  process.argv[1] && path.resolve(process.argv[1]) === __filename;
 
-main().catch((error) => {
-  console.error(error?.stack || error?.message || String(error));
-  process.exitCode = 1;
-});
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error(error?.stack || error?.message || String(error));
+    process.exitCode = 1;
+  });
+}
 
 async function main() {
   const backendResults = await runBackendMatrix(matrix, {
@@ -271,15 +282,16 @@ async function runInlineMatrix(entries, options) {
           detailsHonest: outcome === "success" ? Boolean(snapshot.detailsText) : true
         });
       } catch (error) {
+        const navigationTransportIssue = isRetryableInlineTransportError(error);
         results.push({
           id: entry.id,
-          outcome: "crashed",
+          outcome: navigationTransportIssue ? "transport" : "crashed",
           latencyMs: 0,
           detailsOpened: false,
-          compactInline: false,
-          understandable: false,
-          noSidebarBlowup: false,
-          workspaceHandoffWorks: false,
+          compactInline: null,
+          understandable: null,
+          noSidebarBlowup: null,
+          workspaceHandoffWorks: null,
           panelBefore: null,
           panelAfter: null,
           cardWidth: 0,
@@ -290,6 +302,7 @@ async function runInlineMatrix(entries, options) {
           detailsText: "",
           buttons: [],
           detailsHonest: false,
+          transportIssue: navigationTransportIssue,
           error: error?.message || String(error)
         });
       } finally {
@@ -428,10 +441,7 @@ async function gotoVideoWithRetry(page, url, attempts = 3) {
       return;
     } catch (error) {
       lastError = error;
-      if (
-        !/ERR_NETWORK_CHANGED|ERR_NAME_NOT_RESOLVED/i.test(String(error?.message || "")) ||
-        attempt === attempts - 1
-      ) {
+      if (!isRetryableInlineTransportError(error) || attempt === attempts - 1) {
         throw error;
       }
       await wait(500);
@@ -545,6 +555,9 @@ function evaluateInlineUnderstandable(outcome, snapshot) {
         snapshot.buttons.includes("Open full workspace")
     );
   }
+  if (outcome === "transport") {
+    return null;
+  }
   return false;
 }
 
@@ -565,30 +578,6 @@ function evaluateExpectation(entry, body) {
   return true;
 }
 
-function buildSummary(results) {
-  const backendSuccess = results.filter((entry) => entry.backend?.ok).length;
-  const inlineSuccess = results.filter((entry) => entry.inline?.outcome === "success").length;
-  const inlineMeasured = results.filter((entry) => entry.inline).length;
-  const inlineCompact = results.filter((entry) => entry.inline?.compactInline).length;
-  const backendGoodInlineErrors = results.filter(
-    (entry) => entry.backend?.ok && entry.inline && entry.inline.outcome !== "success"
-  ).length;
-  const canaryMismatches = results
-    .filter((entry) => entry.canary)
-    .filter((entry) => entry.backend?.meetsExpectation === false)
-    .map((entry) => `${entry.id}: expected canary outcome did not match actual winner ${entry.backend?.winnerReason || "unknown"}`);
-
-  return {
-    total: results.length,
-    backendSuccess,
-    inlineSuccess,
-    inlineMeasured,
-    inlineCompact,
-    backendGoodInlineErrors,
-    canaryMismatches
-  };
-}
-
 function buildMarkdownReport(report) {
   const lines = [
     "# Staged Consumer QA Report",
@@ -605,6 +594,9 @@ function buildMarkdownReport(report) {
     report.inlineClientInstanceId
       ? `Inline compact runs: ${report.summary.inlineCompact}/${report.summary.inlineMeasured}`
       : "Inline compact runs: skipped",
+    report.inlineClientInstanceId
+      ? `Inline transport issues: ${report.summary.inlineTransportIssues}`
+      : "Inline transport issues: skipped",
     report.inlineClientInstanceId
       ? `Backend-good inline errors: ${report.summary.backendGoodInlineErrors}`
       : "Backend-good inline errors: skipped",
@@ -624,7 +616,7 @@ function buildMarkdownReport(report) {
 
   report.matrix.forEach((entry) => {
     lines.push(
-      `| ${entry.label} | ${entry.categories.join(", ")} | ${entry.backend?.ok ? "success" : `fail (${entry.backend?.errorCode || entry.backend?.winnerReason || "n/a"})`} | ${entry.backend?.failureCategory || "n/a"} | ${entry.backend?.originKind || "n/a"} | ${entry.backend?.recoveryTier || "n/a"} | ${entry.backend?.sourceTrustTier || "n/a"} | ${entry.backend?.winnerReason || "n/a"} | ${entry.backend?.latencyMs ?? ""} | ${entry.inline ? `${entry.inline.outcome}${entry.inline.understandable ? "" : " (unclear)"}` : "skipped"} | ${entry.inline ? (entry.inline.compactInline ? "yes" : "no") : "skipped"} | ${entry.inline ? (entry.inline.workspaceHandoffWorks ? "yes" : "no") : "skipped"} |`
+      `| ${entry.label} | ${entry.categories.join(", ")} | ${entry.backend?.ok ? "success" : `fail (${entry.backend?.errorCode || entry.backend?.winnerReason || "n/a"})`} | ${entry.backend?.failureCategory || "n/a"} | ${entry.backend?.originKind || "n/a"} | ${entry.backend?.recoveryTier || "n/a"} | ${entry.backend?.sourceTrustTier || "n/a"} | ${entry.backend?.winnerReason || "n/a"} | ${entry.backend?.latencyMs ?? ""} | ${entry.inline ? formatInlineOutcome(entry.inline) : "skipped"} | ${entry.inline ? formatInlineCompact(entry.inline) : "skipped"} | ${entry.inline ? formatWorkspaceHandoff(entry.inline) : "skipped"} |`
     );
   });
 
@@ -632,6 +624,7 @@ function buildMarkdownReport(report) {
   lines.push("- `Inline` records whether the watch-page widget reached a success card, error card, or timed out.");
   lines.push("- `Compact` requires the inline card to stay within the small watch-page footprint and avoid opening the YouTube transcript engagement panel.");
   lines.push("- `Workspace` checks that `Open full workspace` stored a valid panel launch request.");
+  lines.push("- `transport` means the staged runner hit a transient browser/network navigation failure before the page could load; it is tracked separately from product behavior.");
   lines.push("");
   return lines.join("\n");
 }
