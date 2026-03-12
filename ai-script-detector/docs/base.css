@@ -1,16 +1,18 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
 
 :root {
   color-scheme: light;
-  --paper: rgba(255, 252, 246, 0.84);
+  --paper: rgba(255, 251, 245, 0.9);
   --paper-strong: #fffdf8;
-  --ink: #221a13;
-  --muted: #5f574f;
-  --line: rgba(56, 43, 30, 0.12);
-  --accent: #b4522f;
-  --accent-soft: rgba(180, 82, 47, 0.1);
-  --accent-deep: #21344b;
-  --shadow: 0 24px 70px rgba(56, 38, 24, 0.12);
+  --ink: #1d1d18;
+  --muted: #5d5a53;
+  --line: rgba(53, 49, 42, 0.12);
+  --accent: #c95b39;
+  --accent-soft: rgba(201, 91, 57, 0.1);
+  --accent-deep: #17384f;
+  --accent-mint: #d8efe3;
+  --accent-gold: #f6d79f;
+  --shadow: 0 28px 80px rgba(40, 31, 22, 0.12);
   --radius-xl: 28px;
   --radius-lg: 22px;
   --radius-md: 16px;
@@ -24,16 +26,20 @@
 html {
   min-height: 100%;
   background:
-    radial-gradient(circle at 0% 10%, rgba(255, 194, 133, 0.28), transparent 26%),
-    radial-gradient(circle at 100% 0%, rgba(156, 199, 255, 0.22), transparent 24%),
-    linear-gradient(180deg, #fcf8f1, #f1e6d6 58%, #f5f0e8);
+    radial-gradient(circle at 12% 10%, rgba(246, 215, 159, 0.52), transparent 22%),
+    radial-gradient(circle at 92% 8%, rgba(117, 173, 212, 0.28), transparent 20%),
+    linear-gradient(180deg, #f8f1e6, #efe3d1 55%, #ece2d6),
+    linear-gradient(rgba(29, 29, 24, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29, 29, 24, 0.035) 1px, transparent 1px);
+  background-size: auto, auto, auto, 26px 26px, 26px 26px;
 }
 
 body {
   margin: 0;
   color: var(--ink);
-  font-family: "Manrope", "Aptos", sans-serif;
+  font-family: "IBM Plex Sans", "Aptos", sans-serif;
   line-height: 1.6;
+  cursor: url("assets/cursor-magnify.svg") 12 12, auto;
 }
 
 img {
@@ -44,6 +50,12 @@ img {
 a {
   color: var(--accent-deep);
   text-decoration: none;
+}
+
+a,
+button,
+.button {
+  cursor: url("assets/cursor-magnify.svg") 12 12, pointer;
 }
 
 a:hover {
@@ -77,9 +89,36 @@ dl {
 }
 
 .site-shell {
+  position: relative;
   width: min(calc(100% - 32px), var(--content-width));
   margin: 0 auto;
   padding: 24px 0 72px;
+}
+
+.site-shell::before,
+.site-shell::after {
+  content: "";
+  position: fixed;
+  inset: auto;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(24px);
+  opacity: 0.45;
+  z-index: -1;
+}
+
+.site-shell::before {
+  top: 90px;
+  right: max(8px, calc((100vw - var(--content-width)) / 2 - 36px));
+  background: radial-gradient(circle, rgba(216, 239, 227, 0.7), transparent 70%);
+}
+
+.site-shell::after {
+  left: max(8px, calc((100vw - var(--content-width)) / 2 - 12px));
+  bottom: 80px;
+  background: radial-gradient(circle, rgba(246, 215, 159, 0.7), transparent 70%);
 }
 
 .site-nav,
@@ -87,7 +126,9 @@ dl {
 .content-card {
   border: 1px solid var(--line);
   border-radius: var(--radius-xl);
-  background: var(--paper);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 249, 241, 0.9)),
+    var(--paper);
   backdrop-filter: blur(12px);
   box-shadow: var(--shadow);
 }
@@ -110,6 +151,7 @@ dl {
   width: 52px;
   height: 52px;
   border-radius: 18px;
+  box-shadow: 0 14px 28px rgba(23, 56, 79, 0.14);
 }
 
 .brand-label {
@@ -140,9 +182,27 @@ dl {
   padding: 9px 14px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.7);
   font-size: 14px;
   font-weight: 700;
+  transition:
+    transform 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.nav-links a:hover,
+.nav-links a:focus-visible {
+  transform: translateY(-1px);
+  text-decoration: none;
+  border-color: rgba(23, 56, 79, 0.22);
+  background: rgba(216, 239, 227, 0.6);
+}
+
+.nav-links .nav-link-strong {
+  background: var(--accent-deep);
+  border-color: transparent;
+  color: #fff;
 }
 
 .button {
@@ -155,6 +215,11 @@ dl {
   border: 1px solid transparent;
   font-size: 14px;
   font-weight: 800;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease;
 }
 
 .button-primary {
@@ -162,8 +227,16 @@ dl {
   color: #fff;
 }
 
+.button:hover,
+.button:focus-visible {
+  transform: translateY(-1px);
+  text-decoration: none;
+  box-shadow: 0 10px 24px rgba(23, 56, 79, 0.12);
+}
+
 .button-primary:hover,
-.button-secondary:hover {
+.button-secondary:hover,
+.button-ghost:hover {
   text-decoration: none;
 }
 
@@ -173,6 +246,12 @@ dl {
   color: var(--ink);
 }
 
+.button-ghost {
+  background: rgba(216, 239, 227, 0.46);
+  border-color: rgba(23, 56, 79, 0.14);
+  color: var(--accent-deep);
+}
+
 .content-section {
   display: grid;
   gap: 20px;
@@ -180,7 +259,20 @@ dl {
 }
 
 .content-card {
+  position: relative;
   padding: 24px;
+}
+
+.content-card::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  width: 86px;
+  height: 24px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(246, 215, 159, 0.75), rgba(216, 239, 227, 0.72));
+  opacity: 0.7;
 }
 
 .content-card h2 {
@@ -221,6 +313,24 @@ dl {
   gap: 14px;
 }
 
+@keyframes site-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.site-nav,
+.content-card,
+.footer {
+  animation: site-rise 480ms ease both;
+}
+
 @media (max-width: 860px) {
   .site-nav,
   .footer-row {
@@ -255,5 +365,10 @@ dl {
   .nav-links a,
   .button {
     width: 100%;
+  }
+
+  .site-shell::before,
+  .site-shell::after {
+    display: none;
   }
 }

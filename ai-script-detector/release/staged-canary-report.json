@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-03-12T02:51:04.151Z",
+  "generatedAt": "2026-03-12T04:59:29.715Z",
   "backendOrigin": "https://scriptlens-backend-134711094498.us-west2.run.app",
-  "backendClientInstanceId": "staging-backend-1773283864151-3jvb51",
+  "backendClientInstanceId": "staging-backend-1773291569715-2ew13t",
   "inlineClientInstanceId": null,
   "matrix": [
     {
@@ -19,7 +19,7 @@
       "backend": {
         "id": "npy-writing-safety",
         "ok": true,
-        "latencyMs": 145,
+        "latencyMs": 7243,
         "originKind": "manual_caption_track",
         "recoveryTier": "hosted_transcript",
         "sourceTrustTier": "caption-derived",
@@ -46,21 +46,13 @@
         ],
         "stageTelemetry": [
           {
-            "traceId": "inspect-1773281778946",
-            "type": "cache",
-            "stage": "cache",
-            "outcome": "hit",
-            "cacheStatus": "hit",
-            "winnerReason": "quality-eligible:manual_caption_track"
-          },
-          {
-            "traceId": "inspect-1773281778946",
+            "traceId": "staging-backend-1-1773291569717",
             "type": "stage",
             "stage": "static-caption-track",
             "outcome": "failure",
-            "startedAt": 1773281779206,
-            "endedAt": 1773281780013,
-            "durationMs": 807,
+            "startedAt": 1773291571504,
+            "endedAt": 1773291572561,
+            "durationMs": 1057,
             "cacheStatus": "miss",
             "errorCode": "caption_tracks_missing",
             "warnings": [
@@ -77,13 +69,13 @@
             "detail": null
           },
           {
-            "traceId": "inspect-1773281778946",
+            "traceId": "staging-backend-1-1773291569717",
             "type": "stage",
             "stage": "youtubei-command",
             "outcome": "failure",
-            "startedAt": 1773281780013,
-            "endedAt": 1773281780053,
-            "durationMs": 40,
+            "startedAt": 1773291572561,
+            "endedAt": 1773291572616,
+            "durationMs": 55,
             "cacheStatus": "miss",
             "errorCode": "youtubei_http_400",
             "warnings": [
@@ -100,13 +92,13 @@
             "detail": null
           },
           {
-            "traceId": "inspect-1773281778946",
+            "traceId": "staging-backend-1-1773291569717",
             "type": "stage",
             "stage": "yt-dlp-captions",
             "outcome": "success",
-            "startedAt": 1773281780053,
-            "endedAt": 1773281784585,
-            "durationMs": 4532,
+            "startedAt": 1773291572616,
+            "endedAt": 1773291577200,
+            "durationMs": 4584,
             "cacheStatus": "miss",
             "errorCode": null,
             "warnings": [],
@@ -165,7 +157,7 @@
                     "--sub-langs",
                     "en,en-orig",
                     "-o",
-                    "/tmp/scriptlens-ytdlp-6gsXXY/json3/%(id)s.%(ext)s",
+                    "/tmp/scriptlens-ytdlp-1bG9kd/json3/%(id)s.%(ext)s",
                     "https://www.youtube.com/watch?v=NPY2NIS-iao"
                   ],
                   "exitCode": 1,
@@ -179,7 +171,7 @@
                   "authenticatedAcquisitionUsed": true,
                   "acquisitionPathUsed": "authenticated-yt-dlp-captions",
                   "stderrTail": "t__ File \"/usr/local/bin/yt-dlp/yt_dlp/YoutubeDL.py\", line 1054, in close File \"/usr/local/bin/yt-dlp/yt_dlp/YoutubeDL.py\", line 1046, in save_cookies File \"/usr/local/bin/yt-dlp/yt_dlp/cookies.py\", line 1350, in save File \"/usr/lib/python3.10/contextlib.py\", line 142, in __exit__ next(self.gen) File \"/usr/local/bin/yt-dlp/yt_dlp/cookies.py\", line 1305, in open OSError: [Errno 22] Invalid argument",
-                  "stdoutTail": "ing video subtitles to: /tmp/scriptlens-ytdlp-6gsXXY/json3/NPY2NIS-iao.en.json3 [download] Destination: /tmp/scriptlens-ytdlp-6gsXXY/json3/NPY2NIS-iao.en.json3 [download] Download completed [info] Writing video subtitles to: /tmp/scriptlens-ytdlp-6gsXXY/json3/NPY2NIS-iao.en-orig.json3 [download] Destination: /tmp/scriptlens-ytdlp-6gsXXY/json3/NPY2NIS-iao.en-orig.json3 [download] Download completed",
+                  "stdoutTail": "ing video subtitles to: /tmp/scriptlens-ytdlp-1bG9kd/json3/NPY2NIS-iao.en.json3 [download] Destination: /tmp/scriptlens-ytdlp-1bG9kd/json3/NPY2NIS-iao.en.json3 [download] Download completed [info] Writing video subtitles to: /tmp/scriptlens-ytdlp-1bG9kd/json3/NPY2NIS-iao.en-orig.json3 [download] Destination: /tmp/scriptlens-ytdlp-1bG9kd/json3/NPY2NIS-iao.en-orig.json3 [download] Download completed",
                   "error": null,
                   "failureKind": "exit_nonzero_with_subtitle",
                   "parseResult": "success"
@@ -207,7 +199,7 @@
       "backend": {
         "id": "vwq-english-transitions",
         "ok": true,
-        "latencyMs": 121,
+        "latencyMs": 6424,
         "originKind": "manual_caption_track",
         "recoveryTier": "hosted_transcript",
         "sourceTrustTier": "caption-derived",
@@ -234,21 +226,13 @@
         ],
         "stageTelemetry": [
           {
-            "traceId": "smoke-2-1773281039637",
-            "type": "cache",
-            "stage": "cache",
-            "outcome": "hit",
-            "cacheStatus": "hit",
-            "winnerReason": "quality-eligible:manual_caption_track"
-          },
-          {
-            "traceId": "smoke-2-1773281039637",
+            "traceId": "staging-backend-2-1773291576960",
             "type": "stage",
             "stage": "static-caption-track",
             "outcome": "failure",
-            "startedAt": 1773281040245,
-            "endedAt": 1773281041080,
-            "durationMs": 835,
+            "startedAt": 1773291577325,
+            "endedAt": 1773291578266,
+            "durationMs": 941,
             "cacheStatus": "miss",
             "errorCode": "caption_tracks_missing",
             "warnings": [
@@ -265,13 +249,13 @@
             "detail": null
           },
           {
-            "traceId": "smoke-2-1773281039637",
+            "traceId": "staging-backend-2-1773291576960",
             "type": "stage",
             "stage": "youtubei-command",
             "outcome": "failure",
-            "startedAt": 1773281041080,
-            "endedAt": 1773281041124,
-            "durationMs": 44,
+            "startedAt": 1773291578266,
+            "endedAt": 1773291578313,
+            "durationMs": 47,
             "cacheStatus": "miss",
             "errorCode": "youtubei_http_400",
             "warnings": [
@@ -288,13 +272,13 @@
             "detail": null
           },
           {
-            "traceId": "smoke-2-1773281039637",
+            "traceId": "staging-backend-2-1773291576960",
             "type": "stage",
             "stage": "yt-dlp-captions",
             "outcome": "success",
-            "startedAt": 1773281041124,
-            "endedAt": 1773281046489,
-            "durationMs": 5365,
+            "startedAt": 1773291578313,
+            "endedAt": 1773291583617,
+            "durationMs": 5304,
             "cacheStatus": "miss",
             "errorCode": null,
             "warnings": [],
@@ -353,7 +337,7 @@
                     "--sub-langs",
                     "en,en-orig",
                     "-o",
-                    "/tmp/scriptlens-ytdlp-bBHKrr/json3/%(id)s.%(ext)s",
+                    "/tmp/scriptlens-ytdlp-UInEaW/json3/%(id)s.%(ext)s",
                     "https://www.youtube.com/watch?v=vWQk67meYUA"
                   ],
                   "exitCode": 1,
@@ -367,7 +351,7 @@
                   "authenticatedAcquisitionUsed": true,
                   "acquisitionPathUsed": "authenticated-yt-dlp-captions",
                   "stderrTail": "t__ File \"/usr/local/bin/yt-dlp/yt_dlp/YoutubeDL.py\", line 1054, in close File \"/usr/local/bin/yt-dlp/yt_dlp/YoutubeDL.py\", line 1046, in save_cookies File \"/usr/local/bin/yt-dlp/yt_dlp/cookies.py\", line 1350, in save File \"/usr/lib/python3.10/contextlib.py\", line 142, in __exit__ next(self.gen) File \"/usr/local/bin/yt-dlp/yt_dlp/cookies.py\", line 1305, in open OSError: [Errno 22] Invalid argument",
-                  "stdoutTail": "ing video subtitles to: /tmp/scriptlens-ytdlp-bBHKrr/json3/vWQk67meYUA.en.json3 [download] Destination: /tmp/scriptlens-ytdlp-bBHKrr/json3/vWQk67meYUA.en.json3 [download] Download completed [info] Writing video subtitles to: /tmp/scriptlens-ytdlp-bBHKrr/json3/vWQk67meYUA.en-orig.json3 [download] Destination: /tmp/scriptlens-ytdlp-bBHKrr/json3/vWQk67meYUA.en-orig.json3 [download] Download completed",
+                  "stdoutTail": "ing video subtitles to: /tmp/scriptlens-ytdlp-UInEaW/json3/vWQk67meYUA.en.json3 [download] Destination: /tmp/scriptlens-ytdlp-UInEaW/json3/vWQk67meYUA.en.json3 [download] Download completed [info] Writing video subtitles to: /tmp/scriptlens-ytdlp-UInEaW/json3/vWQk67meYUA.en-orig.json3 [download] Destination: /tmp/scriptlens-ytdlp-UInEaW/json3/vWQk67meYUA.en-orig.json3 [download] Download completed",
                   "error": null,
                   "failureKind": "exit_nonzero_with_subtitle",
                   "parseResult": "success"
@@ -394,7 +378,7 @@
       "backend": {
         "id": "jnqx-me-at-zoo",
         "ok": true,
-        "latencyMs": 32,
+        "latencyMs": 5653,
         "originKind": "manual_caption_track",
         "recoveryTier": "hosted_transcript",
         "sourceTrustTier": "caption-derived",
@@ -421,21 +405,13 @@
         ],
         "stageTelemetry": [
           {
-            "traceId": "smoke-3-1773281046374",
-            "type": "cache",
-            "stage": "cache",
-            "outcome": "hit",
-            "cacheStatus": "hit",
-            "winnerReason": "quality-eligible:manual_caption_track"
-          },
-          {
-            "traceId": "smoke-3-1773281046374",
+            "traceId": "staging-backend-3-1773291583384",
             "type": "stage",
             "stage": "static-caption-track",
             "outcome": "failure",
-            "startedAt": 1773281046699,
-            "endedAt": 1773281047780,
-            "durationMs": 1081,
+            "startedAt": 1773291583759,
+            "endedAt": 1773291584453,
+            "durationMs": 694,
             "cacheStatus": "miss",
             "errorCode": "caption_tracks_missing",
             "warnings": [
@@ -452,13 +428,13 @@
             "detail": null
           },
           {
-            "traceId": "smoke-3-1773281046374",
+            "traceId": "staging-backend-3-1773291583384",
             "type": "stage",
             "stage": "youtubei-command",
             "outcome": "failure",
-            "startedAt": 1773281047780,
-            "endedAt": 1773281047827,
-            "durationMs": 47,
+            "startedAt": 1773291584453,
+            "endedAt": 1773291584495,
+            "durationMs": 42,
             "cacheStatus": "miss",
             "errorCode": "youtubei_http_400",
             "warnings": [
@@ -475,13 +451,13 @@
             "detail": null
           },
           {
-            "traceId": "smoke-3-1773281046374",
+            "traceId": "staging-backend-3-1773291583384",
             "type": "stage",
             "stage": "yt-dlp-captions",
             "outcome": "success",
-            "startedAt": 1773281047827,
-            "endedAt": 1773281052841,
-            "durationMs": 5014,
+            "startedAt": 1773291584495,
+            "endedAt": 1773291589272,
+            "durationMs": 4777,
             "cacheStatus": "miss",
             "errorCode": null,
             "warnings": [],
@@ -540,7 +516,7 @@
                     "--sub-langs",
                     "en,en-orig",
                     "-o",
-                    "/tmp/scriptlens-ytdlp-SOgCo7/json3/%(id)s.%(ext)s",
+                    "/tmp/scriptlens-ytdlp-7kqpvT/json3/%(id)s.%(ext)s",
                     "https://www.youtube.com/watch?v=jNQXAC9IVRw"
                   ],
                   "exitCode": 1,
@@ -553,7 +529,7 @@
                   "authenticatedAcquisitionUsed": true,
                   "acquisitionPathUsed": "authenticated-yt-dlp-captions",
                   "stderrTail": "t__ File \"/usr/local/bin/yt-dlp/yt_dlp/YoutubeDL.py\", line 1054, in close File \"/usr/local/bin/yt-dlp/yt_dlp/YoutubeDL.py\", line 1046, in save_cookies File \"/usr/local/bin/yt-dlp/yt_dlp/cookies.py\", line 1350, in save File \"/usr/lib/python3.10/contextlib.py\", line 142, in __exit__ next(self.gen) File \"/usr/local/bin/yt-dlp/yt_dlp/cookies.py\", line 1305, in open OSError: [Errno 22] Invalid argument",
-                  "stdoutTail": "e] jNQXAC9IVRw: Downloading player 9f4cc5e4-tv [youtube] [jsc:node] Solving JS challenges using node [info] jNQXAC9IVRw: Downloading subtitles: en [info] jNQXAC9IVRw: Downloading 1 format(s): 395+251 [info] Writing video subtitles to: /tmp/scriptlens-ytdlp-SOgCo7/json3/jNQXAC9IVRw.en.json3 [download] Destination: /tmp/scriptlens-ytdlp-SOgCo7/json3/jNQXAC9IVRw.en.json3 [download] Download completed",
+                  "stdoutTail": "e] jNQXAC9IVRw: Downloading player 9f4cc5e4-tv [youtube] [jsc:node] Solving JS challenges using node [info] jNQXAC9IVRw: Downloading subtitles: en [info] jNQXAC9IVRw: Downloading 1 format(s): 395+251 [info] Writing video subtitles to: /tmp/scriptlens-ytdlp-7kqpvT/json3/jNQXAC9IVRw.en.json3 [download] Destination: /tmp/scriptlens-ytdlp-7kqpvT/json3/jNQXAC9IVRw.en.json3 [download] Download completed",
                   "error": null,
                   "failureKind": "exit_nonzero_with_subtitle",
                   "parseResult": "success"
@@ -581,7 +557,7 @@
       "backend": {
         "id": "m7lc-youtube-api-demo",
         "ok": true,
-        "latencyMs": 58,
+        "latencyMs": 5849,
         "originKind": "manual_caption_track",
         "recoveryTier": "hosted_transcript",
         "sourceTrustTier": "caption-derived",
@@ -608,21 +584,13 @@
         ],
         "stageTelemetry": [
           {
-            "traceId": "smoke-4-1773281052634",
-            "type": "cache",
-            "stage": "cache",
-            "outcome": "hit",
-            "cacheStatus": "hit",
-            "winnerReason": "quality-eligible:manual_caption_track"
-          },
-          {
-            "traceId": "smoke-4-1773281052634",
+            "traceId": "staging-backend-4-1773291589037",
             "type": "stage",
             "stage": "static-caption-track",
             "outcome": "failure",
-            "startedAt": 1773281052932,
-            "endedAt": 1773281054014,
-            "durationMs": 1082,
+            "startedAt": 1773291589398,
+            "endedAt": 1773291590284,
+            "durationMs": 886,
             "cacheStatus": "miss",
             "errorCode": "caption_tracks_missing",
             "warnings": [
@@ -639,13 +607,13 @@
             "detail": null
           },
           {
-            "traceId": "smoke-4-1773281052634",
+            "traceId": "staging-backend-4-1773291589037",
             "type": "stage",
             "stage": "youtubei-command",
             "outcome": "failure",
-            "startedAt": 1773281054014,
-            "endedAt": 1773281054057,
-            "durationMs": 43,
+            "startedAt": 1773291590284,
+            "endedAt": 1773291590329,
+            "durationMs": 45,
             "cacheStatus": "miss",
             "errorCode": "youtubei_http_400",
             "warnings": [
@@ -662,13 +630,13 @@
             "detail": null
           },
           {
-            "traceId": "smoke-4-1773281052634",
+            "traceId": "staging-backend-4-1773291589037",
             "type": "stage",
             "stage": "yt-dlp-captions",
             "outcome": "success",
-            "startedAt": 1773281054057,
-            "endedAt": 1773281059001,
-            "durationMs": 4944,
+            "startedAt": 1773291590329,
+            "endedAt": 1773291595010,
+            "durationMs": 4681,
             "cacheStatus": "miss",
             "errorCode": null,
             "warnings": [],
@@ -727,7 +695,7 @@
                     "--sub-langs",
                     "en,en-orig",
                     "-o",
-                    "/tmp/scriptlens-ytdlp-pHvbTt/json3/%(id)s.%(ext)s",
+                    "/tmp/scriptlens-ytdlp-HC040m/json3/%(id)s.%(ext)s",
                     "https://www.youtube.com/watch?v=M7lc1UVf-VE"
                   ],
                   "exitCode": 1,
@@ -741,7 +709,7 @@
                   "authenticatedAcquisitionUsed": true,
                   "acquisitionPathUsed": "authenticated-yt-dlp-captions",
                   "stderrTail": "t__ File \"/usr/local/bin/yt-dlp/yt_dlp/YoutubeDL.py\", line 1054, in close File \"/usr/local/bin/yt-dlp/yt_dlp/YoutubeDL.py\", line 1046, in save_cookies File \"/usr/local/bin/yt-dlp/yt_dlp/cookies.py\", line 1350, in save File \"/usr/lib/python3.10/contextlib.py\", line 142, in __exit__ next(self.gen) File \"/usr/local/bin/yt-dlp/yt_dlp/cookies.py\", line 1305, in open OSError: [Errno 22] Invalid argument",
-                  "stdoutTail": "ing video subtitles to: /tmp/scriptlens-ytdlp-pHvbTt/json3/M7lc1UVf-VE.en.json3 [download] Destination: /tmp/scriptlens-ytdlp-pHvbTt/json3/M7lc1UVf-VE.en.json3 [download] Download completed [info] Writing video subtitles to: /tmp/scriptlens-ytdlp-pHvbTt/json3/M7lc1UVf-VE.en-orig.json3 [download] Destination: /tmp/scriptlens-ytdlp-pHvbTt/json3/M7lc1UVf-VE.en-orig.json3 [download] Download completed",
+                  "stdoutTail": "ing video subtitles to: /tmp/scriptlens-ytdlp-HC040m/json3/M7lc1UVf-VE.en.json3 [download] Destination: /tmp/scriptlens-ytdlp-HC040m/json3/M7lc1UVf-VE.en.json3 [download] Download completed [info] Writing video subtitles to: /tmp/scriptlens-ytdlp-HC040m/json3/M7lc1UVf-VE.en-orig.json3 [download] Destination: /tmp/scriptlens-ytdlp-HC040m/json3/M7lc1UVf-VE.en-orig.json3 [download] Download completed",
                   "error": null,
                   "failureKind": "exit_nonzero_with_subtitle",
                   "parseResult": "success"
@@ -769,7 +737,7 @@
       "backend": {
         "id": "airc-neural-networks",
         "ok": true,
-        "latencyMs": 69,
+        "latencyMs": 10552,
         "originKind": "manual_caption_track",
         "recoveryTier": "hosted_transcript",
         "sourceTrustTier": "caption-derived",
@@ -796,21 +764,13 @@
         ],
         "stageTelemetry": [
           {
-            "traceId": "staging-backend-5-1773283799178",
-            "type": "cache",
-            "stage": "cache",
-            "outcome": "hit",
-            "cacheStatus": "hit",
-            "winnerReason": "quality-eligible:manual_caption_track"
-          },
-          {
-            "traceId": "staging-backend-5-1773283799178",
+            "traceId": "staging-backend-5-1773291594886",
             "type": "stage",
             "stage": "static-caption-track",
             "outcome": "failure",
-            "startedAt": 1773283799438,
-            "endedAt": 1773283800178,
-            "durationMs": 740,
+            "startedAt": 1773291595247,
+            "endedAt": 1773291596040,
+            "durationMs": 793,
             "cacheStatus": "miss",
             "errorCode": "caption_tracks_missing",
             "warnings": [
@@ -827,13 +787,13 @@
             "detail": null
           },
           {
-            "traceId": "staging-backend-5-1773283799178",
+            "traceId": "staging-backend-5-1773291594886",
             "type": "stage",
             "stage": "youtubei-command",
             "outcome": "failure",
-            "startedAt": 1773283800179,
-            "endedAt": 1773283800223,
-            "durationMs": 44,
+            "startedAt": 1773291596040,
+            "endedAt": 1773291596086,
+            "durationMs": 46,
             "cacheStatus": "miss",
             "errorCode": "youtubei_http_400",
             "warnings": [
@@ -850,13 +810,13 @@
             "detail": null
           },
           {
-            "traceId": "staging-backend-5-1773283799178",
+            "traceId": "staging-backend-5-1773291594886",
             "type": "stage",
             "stage": "yt-dlp-captions",
             "outcome": "success",
-            "startedAt": 1773283800223,
-            "endedAt": 1773283809936,
-            "durationMs": 9713,
+            "startedAt": 1773291596086,
+            "endedAt": 1773291605653,
+            "durationMs": 9567,
             "cacheStatus": "miss",
             "errorCode": null,
             "warnings": [],
@@ -915,7 +875,7 @@
                     "--sub-langs",
                     "en,en-orig",
                     "-o",
-                    "/tmp/scriptlens-ytdlp-5J0fX3/json3/%(id)s.%(ext)s",
+                    "/tmp/scriptlens-ytdlp-kdfJjt/json3/%(id)s.%(ext)s",
                     "https://www.youtube.com/watch?v=aircAruvnKk"
                   ],
                   "exitCode": 1,
@@ -929,7 +889,7 @@
                   "authenticatedAcquisitionUsed": true,
                   "acquisitionPathUsed": "authenticated-yt-dlp-captions",
                   "stderrTail": "t__ File \"/usr/local/bin/yt-dlp/yt_dlp/YoutubeDL.py\", line 1054, in close File \"/usr/local/bin/yt-dlp/yt_dlp/YoutubeDL.py\", line 1046, in save_cookies File \"/usr/local/bin/yt-dlp/yt_dlp/cookies.py\", line 1350, in save File \"/usr/lib/python3.10/contextlib.py\", line 142, in __exit__ next(self.gen) File \"/usr/local/bin/yt-dlp/yt_dlp/cookies.py\", line 1305, in open OSError: [Errno 22] Invalid argument",
-                  "stdoutTail": "ing video subtitles to: /tmp/scriptlens-ytdlp-5J0fX3/json3/aircAruvnKk.en.json3 [download] Destination: /tmp/scriptlens-ytdlp-5J0fX3/json3/aircAruvnKk.en.json3 [download] Download completed [info] Writing video subtitles to: /tmp/scriptlens-ytdlp-5J0fX3/json3/aircAruvnKk.en-orig.json3 [download] Destination: /tmp/scriptlens-ytdlp-5J0fX3/json3/aircAruvnKk.en-orig.json3 [download] Download completed",
+                  "stdoutTail": "ing video subtitles to: /tmp/scriptlens-ytdlp-kdfJjt/json3/aircAruvnKk.en.json3 [download] Destination: /tmp/scriptlens-ytdlp-kdfJjt/json3/aircAruvnKk.en.json3 [download] Download completed [info] Writing video subtitles to: /tmp/scriptlens-ytdlp-kdfJjt/json3/aircAruvnKk.en-orig.json3 [download] Destination: /tmp/scriptlens-ytdlp-kdfJjt/json3/aircAruvnKk.en-orig.json3 [download] Download completed",
                   "error": null,
                   "failureKind": "exit_nonzero_with_subtitle",
                   "parseResult": "success"
@@ -957,7 +917,7 @@
       "backend": {
         "id": "eeaa-documentary-cap",
         "ok": false,
-        "latencyMs": 28,
+        "latencyMs": 19077,
         "originKind": "unavailable",
         "recoveryTier": "hosted_transcript",
         "sourceTrustTier": "unavailable",
@@ -975,21 +935,13 @@
         ],
         "stageTelemetry": [
           {
-            "traceId": "staging-backend-15-1773282954703",
-            "type": "cache",
-            "stage": "cache",
-            "outcome": "hit",
-            "cacheStatus": "hit",
-            "winnerReason": "asr_duration_limit"
-          },
-          {
-            "traceId": "staging-backend-15-1773282954703",
+            "traceId": "staging-backend-6-1773291605438",
             "type": "stage",
             "stage": "static-caption-track",
             "outcome": "failure",
-            "startedAt": 1773282955098,
-            "endedAt": 1773282955919,
-            "durationMs": 821,
+            "startedAt": 1773291605813,
+            "endedAt": 1773291606531,
+            "durationMs": 718,
             "cacheStatus": "miss",
             "errorCode": "caption_tracks_missing",
             "warnings": [
@@ -1006,13 +958,13 @@
             "detail": null
           },
           {
-            "traceId": "staging-backend-15-1773282954703",
+            "traceId": "staging-backend-6-1773291605438",
             "type": "stage",
             "stage": "youtubei-command",
             "outcome": "failure",
-            "startedAt": 1773282955919,
-            "endedAt": 1773282955923,
-            "durationMs": 4,
+            "startedAt": 1773291606531,
+            "endedAt": 1773291606536,
+            "durationMs": 5,
             "cacheStatus": "miss",
             "errorCode": "youtubei_params_missing",
             "warnings": [
@@ -1029,13 +981,13 @@
             "detail": null
           },
           {
-            "traceId": "staging-backend-15-1773282954703",
+            "traceId": "staging-backend-6-1773291605438",
             "type": "stage",
             "stage": "yt-dlp-captions",
             "outcome": "failure",
-            "startedAt": 1773282955923,
-            "endedAt": 1773282968896,
-            "durationMs": 12973,
+            "startedAt": 1773291606536,
+            "endedAt": 1773291618809,
+            "durationMs": 12273,
             "cacheStatus": "miss",
             "errorCode": "yt_dlp_exit_nonzero",
             "warnings": [
@@ -1069,7 +1021,7 @@
                     "--sub-langs",
                     "en,en-orig",
                     "-o",
-                    "/tmp/scriptlens-ytdlp-iMcf29/json3/%(id)s.%(ext)s",
+                    "/tmp/scriptlens-ytdlp-CkyORG/json3/%(id)s.%(ext)s",
                     "https://www.youtube.com/watch?v=eeaAwLOTMAU"
                   ],
                   "exitCode": 1,
@@ -1102,7 +1054,7 @@
                     "--sub-langs",
                     "en,en-orig",
                     "-o",
-                    "/tmp/scriptlens-ytdlp-iMcf29/vtt/%(id)s.%(ext)s",
+                    "/tmp/scriptlens-ytdlp-CkyORG/vtt/%(id)s.%(ext)s",
                     "https://www.youtube.com/watch?v=eeaAwLOTMAU"
                   ],
                   "exitCode": 1,
@@ -1133,7 +1085,7 @@
                     "--sub-langs",
                     "en,en-orig",
                     "-o",
-                    "/tmp/scriptlens-ytdlp-iMcf29/best/%(id)s.%(ext)s",
+                    "/tmp/scriptlens-ytdlp-CkyORG/best/%(id)s.%(ext)s",
                     "https://www.youtube.com/watch?v=eeaAwLOTMAU"
                   ],
                   "exitCode": 1,
@@ -1156,13 +1108,13 @@
             }
           },
           {
-            "traceId": "staging-backend-15-1773282954703",
+            "traceId": "staging-backend-6-1773291605438",
             "type": "stage",
             "stage": "headless-transcript-panel",
             "outcome": "failure",
-            "startedAt": 1773282968896,
-            "endedAt": 1773282974431,
-            "durationMs": 5535,
+            "startedAt": 1773291618809,
+            "endedAt": 1773291624761,
+            "durationMs": 5952,
             "cacheStatus": "miss",
             "errorCode": "backend_headless_panel_failed",
             "warnings": [
@@ -1194,13 +1146,13 @@
                 {
                   "step": "launch",
                   "outcome": "success",
-                  "durationMs": 79,
+                  "durationMs": 328,
                   "detail": null
                 },
                 {
                   "step": "authSession",
                   "outcome": "success",
-                  "durationMs": 38,
+                  "durationMs": 19,
                   "detail": {
                     "authenticatedModeEnabled": true,
                     "authenticatedAcquisitionUsed": true,
@@ -1213,13 +1165,13 @@
                 {
                   "step": "goto",
                   "outcome": "success",
-                  "durationMs": 2630,
+                  "durationMs": 2682,
                   "detail": null
                 },
                 {
                   "step": "consent",
                   "outcome": "success",
-                  "durationMs": 105,
+                  "durationMs": 70,
                   "detail": {
                     "accepted": false,
                     "buttonLabel": null
@@ -1228,7 +1180,7 @@
                 {
                   "step": "pageDataTranscript",
                   "outcome": "failure",
-                  "durationMs": 7,
+                  "durationMs": 23,
                   "detail": {
                     "errorCode": "backend_headless_page_transcript_params_missing",
                     "responseStatus": null,
@@ -1240,7 +1192,7 @@
                 {
                   "step": "openTranscript",
                   "outcome": "failure",
-                  "durationMs": 983,
+                  "durationMs": 1072,
                   "detail": {
                     "errorCode": "backend_headless_panel_failed",
                     "route": null,
@@ -1282,7 +1234,7 @@
               "pageSnapshots": [
                 {
                   "label": "after-goto",
-                  "capturedAt": 1773282971743,
+                  "capturedAt": 1773291622040,
                   "pageState": {
                     "title": "40 Minutes - Childrens Parties. BBC Documentary 1981 - YouTube",
                     "url": "https://www.youtube.com/watch?v=eeaAwLOTMAU",
@@ -1310,7 +1262,7 @@
                 },
                 {
                   "label": "after-consent",
-                  "capturedAt": 1773282971854,
+                  "capturedAt": 1773291622116,
                   "pageState": {
                     "title": "40 Minutes - Childrens Parties. BBC Documentary 1981 - YouTube",
                     "url": "https://www.youtube.com/watch?v=eeaAwLOTMAU",
@@ -1338,7 +1290,7 @@
                 },
                 {
                   "label": "open-transcript-miss",
-                  "capturedAt": 1773282974344,
+                  "capturedAt": 1773291624718,
                   "pageState": {
                     "title": "40 Minutes - Childrens Parties. BBC Documentary 1981 - YouTube",
                     "url": "https://www.youtube.com/watch?v=eeaAwLOTMAU",
@@ -1419,7 +1371,7 @@
             }
           },
           {
-            "traceId": "staging-backend-15-1773282954703",
+            "traceId": "staging-backend-6-1773291605438",
             "type": "asr-decision",
             "stage": "audio-asr",
             "outcome": "skipped",
@@ -1464,7 +1416,7 @@
       "backend": {
         "id": "8xrz-podcast-absolute-cap",
         "ok": false,
-        "latencyMs": 38,
+        "latencyMs": 12927,
         "originKind": "unavailable",
         "recoveryTier": "hosted_transcript",
         "sourceTrustTier": "unavailable",
@@ -1476,7 +1428,7 @@
         "warnings": [
           "caption_tracks_missing",
           "youtubei_failed",
-          "backend_headless_panel_failed",
+          "backend_headless_transcript_failed_precondition",
           "asr_duration_absolute_limit",
           "backend_yt_dlp_resolver",
           "backend_yt_dlp_nonzero_exit",
@@ -1485,21 +1437,13 @@
         ],
         "stageTelemetry": [
           {
-            "traceId": "staging-backend-7-1773283830000",
-            "type": "cache",
-            "stage": "cache",
-            "outcome": "hit",
-            "cacheStatus": "hit",
-            "winnerReason": "asr_duration_absolute_limit"
-          },
-          {
-            "traceId": "staging-backend-7-1773283830000",
+            "traceId": "staging-backend-7-1773291624515",
             "type": "stage",
             "stage": "static-caption-track",
             "outcome": "failure",
-            "startedAt": 1773283830330,
-            "endedAt": 1773283831088,
-            "durationMs": 758,
+            "startedAt": 1773291624887,
+            "endedAt": 1773291625697,
+            "durationMs": 810,
             "cacheStatus": "miss",
             "errorCode": "caption_tracks_missing",
             "warnings": [
@@ -1516,13 +1460,13 @@
             "detail": null
           },
           {
-            "traceId": "staging-backend-7-1773283830000",
+            "traceId": "staging-backend-7-1773291624515",
             "type": "stage",
             "stage": "youtubei-command",
             "outcome": "failure",
-            "startedAt": 1773283831088,
-            "endedAt": 1773283831129,
-            "durationMs": 41,
+            "startedAt": 1773291625698,
+            "endedAt": 1773291625751,
+            "durationMs": 53,
             "cacheStatus": "miss",
             "errorCode": "youtubei_http_400",
             "warnings": [
@@ -1539,13 +1483,13 @@
             "detail": null
           },
           {
-            "traceId": "staging-backend-7-1773283830000",
+            "traceId": "staging-backend-7-1773291624515",
             "type": "stage",
             "stage": "yt-dlp-captions",
             "outcome": "success",
-            "startedAt": 1773283831129,
-            "endedAt": 1773283836745,
-            "durationMs": 5616,
+            "startedAt": 1773291625751,
+            "endedAt": 1773291631293,
+            "durationMs": 5542,
             "cacheStatus": "miss",
             "errorCode": null,
             "warnings": [],
@@ -1606,7 +1550,7 @@
                     "--sub-langs",
                     "en,en-orig",
                     "-o",
-                    "/tmp/scriptlens-ytdlp-4N1QOI/json3/%(id)s.%(ext)s",
+                    "/tmp/scriptlens-ytdlp-bSbNmr/json3/%(id)s.%(ext)s",
                     "https://www.youtube.com/watch?v=8xRz8ra9mdI"
                   ],
                   "exitCode": 1,
@@ -1620,7 +1564,7 @@
                   "authenticatedAcquisitionUsed": true,
                   "acquisitionPathUsed": "authenticated-yt-dlp-captions",
                   "stderrTail": "t__ File \"/usr/local/bin/yt-dlp/yt_dlp/YoutubeDL.py\", line 1054, in close File \"/usr/local/bin/yt-dlp/yt_dlp/YoutubeDL.py\", line 1046, in save_cookies File \"/usr/local/bin/yt-dlp/yt_dlp/cookies.py\", line 1350, in save File \"/usr/lib/python3.10/contextlib.py\", line 142, in __exit__ next(self.gen) File \"/usr/local/bin/yt-dlp/yt_dlp/cookies.py\", line 1305, in open OSError: [Errno 22] Invalid argument",
-                  "stdoutTail": "ing video subtitles to: /tmp/scriptlens-ytdlp-4N1QOI/json3/8xRz8ra9mdI.en.json3 [download] Destination: /tmp/scriptlens-ytdlp-4N1QOI/json3/8xRz8ra9mdI.en.json3 [download] Download completed [info] Writing video subtitles to: /tmp/scriptlens-ytdlp-4N1QOI/json3/8xRz8ra9mdI.en-orig.json3 [download] Destination: /tmp/scriptlens-ytdlp-4N1QOI/json3/8xRz8ra9mdI.en-orig.json3 [download] Download completed",
+                  "stdoutTail": "ing video subtitles to: /tmp/scriptlens-ytdlp-bSbNmr/json3/8xRz8ra9mdI.en.json3 [download] Destination: /tmp/scriptlens-ytdlp-bSbNmr/json3/8xRz8ra9mdI.en.json3 [download] Download completed [info] Writing video subtitles to: /tmp/scriptlens-ytdlp-bSbNmr/json3/8xRz8ra9mdI.en-orig.json3 [download] Destination: /tmp/scriptlens-ytdlp-bSbNmr/json3/8xRz8ra9mdI.en-orig.json3 [download] Download completed",
                   "error": null,
                   "failureKind": "exit_nonzero_with_subtitle",
                   "parseResult": "success"
@@ -1629,17 +1573,17 @@
             }
           },
           {
-            "traceId": "staging-backend-7-1773283830000",
+            "traceId": "staging-backend-7-1773291624515",
             "type": "stage",
             "stage": "headless-transcript-panel",
             "outcome": "failure",
-            "startedAt": 1773283836745,
-            "endedAt": 1773283846754,
-            "durationMs": 10009,
+            "startedAt": 1773291631293,
+            "endedAt": 1773291637669,
+            "durationMs": 6376,
             "cacheStatus": "miss",
-            "errorCode": "backend_headless_panel_failed",
+            "errorCode": "backend_headless_transcript_failed_precondition",
             "warnings": [
-              "backend_headless_panel_failed"
+              "backend_headless_transcript_failed_precondition"
             ],
             "circuitState": null,
             "warning": null,
@@ -1667,13 +1611,13 @@
                 {
                   "step": "launch",
                   "outcome": "success",
-                  "durationMs": 74,
+                  "durationMs": 316,
                   "detail": null
                 },
                 {
                   "step": "authSession",
                   "outcome": "success",
-                  "durationMs": 20,
+                  "durationMs": 16,
                   "detail": {
                     "authenticatedModeEnabled": true,
                     "authenticatedAcquisitionUsed": true,
@@ -1686,13 +1630,13 @@
                 {
                   "step": "goto",
                   "outcome": "success",
-                  "durationMs": 2829,
+                  "durationMs": 2577,
                   "detail": null
                 },
                 {
                   "step": "consent",
                   "outcome": "success",
-                  "durationMs": 151,
+                  "durationMs": 134,
                   "detail": {
                     "accepted": false,
                     "buttonLabel": null
@@ -1701,7 +1645,7 @@
                 {
                   "step": "pageDataTranscript",
                   "outcome": "failure",
-                  "durationMs": 157,
+                  "durationMs": 285,
                   "detail": {
                     "errorCode": "backend_headless_page_transcript_failed_precondition",
                     "responseStatus": 400,
@@ -1712,20 +1656,118 @@
                 },
                 {
                   "step": "openTranscript",
-                  "outcome": "failure",
-                  "durationMs": 5048,
+                  "outcome": "success",
+                  "durationMs": 1219,
                   "detail": {
-                    "errorCode": "backend_headless_panel_failed",
-                    "route": "timeout",
-                    "expand": null,
-                    "attempts": []
+                    "opened": true,
+                    "route": "direct-selector",
+                    "selector": "button[aria-label*='transcript' i]",
+                    "expand": {
+                      "expanded": true,
+                      "route": "evaluate-click",
+                      "selector": "#description-inline-expander #expand",
+                      "buttonLabel": "...more"
+                    },
+                    "attempts": [
+                      {
+                        "route": "direct-selector",
+                        "selector": "button[aria-label*='transcript' i]",
+                        "clicked": true
+                      }
+                    ]
+                  }
+                },
+                {
+                  "step": "waitSegments",
+                  "outcome": "failure",
+                  "durationMs": 24,
+                  "detail": {
+                    "errorCode": "backend_headless_transcript_failed_precondition",
+                    "timeoutMs": 6000,
+                    "transcriptRequests": 1,
+                    "pageState": {
+                      "title": "Joe Rogan Experience #1530 - Duncan Trussell - YouTube",
+                      "url": "https://www.youtube.com/watch?v=8xRz8ra9mdI",
+                      "languageCode": "en",
+                      "videoDurationSeconds": 19189,
+                      "bodySnippet": "Skip navigation Create 0:01 / 5:19:48 In this video Joe Rogan Experience #1530 - Duncan Trussell PowerfulJRE 20.8M subscribers 113K Share Ask Add note 8,232,983 views Aug 31, 2020 The Joe Rogan Experience Duncan Trussell is a stand-up comed",
+                      "transcriptButtons": {
+                        "total": 4,
+                        "visible": 2,
+                        "labels": [
+                          {
+                            "label": "Show transcript",
+                            "visible": true
+                          },
+                          {
+                            "label": "Transcript",
+                            "visible": true
+                          },
+                          {
+                            "label": "Show transcript",
+                            "visible": false
+                          },
+                          {
+                            "label": "Close transcript",
+                            "visible": false
+                          }
+                        ]
+                      },
+                      "descriptionTranscriptButtons": {
+                        "total": 2,
+                        "visible": 1,
+                        "labels": [
+                          {
+                            "label": "Show transcript",
+                            "visible": true
+                          },
+                          {
+                            "label": "Show transcript",
+                            "visible": false
+                          }
+                        ]
+                      },
+                      "expandButtons": {
+                        "total": 2,
+                        "visible": 0,
+                        "labels": [
+                          {
+                            "label": "...more",
+                            "visible": false
+                          },
+                          {
+                            "label": "...more",
+                            "visible": false
+                          }
+                        ]
+                      },
+                      "transcriptPanels": [
+                        {
+                          "targetId": "PAmodern_transcript_view",
+                          "display": "none",
+                          "visibility": "visible",
+                          "hidden": false,
+                          "ariaHidden": null,
+                          "visible": false
+                        },
+                        {
+                          "targetId": "engagement-panel-searchable-transcript",
+                          "display": "none",
+                          "visibility": "visible",
+                          "hidden": false,
+                          "ariaHidden": null,
+                          "visible": false
+                        }
+                      ],
+                      "segmentCount": 0
+                    }
                   }
                 }
               ],
               "pageSnapshots": [
                 {
                   "label": "after-goto",
-                  "capturedAt": 1773283839822,
+                  "capturedAt": 1773291634397,
                   "pageState": {
                     "title": "Joe Rogan Experience #1530 - Duncan Trussell - YouTube",
                     "url": "https://www.youtube.com/watch?v=8xRz8ra9mdI",
@@ -1753,7 +1795,7 @@
                 },
                 {
                   "label": "after-consent",
-                  "capturedAt": 1773283839978,
+                  "capturedAt": 1773291634539,
                   "pageState": {
                     "title": "Joe Rogan Experience #1530 - Duncan Trussell - YouTube",
                     "url": "https://www.youtube.com/watch?v=8xRz8ra9mdI",
@@ -1780,14 +1822,94 @@
                   }
                 },
                 {
-                  "label": "open-transcript-miss",
-                  "capturedAt": 1773283846703,
+                  "label": "after-open-transcript",
+                  "capturedAt": 1773291637576,
                   "pageState": {
                     "title": "Joe Rogan Experience #1530 - Duncan Trussell - YouTube",
                     "url": "https://www.youtube.com/watch?v=8xRz8ra9mdI",
                     "languageCode": "en",
                     "videoDurationSeconds": 19189,
-                    "bodySnippet": "Skip navigation Create 0:05 / 5:19:48 In this video Joe Rogan Experience #1530 - Duncan Trussell PowerfulJRE 20.8M subscribers 113K Share Ask Add note 8,232,983 views Aug 31, 2020 The Joe Rogan Experience Duncan Trussell is a stand-up comed",
+                    "bodySnippet": "Skip navigation Create 0:01 / 5:19:48 In this video Joe Rogan Experience #1530 - Duncan Trussell PowerfulJRE 20.8M subscribers 113K Share Ask Add note 8,232,983 views Aug 31, 2020 The Joe Rogan Experience Duncan Trussell is a stand-up comed",
+                    "transcriptButtons": {
+                      "total": 4,
+                      "visible": 2,
+                      "labels": [
+                        {
+                          "label": "Show transcript",
+                          "visible": true
+                        },
+                        {
+                          "label": "Transcript",
+                          "visible": true
+                        },
+                        {
+                          "label": "Show transcript",
+                          "visible": false
+                        },
+                        {
+                          "label": "Close transcript",
+                          "visible": false
+                        }
+                      ]
+                    },
+                    "descriptionTranscriptButtons": {
+                      "total": 2,
+                      "visible": 1,
+                      "labels": [
+                        {
+                          "label": "Show transcript",
+                          "visible": true
+                        },
+                        {
+                          "label": "Show transcript",
+                          "visible": false
+                        }
+                      ]
+                    },
+                    "expandButtons": {
+                      "total": 2,
+                      "visible": 0,
+                      "labels": [
+                        {
+                          "label": "...more",
+                          "visible": false
+                        },
+                        {
+                          "label": "...more",
+                          "visible": false
+                        }
+                      ]
+                    },
+                    "transcriptPanels": [
+                      {
+                        "targetId": "PAmodern_transcript_view",
+                        "display": "none",
+                        "visibility": "visible",
+                        "hidden": false,
+                        "ariaHidden": null,
+                        "visible": false
+                      },
+                      {
+                        "targetId": "engagement-panel-searchable-transcript",
+                        "display": "none",
+                        "visibility": "visible",
+                        "hidden": false,
+                        "ariaHidden": null,
+                        "visible": false
+                      }
+                    ],
+                    "segmentCount": 0
+                  }
+                },
+                {
+                  "label": "transcript-request-failed",
+                  "capturedAt": 1773291637600,
+                  "pageState": {
+                    "title": "Joe Rogan Experience #1530 - Duncan Trussell - YouTube",
+                    "url": "https://www.youtube.com/watch?v=8xRz8ra9mdI",
+                    "languageCode": "en",
+                    "videoDurationSeconds": 19189,
+                    "bodySnippet": "Skip navigation Create 0:01 / 5:19:48 In this video Joe Rogan Experience #1530 - Duncan Trussell PowerfulJRE 20.8M subscribers 113K Share Ask Add note 8,232,983 views Aug 31, 2020 The Joe Rogan Experience Duncan Trussell is a stand-up comed",
                     "transcriptButtons": {
                       "total": 4,
                       "visible": 2,
@@ -1864,7 +1986,7 @@
                 {
                   "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false&key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8",
                   "method": "POST",
-                  "postDataSnippet": "{\"context\":{\"client\":{\"hl\":\"en\",\"gl\":\"US\",\"remoteHost\":\"2600:1900:0:2e01:0:0:0:500\",\"deviceMake\":\"\",\"deviceModel\":\"\",\"visitorData\":\"CgtkYlNldk5Nai1SOCj808jNBjIKCgJVUxIEGgAgJg%3D%3D\",\"userAgent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",
+                  "postDataSnippet": "{\"context\":{\"client\":{\"hl\":\"en\",\"gl\":\"US\",\"remoteHost\":\"2600:1900:0:2e02:0:0:0:501\",\"deviceMake\":\"\",\"deviceModel\":\"\",\"visitorData\":\"CgtrT1NqZDZ5ZVh5ayjvkMnNBjIKCgJVUxIEGgAgYQ%3D%3D\",\"userAgent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",
                   "status": 400,
                   "ok": false,
                   "responseBodySnippet": "{ \"error\": { \"code\": 400, \"message\": \"Precondition check failed.\", \"errors\": [ { \"message\": \"Precondition check failed.\", \"domain\": \"global\", \"reason\": \"failedPrecondition\" } ], \"status\": \"FAILED_PRECONDITION\" } }",
@@ -1877,7 +1999,7 @@
                 "url": "https://www.youtube.com/watch?v=8xRz8ra9mdI",
                 "languageCode": "en",
                 "videoDurationSeconds": 19189,
-                "bodySnippet": "Skip navigation Create 0:05 / 5:19:48 In this video Joe Rogan Experience #1530 - Duncan Trussell PowerfulJRE 20.8M subscribers 113K Share Ask Add note 8,232,983 views Aug 31, 2020 The Joe Rogan Experience Duncan Trussell is a stand-up comed",
+                "bodySnippet": "Skip navigation Create 0:01 / 5:19:48 In this video Joe Rogan Experience #1530 - Duncan Trussell PowerfulJRE 20.8M subscribers 113K Share Ask Add note 8,232,983 views Aug 31, 2020 The Joe Rogan Experience Duncan Trussell is a stand-up comed",
                 "transcriptButtons": {
                   "total": 4,
                   "visible": 2,
@@ -1959,7 +2081,7 @@
             }
           },
           {
-            "traceId": "staging-backend-7-1773283830000",
+            "traceId": "staging-backend-7-1773291624515",
             "type": "asr-decision",
             "stage": "audio-asr",
             "outcome": "skipped",

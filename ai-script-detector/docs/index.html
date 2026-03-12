@@ -17,7 +17,7 @@
         <div class="brand">
           <img src="assets/icon.svg" alt="ScriptLens" class="brand-mark">
           <div class="brand-label">
-            <span class="eyebrow">Chrome extension</span>
+            <span class="eyebrow">Field kit for YouTube</span>
             <strong>ScriptLens</strong>
           </div>
         </div>
@@ -26,25 +26,34 @@
           <a href="#specs">Specs</a>
           <a href="./privacy.html">Privacy</a>
           <a href="./support.html">Support</a>
+          <a href="https://github.com/Zwin-ux/Synergy" class="nav-link-strong">GitHub</a>
         </div>
       </nav>
 
       <main class="landing-main">
         <section class="landing-panel hero">
           <div class="hero-copy">
-            <span class="eyebrow">Chrome Web Store release</span>
+            <div class="hero-meta">
+              <span class="eyebrow">Chrome Web Store release</span>
+              <div class="hero-tags" aria-label="ScriptLens highlights">
+                <span>Open source</span>
+                <span>Transcript first</span>
+                <span>Desktop watch pages</span>
+              </div>
+            </div>
             <h1>One-click transcript review for desktop YouTube.</h1>
             <p>
               ScriptLens adds an inline <code>Analyze video</code> button to desktop <code>youtube.com/watch</code> pages. It checks the strongest available transcript path, scores AI-like writing patterns, and shows the verdict before you ever need the full workspace.
             </p>
             <ul class="hero-points">
-              <li>Transcript-first by default</li>
-              <li>Verdict, score, explanation, and transcript quality in one view</li>
+              <li>Feels like a tiny watch-page tool, not another giant dashboard</li>
+              <li>Verdict, score, explanation, and transcript quality in one clear card</li>
               <li>Local scoring with optional recovery through a ScriptLens or self-hosted backend</li>
             </ul>
             <div class="hero-actions">
               <a class="button button-primary" href="#product">See the product</a>
               <a class="button button-secondary" href="./privacy.html">Privacy policy</a>
+              <a class="button button-ghost" href="https://github.com/Zwin-ux/Synergy">View GitHub</a>
             </div>
           </div>
 
@@ -54,7 +63,7 @@
             </div>
             <figcaption>
               <strong>Inline result on the watch page</strong>
-              <span>The store build keeps the first check inside YouTube, then lets the user open the workspace only when they want deeper detail.</span>
+              <span>The main flow stays on the video page, then opens the workspace only when you want the deeper evidence trail.</span>
             </figcaption>
           </figure>
         </section>
@@ -162,7 +171,10 @@
               ScriptLens scores locally by default. If transcript recovery is enabled, the extension shares only the YouTube video ID and selected language with the configured recovery backend, which may be hosted by ScriptLens or self-hosted by the user.
             </p>
           </div>
-          <a class="button button-secondary" href="./support.html">Support and setup</a>
+          <div class="privacy-actions">
+            <a class="button button-secondary" href="./support.html">Support and setup</a>
+            <a class="button button-ghost" href="https://github.com/Zwin-ux/Synergy">Browse the repo</a>
+          </div>
         </section>
       </main>
 
