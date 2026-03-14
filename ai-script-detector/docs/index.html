@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ScriptLens | YouTube transcript review for Chrome</title>
+    <title>ScriptLens | Corporate AI transcript review for Chrome</title>
     <meta
       name="description"
-      content="ScriptLens is a YouTube-only Chrome extension for desktop watch pages. Run an inline transcript check, review the verdict, and open the workspace when you need more detail."
+      content="ScriptLens is a modern Chrome extension for desktop YouTube watch pages. Review transcript quality, inspect AI-like writing patterns, and move from inline signal to deeper workspace analysis."
     >
     <link rel="stylesheet" href="base.css">
     <link rel="stylesheet" href="landing.css">
@@ -17,15 +17,15 @@
         <div class="brand">
           <img src="assets/icon.svg" alt="ScriptLens" class="brand-mark">
           <div class="brand-label">
-            <span class="eyebrow">Field kit for YouTube</span>
+            <span class="eyebrow">AI review for YouTube</span>
             <strong>ScriptLens</strong>
           </div>
         </div>
         <div class="nav-links">
           <a href="#product">Product</a>
-          <a href="#specs">Specs</a>
-          <a href="./privacy.html">Privacy</a>
-          <a href="./support.html">Support</a>
+          <a href="#showcase">Showcase</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/support">Support</a>
           <a href="https://github.com/Zwin-ux/Synergy" class="nav-link-strong">GitHub</a>
         </div>
       </nav>
@@ -34,156 +34,189 @@
         <section class="landing-panel hero">
           <div class="hero-copy">
             <div class="hero-meta">
-              <span class="eyebrow">Chrome Web Store release</span>
-              <div class="hero-tags" aria-label="ScriptLens highlights">
-                <span>Open source</span>
-                <span>Transcript first</span>
-                <span>Desktop watch pages</span>
-              </div>
+              <span class="eyebrow">ScriptLens for desktop YouTube</span>
             </div>
-            <h1>One-click transcript review for desktop YouTube.</h1>
+            <h1>Clear transcript review for desktop YouTube.</h1>
             <p>
-              ScriptLens adds an inline <code>Analyze video</code> button to desktop <code>youtube.com/watch</code> pages. It checks the strongest available transcript path, scores AI-like writing patterns, and shows the verdict before you ever need the full workspace.
+              ScriptLens adds a compact <code>Analyze video</code> button to desktop <code>youtube.com/watch</code> pages. It checks the strongest transcript path, gives you a readable score with context, and opens the workspace only when you want more detail.
             </p>
             <ul class="hero-points">
-              <li>Feels like a tiny watch-page tool, not another giant dashboard</li>
-              <li>Verdict, score, explanation, and transcript quality in one clear card</li>
-              <li>Local scoring with optional recovery through a ScriptLens or self-hosted backend</li>
+              <li>Transcript quality and provenance stay visible so the result feels grounded.</li>
+              <li>The default flow stays on the watch page instead of pushing users into a bigger dashboard.</li>
+              <li>Optional recovery only steps in when the local transcript path is not strong enough.</li>
             </ul>
             <div class="hero-actions">
-              <a class="button button-primary" href="#product">See the product</a>
-              <a class="button button-secondary" href="./privacy.html">Privacy policy</a>
-              <a class="button button-ghost" href="https://github.com/Zwin-ux/Synergy">View GitHub</a>
+              <a class="button button-primary" href="#showcase">See the product</a>
+              <a class="button button-secondary" href="/privacy">Privacy policy</a>
+              <a class="button button-ghost" href="/support">Support</a>
             </div>
           </div>
 
-          <figure class="hero-shot">
-            <div class="shot-frame shot-frame-wide">
-              <img src="assets/inline-result.png" alt="ScriptLens inline result on a desktop YouTube watch page.">
+          <div class="hero-visual">
+            <div class="illustration-panel">
+              <img src="assets/analysis-hero.svg" alt="Corporate Memphis illustration of a browser window, document, and magnifying glass representing AI transcript analysis.">
             </div>
-            <figcaption>
-              <strong>Inline result on the watch page</strong>
-              <span>The main flow stays on the video page, then opens the workspace only when you want the deeper evidence trail.</span>
-            </figcaption>
-          </figure>
+          </div>
         </section>
 
-        <section class="landing-panel surface-section" id="product">
+        <section class="landing-panel" id="product">
+          <div class="section-intro">
+            <span class="eyebrow">Why it works</span>
+            <h2>Built to feel straightforward from the first click.</h2>
+            <p>
+              The product stays intentionally scoped: one YouTube watch page, one transcript-first analysis path, one clear handoff into the workspace when the user wants more proof.
+            </p>
+          </div>
+
+          <div class="feature-grid">
+            <article class="feature-card">
+              <span class="eyebrow">Transcript first</span>
+              <h3>Start from the spoken content.</h3>
+              <p>
+                ScriptLens prioritizes transcript-class sources before anything else. Title and description are not treated as the default win path.
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <span class="eyebrow">Local by default</span>
+              <h3>Keep scoring on-device.</h3>
+              <p>
+                The core score runs inside the extension. When stronger recovery is needed, the product can use a configured backend without turning the normal flow into cloud scoring.
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <span class="eyebrow">Clear handoff</span>
+              <h3>Inline first, workspace second.</h3>
+              <p>
+                Users get the quick answer on the watch page, then move into the side-panel workspace when they need the deeper explanation, transcript evidence, or support path.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="landing-panel showcase-panel" id="showcase">
           <div class="section-intro">
             <span class="eyebrow">Product surfaces</span>
-            <h2>Simple main flow, deeper tools when needed.</h2>
+            <h2>The interface stays simple as you go deeper.</h2>
             <p>
-              The default path is the inline check. The popup and side panel are there for settings, transcript choices, and a longer report view.
+              ScriptLens uses a compact inline result as the main consumer experience and backs it with a popup and workspace that feel like the same product family.
             </p>
           </div>
 
           <div class="surface-grid">
-            <figure class="surface-card">
-              <div class="shot-frame">
-                <img src="assets/popup-surface.png" alt="ScriptLens popup showing a quick transcript review result.">
+            <figure class="surface-card surface-card-wide">
+              <div class="shot-frame shot-frame-wide">
+                <img src="assets/inline-result.png" alt="ScriptLens inline result card on a desktop YouTube watch page.">
               </div>
               <figcaption>
-                <strong>Toolbar popup</strong>
-                <p>Quick controls for reruns, transcript options, and recent checks.</p>
+                <strong>Inline watch-page result</strong>
+                <p>The main interaction stays on YouTube with a compact transcript-quality card and a clear path to the workspace.</p>
               </figcaption>
             </figure>
 
             <figure class="surface-card">
-              <div class="shot-frame">
-                <img src="assets/workspace-surface.png" alt="ScriptLens side-panel workspace with a detailed report.">
+              <div class="shot-frame shot-frame-tall">
+                <img src="assets/popup-surface.png" alt="ScriptLens popup with a quick transcript review result.">
+              </div>
+              <figcaption>
+                <strong>Toolbar popup</strong>
+                <p>Quick controls for reruns, transcript selection, and recent checks.</p>
+              </figcaption>
+            </figure>
+
+            <figure class="surface-card">
+              <div class="shot-frame shot-frame-tall">
+                <img src="assets/workspace-surface.png" alt="ScriptLens side-panel workspace with detailed analysis.">
               </div>
               <figcaption>
                 <strong>Side-panel workspace</strong>
-                <p>The full report surface for reasons, flagged passages, and transcript quality review.</p>
+                <p>The deeper evidence trail for reasons, flagged patterns, transcript provenance, and user recovery decisions.</p>
               </figcaption>
             </figure>
           </div>
         </section>
 
         <section class="spec-layout" id="specs">
-          <div class="feature-stack">
-            <article class="landing-panel feature-card">
-              <span class="eyebrow">Transcript first</span>
-              <h3>Starts with the spoken content.</h3>
-              <p>
-                ScriptLens tries YouTube transcript paths first. Title and description fallback only happens when the user explicitly allows it.
-              </p>
-            </article>
-
-            <article class="landing-panel feature-card">
-              <span class="eyebrow">Local scoring</span>
-              <h3>No cloud scoring in the normal path.</h3>
-              <p>
-                Scoring runs inside the extension. If transcript recovery is needed, ScriptLens can call a compatible recovery backend using just the YouTube video ID and selected language.
-              </p>
-            </article>
-
-            <article class="landing-panel feature-card">
-              <span class="eyebrow">Clearly scoped</span>
-              <h3>Built for desktop watch pages, not everything.</h3>
-              <p>
-                This release is intentionally limited to desktop <code>youtube.com/watch</code> pages. Shorts, <code>m.youtube.com</code>, and generic page scanning are out of scope.
-              </p>
-            </article>
-          </div>
-
           <article class="landing-panel spec-card">
-            <span class="eyebrow">Store-facing spec</span>
-            <h2>What ships in this build.</h2>
+            <span class="eyebrow">Shipping scope</span>
+            <h2>What this build is designed to do.</h2>
             <dl class="spec-list">
               <div>
                 <dt>Browser</dt>
                 <dd>Chrome 114 or newer</dd>
               </div>
               <div>
-                <dt>Supported pages</dt>
+                <dt>Pages</dt>
                 <dd>Desktop <code>youtube.com/watch</code></dd>
               </div>
               <div>
-                <dt>Main surfaces</dt>
-                <dd>Inline result, toolbar popup, side-panel workspace</dd>
+                <dt>Main output</dt>
+                <dd>Verdict, score, explanation, transcript quality, and provenance</dd>
               </div>
               <div>
-                <dt>Primary output</dt>
-                <dd>Verdict, score, explanation, and transcript quality</dd>
+                <dt>Primary surfaces</dt>
+                <dd>Inline result, toolbar popup, and side-panel workspace</dd>
               </div>
               <div>
                 <dt>Permissions</dt>
-                <dd><code>storage</code>, <code>sidePanel</code>, and YouTube host access</dd>
+                <dd><code>storage</code>, <code>sidePanel</code>, YouTube host access, and a fixed recovery backend host in packaged recovery builds</dd>
               </div>
               <div>
-                <dt>Recovery backend</dt>
-                <dd>Hosted ScriptLens recovery or a compatible self-hosted backend</dd>
-              </div>
-              <div>
-                <dt>Not included</dt>
-                <dd>Shorts, mobile YouTube, or a generic website detector</dd>
+                <dt>Out of scope</dt>
+                <dd>Shorts, mobile YouTube, and generic site-wide detection</dd>
               </div>
             </dl>
           </article>
+
+          <div class="trust-stack">
+            <article class="feature-card">
+              <span class="eyebrow">Trust signal</span>
+              <h3>Quality is visible, not hidden.</h3>
+              <p>
+                The product shows transcript quality and recovery provenance so users can judge whether the score is based on a strong source.
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <span class="eyebrow">Privacy posture</span>
+              <h3>Minimal transfer when recovery is used.</h3>
+              <p>
+                In recovery-enabled builds, the extension only sends the YouTube video ID and requested language to the configured backend.
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <span class="eyebrow">Support model</span>
+              <h3>Public support, documented behavior.</h3>
+              <p>
+                The privacy policy and support pages are part of the same public site so the Chrome Web Store listing points to real operational docs.
+              </p>
+            </article>
+          </div>
         </section>
 
         <section class="landing-panel privacy-band">
           <div class="privacy-copy">
-            <span class="eyebrow">Privacy posture</span>
-            <h2>Transcript text stays on-device in the normal path.</h2>
+            <span class="eyebrow">Operational links</span>
+            <h2>Ready for a public product surface.</h2>
             <p>
-              ScriptLens scores locally by default. If transcript recovery is enabled, the extension shares only the YouTube video ID and selected language with the configured recovery backend, which may be hosted by ScriptLens or self-hosted by the user.
+              Use the Railway-hosted pages for your Chrome Web Store privacy and support URLs. The site keeps the tone light, corporate, and product-led without falling into hacker aesthetics.
             </p>
           </div>
           <div class="privacy-actions">
-            <a class="button button-secondary" href="./support.html">Support and setup</a>
-            <a class="button button-ghost" href="https://github.com/Zwin-ux/Synergy">Browse the repo</a>
+            <a class="button button-primary" href="/privacy">Privacy page</a>
+            <a class="button button-secondary" href="/support">Support page</a>
           </div>
         </section>
       </main>
 
       <footer class="footer">
         <div class="footer-row">
-          <p>ScriptLens is maintained in the <a href="https://github.com/Zwin-ux/Synergy">Synergy repository</a>.</p>
+          <p>Public site for the ScriptLens Chrome extension, served from Railway.</p>
           <div class="footer-links">
-            <a href="./privacy.html">Privacy</a>
-            <a href="./support.html">Support</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/support">Support</a>
             <a href="https://github.com/Zwin-ux/Synergy/issues">Report an issue</a>
           </div>
         </div>
