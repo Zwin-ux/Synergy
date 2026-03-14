@@ -1,6 +1,7 @@
 const { chromium } = require("@playwright/test");
-const { spawn } = require("node:child_process");
+const { spawn, spawnSync } = require("node:child_process");
 const fs = require("node:fs/promises");
+const fsSync = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const Contracts = require("../shared/contracts");
@@ -35,6 +36,9 @@ module.exports = {
   downloadObservedBrowserSessionMedia,
   pickPreferredTrack,
   parseCaptionPayload,
+  resolveAsrCommandConfig,
+  resolveBackendCapabilitySnapshot,
+  resolveYtDlpCommandConfig,
   selectBrowserSessionMediaCandidate
 };
 
@@ -2245,6 +2249,7 @@ function resolveYtDlpCommandConfig(options) {
       command: String(directCommand[0]),
       prefixArgs: directCommand.slice(1).map((value) => String(value)),
       env: process.env,
+      source: "custom-command",
       authenticatedModeEnabled: authConfig.enabled,
       useCookies: authConfig.enabled && authConfig.useForYtDlp,
       cookieFilePath: authConfig.cookieFilePath
@@ -2255,6 +2260,7 @@ function resolveYtDlpCommandConfig(options) {
       command: directCommand.trim(),
       prefixArgs: [],
       env: process.env,
+      source: "custom-command",
       authenticatedModeEnabled: authConfig.enabled,
       useCookies: authConfig.enabled && authConfig.useForYtDlp,
       cookieFilePath: authConfig.cookieFilePath
@@ -2275,6 +2281,19 @@ function resolveYtDlpCommandConfig(options) {
         ...process.env,
         PYTHONPATH: pythonPath.trim()
       },
+      source: "python-module-path",
+      authenticatedModeEnabled: authConfig.enabled,
+      useCookies: authConfig.enabled && authConfig.useForYtDlp,
+      cookieFilePath: authConfig.cookieFilePath
+    };
+  }
+
+  const autoDetected = detectInstalledYtDlpCommand();
+  if (autoDetected) {
+    return {
+      command: autoDetected.command,
+      prefixArgs: autoDetected.prefixArgs,
+      env: process.env,
       authenticatedModeEnabled: authConfig.enabled,
       useCookies: authConfig.enabled && authConfig.useForYtDlp,
       cookieFilePath: authConfig.cookieFilePath
@@ -2282,6 +2301,48 @@ function resolveYtDlpCommandConfig(options) {
   }
 
   return null;
+}
+
+function detectInstalledYtDlpCommand() {
+  const directCandidates = ["yt-dlp", "yt_dlp", "yt-dlp.exe"];
+  for (const command of directCandidates) {
+    if (probeCommand(command, ["--version"])) {
+      return {
+        command,
+        prefixArgs: [],
+        source: "auto-detected-binary"
+      };
+    }
+  }
+
+  const pythonCandidates = process.platform === "win32"
+    ? ["python", "py"]
+    : ["python3", "python"];
+  for (const command of pythonCandidates) {
+    if (probeCommand(command, ["-m", "yt_dlp", "--version"])) {
+      return {
+        command,
+        prefixArgs: ["-m", "yt_dlp"],
+        source: "auto-detected-python"
+      };
+    }
+  }
+
+  return null;
+}
+
+function probeCommand(command, args) {
+  try {
+    const result = spawnSync(command, args, {
+      env: process.env,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 3000
+    });
+    return !result.error && result.status === 0;
+  } catch (error) {
+    return false;
+  }
 }
 
 async function runYtDlpCommand(request, options) {
@@ -2732,6 +2793,70 @@ function resolveAsrCommandConfig(options) {
     source: "faster-whisper-helper",
     defaultHelper: true
   };
+}
+
+function resolveBackendCapabilitySnapshot(options = {}) {
+  const policy = options.policy || resolveOperationalPolicy(options.policyOverrides);
+  const authConfig = resolveBackendAuthConfig(policy);
+  const ytDlpConfig = resolveYtDlpCommandConfig({
+    ...options,
+    policy
+  });
+  const asrConfig = resolveAsrCommandConfig(options);
+  const asrHelperPath =
+    asrConfig?.defaultHelper && Array.isArray(asrConfig.prefixArgs)
+      ? String(asrConfig.prefixArgs[0] || "").trim()
+      : "";
+
+  return {
+    auth: {
+      mode: authConfig.mode,
+      cookieFileConfigured: Boolean(authConfig.cookieFilePath),
+      enabled: authConfig.enabled,
+      useForYtDlp: authConfig.useForYtDlp,
+      useForBrowserSession: authConfig.useForBrowserSession
+    },
+    ytDlp: {
+      available: Boolean(ytDlpConfig),
+      source: ytDlpConfig?.source || null,
+      command: summarizeCommandIdentity(ytDlpConfig?.command),
+      prefixArgs: summarizePrefixArgs(ytDlpConfig?.prefixArgs),
+      authenticatedModeEnabled: ytDlpConfig?.authenticatedModeEnabled === true,
+      useCookies: ytDlpConfig?.useCookies === true
+    },
+    asr: {
+      enabled: options.enableAutomaticAsr === true,
+      configured: Boolean(asrConfig),
+      source: asrConfig?.source || null,
+      command: summarizeCommandIdentity(asrConfig?.command),
+      prefixArgs: summarizePrefixArgs(asrConfig?.prefixArgs),
+      helperScriptPresent: asrHelperPath ? fsSync.existsSync(asrHelperPath) : null
+    }
+  };
+}
+
+function summarizeCommandIdentity(command) {
+  const value = String(command || "").trim();
+  if (!value) {
+    return null;
+  }
+  return path.basename(value);
+}
+
+function summarizePrefixArgs(prefixArgs) {
+  if (!Array.isArray(prefixArgs) || !prefixArgs.length) {
+    return [];
+  }
+  return prefixArgs.map((value) => {
+    const text = String(value || "").trim();
+    if (!text) {
+      return "";
+    }
+    if (/[/\\]/.test(text)) {
+      return path.basename(text);
+    }
+    return text;
+  });
 }
 
 async function downloadAudioForAsr(request, options) {

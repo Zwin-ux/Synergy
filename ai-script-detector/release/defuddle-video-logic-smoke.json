@@ -1,0 +1,178 @@
+{
+  "generatedAt": "2026-03-13T18:22:34.567Z",
+  "matrixPath": "C:\\Users\\MazenZwin\\Downloads\\Synergy-master\\Synergy-master\\ai-script-detector\\release\\defuddle-video-matrix.json",
+  "request": {
+    "mode": "youtube",
+    "includeSources": [
+      "transcript",
+      "description",
+      "title"
+    ],
+    "trackBaseUrl": "",
+    "transcriptBias": "manual-en",
+    "requireTranscript": false,
+    "allowFallbackText": true
+  },
+  "filters": {
+    "canaryOnly": false,
+    "ids": [
+      "25-storm-chasing-arch-tornado-outbreak-from-ka"
+    ],
+    "categories": [],
+    "limit": null
+  },
+  "builds": {
+    "control": {
+      "version": null,
+      "stagingDir": "",
+      "enableDefuddleExperiment": false
+    },
+    "defuddle": {
+      "version": null,
+      "stagingDir": "",
+      "enableDefuddleExperiment": false
+    }
+  },
+  "summary": {
+    "total": 1,
+    "controlSuccess": 1,
+    "defuddleSuccess": 1,
+    "controlTranscriptWins": 0,
+    "defuddleTranscriptWins": 0,
+    "controlFallbackTextOnly": 1,
+    "defuddleFallbackTextOnly": 0,
+    "changedOutcomes": 1,
+    "defuddleDirectWins": 1,
+    "transcriptRegressions": 0,
+    "labelingIssues": 0
+  },
+  "matrix": [
+    {
+      "id": "25-storm-chasing-arch-tornado-outbreak-from-ka",
+      "videoId": "NYsANnAhr6k",
+      "label": "storm-chasing archive channel - Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive",
+      "url": "https://www.youtube.com/watch?v=NYsANnAhr6k",
+      "title": "Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive",
+      "channel": "storm-chasing archive channel",
+      "durationEstimate": "~3-8 hr",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "unclear",
+      "testValue": "Livestream archive structure is useful for fallback handling when transcripts are delayed or inconsistent.",
+      "category": "livestream",
+      "categories": [
+        "livestream",
+        "unclear",
+        "english",
+        "longform",
+        "fallback-stress"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "defuddle-fallback-candidate",
+      "expectedKind": "direct-content",
+      "expectedOriginKind": null,
+      "canary": true,
+      "control": {
+        "id": "25-storm-chasing-arch-tornado-outbreak-from-ka",
+        "ok": true,
+        "latencyMs": 13333,
+        "error": null,
+        "timeout": false,
+        "score": 3,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "25-storm-chasing-arch-tornado-outbreak-from-ka",
+        "ok": true,
+        "latencyMs": 13510,
+        "error": null,
+        "timeout": false,
+        "score": 10,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive - Extracted page content",
+        "explanation": "The passage did not trigger enough strong AI-like heuristics to support a high score.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": null,
+          "recoveryTier": null,
+          "sourceTrustTier": null,
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "acquisition": {
+          "kind": "page-content",
+          "sourceLabel": "Extracted page content",
+          "providerClass": "local",
+          "strategy": null,
+          "acquisitionState": null,
+          "quality": "weak-fallback",
+          "languageCode": null,
+          "warnings": [
+            "fallback_source",
+            "user_fallback_override",
+            "weak_evidence",
+            "page_capture_noise"
+          ],
+          "coverageRatio": 0.087
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": true,
+        "transcriptRegression": false,
+        "defuddleDirectWin": true,
+        "labelingIssue": false,
+        "summary": "Defuddle direct content replaced the control outcome."
+      }
+    }
+  ]
+}

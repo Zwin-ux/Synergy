@@ -1,0 +1,1782 @@
+{
+  "generatedAt": "2026-03-13T23:53:13.149Z",
+  "matrixPath": "C:\\Users\\MazenZwin\\Downloads\\Synergy-master\\Synergy-master\\ai-script-detector\\release\\defuddle-video-matrix.json",
+  "request": {
+    "mode": "youtube",
+    "includeSources": [
+      "transcript",
+      "description",
+      "title"
+    ],
+    "trackBaseUrl": "",
+    "transcriptBias": "manual-en",
+    "requireTranscript": false,
+    "allowFallbackText": true
+  },
+  "filters": {
+    "canaryOnly": false,
+    "ids": [
+      "33-lifestyle-creator--speaking-only-spanish-fo",
+      "37-ifc-films-good-boy-official-traile"
+    ],
+    "categories": [],
+    "limit": null,
+    "includeBackend": true,
+    "backendLocal": true,
+    "backendEndpointConfigured": false
+  },
+  "backend": {
+    "mode": "local",
+    "url": "http://127.0.0.1:52442/transcript/resolve",
+    "port": 52442
+  },
+  "builds": {
+    "control": {
+      "version": "0.1.0",
+      "stagingDir": "C:\\Users\\MazenZwin\\Downloads\\Synergy-master\\Synergy-master\\ai-script-detector\\dist\\defuddle-video-qa\\control",
+      "enableDefuddleExperiment": false
+    },
+    "defuddle": {
+      "version": "0.1.0",
+      "stagingDir": "C:\\Users\\MazenZwin\\Downloads\\Synergy-master\\Synergy-master\\ai-script-detector\\dist\\defuddle-video-qa\\defuddle",
+      "enableDefuddleExperiment": true
+    }
+  },
+  "variants": {
+    "control": {
+      "label": "control",
+      "buildKey": "control",
+      "allowBackendTranscriptFallback": false,
+      "backendTranscriptEndpointConfigured": false
+    },
+    "defuddle": {
+      "label": "defuddle",
+      "buildKey": "defuddle",
+      "allowBackendTranscriptFallback": false,
+      "backendTranscriptEndpointConfigured": false
+    },
+    "backendControl": {
+      "label": "backend-control",
+      "buildKey": "control",
+      "allowBackendTranscriptFallback": true,
+      "backendTranscriptEndpointConfigured": true
+    },
+    "backendDefuddle": {
+      "label": "backend-defuddle",
+      "buildKey": "defuddle",
+      "allowBackendTranscriptFallback": true,
+      "backendTranscriptEndpointConfigured": true
+    }
+  },
+  "summary": {
+    "total": 2,
+    "controlSuccess": 2,
+    "defuddleSuccess": 2,
+    "controlTranscriptWins": 0,
+    "defuddleTranscriptWins": 0,
+    "controlFallbackTextOnly": 2,
+    "defuddleFallbackTextOnly": 2,
+    "controlPreflightTranscriptAvailable": 1,
+    "defuddlePreflightTranscriptAvailable": 1,
+    "changedOutcomes": 0,
+    "defuddleDirectWins": 0,
+    "transcriptRegressions": 0,
+    "labelingIssues": 0,
+    "backendConfigured": true,
+    "backendControlSuccess": 2,
+    "backendDefuddleSuccess": 2,
+    "backendControlTranscriptWins": 0,
+    "backendDefuddleTranscriptWins": 0,
+    "backendControlRescues": 0,
+    "backendDefuddleRescues": 0,
+    "expectationMismatchCounts": {
+      "control": 1,
+      "defuddle": 1,
+      "backendControl": 1,
+      "backendDefuddle": 1
+    }
+  },
+  "matrix": [
+    {
+      "id": "33-lifestyle-creator--speaking-only-spanish-fo",
+      "videoId": "Sp1sMv7NpZw",
+      "label": "lifestyle creator channel - speaking only spanish for a week puerto rico vlog",
+      "url": "https://www.youtube.com/watch?v=Sp1sMv7NpZw",
+      "title": "speaking only spanish for a week puerto rico vlog",
+      "channel": "lifestyle creator channel",
+      "durationEstimate": "~15-25 min",
+      "primaryLanguage": "English / Spanish mixed",
+      "likelyTranscriptState": "auto",
+      "testValue": "Code-switching makes this useful for fallback logic and language-detection edge cases.",
+      "category": "vlog",
+      "categories": [
+        "vlog",
+        "auto",
+        "english-spanish-mixed",
+        "multilingual"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "transcript-preferred",
+      "expectedKind": "transcript",
+      "expectedOriginKind": "automatic_caption_track",
+      "canary": true,
+      "expectedWinnerClass": "transcript-class",
+      "expectedLocalBehavior": "prefer-local-transcript",
+      "expectedBackendBehavior": "backend-only-if-local-misses",
+      "expectedDefuddleBehavior": "no-direct-win-when-transcript-succeeds",
+      "control": {
+        "id": "33-lifestyle-creator--speaking-only-spanish-fo",
+        "ok": true,
+        "latencyMs": 16188,
+        "error": null,
+        "timeout": false,
+        "score": 5,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - speaking only spanish for a week 🌱 puerto rico vlog - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=Sp1sMv7NpZw&ei=tqK0aersLOPXsfIPo-eC-Qo&caps=asr&opi=112496729&exp=xpe&xoaf=4&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773471014&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=E1B3E1E0A8805AC5A41030A7F15FA71F132B0055.5B0F06AD724B918A87B1E3D4AE3680D75722CB41&key=yt8&kind=asr&lang=es",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "Sp1sMv7NpZw",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773445823812,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "Sp1sMv7NpZw",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": {
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "params": null,
+              "clientName": "1",
+              "clientVersion": "2.20260312.08.00",
+              "responseStatus": 400,
+              "observedAt": 1773445829583
+            },
+            "updatedAt": 1773445831006,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": [
+            {
+              "type": "request",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "method": "POST",
+              "headers": {
+                "content-type": "application/json",
+                "x-youtube-client-name": "1",
+                "x-youtube-client-version": "2.20260312.08.00",
+                "referer": "https://www.youtube.com/watch?v=Sp1sMv7NpZw"
+              },
+              "postData": ""
+            },
+            {
+              "type": "response",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "status": 400,
+              "ok": false,
+              "headers": {
+                "content-type": "application/json; charset=UTF-8"
+              },
+              "body": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+            }
+          ]
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override",
+            "language_requested_mismatch"
+          ],
+          "coverageRatio": null,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 378,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed"
+              ],
+              "errorCode": "caption_fetch_failed"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 361,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_request_shape_pending_validation",
+                "youtubei_failed"
+              ],
+              "errorCode": "youtubei_http_403"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 5592,
+              "sourceConfidence": null,
+              "warningCodes": [],
+              "errorCode": "timeout"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_fetch_failed",
+              "message": "Caption tracks were present, but the transcript payload could not be read."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_http_403",
+              "message": "The YouTube transcript endpoint returned 403."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "timeout",
+              "message": "timeout"
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        },
+        "failureClassification": {
+          "primary": "youtubei_failed_precondition",
+          "signals": [
+            "caption_track_fetch_failed",
+            "youtubei_http_403",
+            "youtubei_failed_precondition",
+            "dom_transcript_timeout",
+            "dom_transcript_panel_opened_no_segments",
+            "weak_fallback_only"
+          ]
+        }
+      },
+      "defuddle": {
+        "id": "33-lifestyle-creator--speaking-only-spanish-fo",
+        "ok": true,
+        "latencyMs": 18950,
+        "error": null,
+        "timeout": false,
+        "score": 5,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - speaking only spanish for a week 🌱 puerto rico vlog - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=Sp1sMv7NpZw&ei=36K0aZzjHoeosfIP8p_ZoAc&caps=asr&opi=112496729&exp=xpe&xoaf=4&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773471055&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=DC0FC571CE6E748CC9A4621DF72F157519899D0D.48542E710EA9B22FBA6384C4BFF26D1BC92DC8E8&key=yt8&kind=asr&lang=es",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "Sp1sMv7NpZw",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773445865816,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "Sp1sMv7NpZw",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": {
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "params": null,
+              "clientName": "1",
+              "clientVersion": "2.20260312.08.00",
+              "responseStatus": 400,
+              "observedAt": 1773445872743
+            },
+            "updatedAt": 1773445874275,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": [
+            {
+              "type": "request",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "method": "POST",
+              "headers": {
+                "content-type": "application/json",
+                "x-youtube-client-name": "1",
+                "x-youtube-client-version": "2.20260312.08.00",
+                "referer": "https://www.youtube.com/watch?v=Sp1sMv7NpZw"
+              },
+              "postData": ""
+            },
+            {
+              "type": "response",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "status": 400,
+              "ok": false,
+              "headers": {
+                "content-type": "application/json; charset=UTF-8"
+              },
+              "body": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+            }
+          ]
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override",
+            "language_requested_mismatch"
+          ],
+          "coverageRatio": null,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 375,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed"
+              ],
+              "errorCode": "caption_fetch_failed"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 285,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_request_shape_pending_validation",
+                "youtubei_failed"
+              ],
+              "errorCode": "youtubei_http_403"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 5612,
+              "sourceConfidence": null,
+              "warningCodes": [],
+              "errorCode": "timeout"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_fetch_failed",
+              "message": "Caption tracks were present, but the transcript payload could not be read."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_http_403",
+              "message": "The YouTube transcript endpoint returned 403."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "timeout",
+              "message": "timeout"
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        },
+        "failureClassification": {
+          "primary": "youtubei_failed_precondition",
+          "signals": [
+            "caption_track_fetch_failed",
+            "youtubei_http_403",
+            "youtubei_failed_precondition",
+            "dom_transcript_timeout",
+            "dom_transcript_panel_opened_no_segments",
+            "weak_fallback_only"
+          ]
+        }
+      },
+      "backendControl": {
+        "id": "33-lifestyle-creator--speaking-only-spanish-fo",
+        "ok": true,
+        "latencyMs": 29972,
+        "error": null,
+        "timeout": false,
+        "score": 5,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - speaking only spanish for a week 🌱 puerto rico vlog - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=Sp1sMv7NpZw&ei=CaO0abDxDoupsfIPlM-LmAw&caps=asr&opi=112496729&exp=xpe&xoaf=4&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773471097&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=21AA0DAC495A1A94B448259ED8154BCB0A4AD23C.4BEB95C3ECDBBDA371C96C779C664EEE562EAA96&key=yt8&kind=asr&lang=es",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "Sp1sMv7NpZw",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773445910988,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "Sp1sMv7NpZw",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": {
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "params": null,
+              "clientName": "1",
+              "clientVersion": "2.20260312.08.00",
+              "responseStatus": 400,
+              "observedAt": 1773445916758
+            },
+            "updatedAt": 1773445927167,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": [
+            {
+              "type": "request",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "method": "POST",
+              "headers": {
+                "content-type": "application/json",
+                "x-youtube-client-name": "1",
+                "x-youtube-client-version": "2.20260312.08.00",
+                "referer": "https://www.youtube.com/watch?v=Sp1sMv7NpZw"
+              },
+              "postData": ""
+            },
+            {
+              "type": "response",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "status": 400,
+              "ok": false,
+              "headers": {
+                "content-type": "application/json; charset=UTF-8"
+              },
+              "body": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+            }
+          ]
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override",
+            "language_requested_mismatch"
+          ],
+          "coverageRatio": null,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 388,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed"
+              ],
+              "errorCode": "caption_fetch_failed"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 441,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_request_shape_pending_validation",
+                "youtubei_failed"
+              ],
+              "errorCode": "youtubei_http_403"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 5520,
+              "sourceConfidence": null,
+              "warningCodes": [],
+              "errorCode": "timeout"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 9003,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed",
+                "youtubei_failed",
+                "yt_dlp_not_configured",
+                "backend_headless_transcript_failed_precondition",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 9003,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed",
+                "youtubei_failed",
+                "yt_dlp_not_configured",
+                "backend_headless_transcript_failed_precondition",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_fetch_failed",
+              "message": "Caption tracks were present, but the transcript payload could not be read."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_http_403",
+              "message": "The YouTube transcript endpoint returned 403."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "timeout",
+              "message": "timeout"
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript",
+            "backendResolver:backend-transcript",
+            "backendResolver:backend-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        },
+        "failureClassification": {
+          "primary": "youtubei_failed_precondition",
+          "signals": [
+            "caption_track_fetch_failed",
+            "youtubei_http_403",
+            "youtubei_failed_precondition",
+            "dom_transcript_timeout",
+            "dom_transcript_panel_opened_no_segments",
+            "weak_fallback_only"
+          ]
+        }
+      },
+      "backendDefuddle": {
+        "id": "33-lifestyle-creator--speaking-only-spanish-fo",
+        "ok": true,
+        "latencyMs": 18356,
+        "error": null,
+        "timeout": false,
+        "score": 5,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - speaking only spanish for a week 🌱 puerto rico vlog - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=Sp1sMv7NpZw&ei=RKO0aYO5HdCO2_gPm7jKyQ0&caps=asr&opi=112496729&exp=xpe&xoaf=4&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773471156&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=336D46B3C29E89707C51000634A4F5A5B05B6F0F.464D8E7288177B914A668C883224220B8069450D&key=yt8&kind=asr&lang=es",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "Sp1sMv7NpZw",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773445967099,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "Sp1sMv7NpZw",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": {
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "params": null,
+              "clientName": "1",
+              "clientVersion": "2.20260312.08.00",
+              "responseStatus": 400,
+              "observedAt": 1773445973178
+            },
+            "updatedAt": 1773445974870,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": [
+            {
+              "type": "request",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "method": "POST",
+              "headers": {
+                "content-type": "application/json",
+                "x-youtube-client-name": "1",
+                "x-youtube-client-version": "2.20260312.08.00",
+                "referer": "https://www.youtube.com/watch?v=Sp1sMv7NpZw"
+              },
+              "postData": ""
+            },
+            {
+              "type": "response",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "status": 400,
+              "ok": false,
+              "headers": {
+                "content-type": "application/json; charset=UTF-8"
+              },
+              "body": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+            }
+          ]
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override",
+            "language_requested_mismatch"
+          ],
+          "coverageRatio": null,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 345,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed"
+              ],
+              "errorCode": "caption_fetch_failed"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 403,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_request_shape_pending_validation",
+                "youtubei_failed"
+              ],
+              "errorCode": "youtubei_http_403"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 5600,
+              "sourceConfidence": null,
+              "warningCodes": [],
+              "errorCode": "timeout"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 13,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed",
+                "youtubei_failed",
+                "yt_dlp_not_configured",
+                "backend_headless_transcript_failed_precondition",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 13,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed",
+                "youtubei_failed",
+                "yt_dlp_not_configured",
+                "backend_headless_transcript_failed_precondition",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_fetch_failed",
+              "message": "Caption tracks were present, but the transcript payload could not be read."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_http_403",
+              "message": "The YouTube transcript endpoint returned 403."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "timeout",
+              "message": "timeout"
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript",
+            "backendResolver:backend-transcript",
+            "backendResolver:backend-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        },
+        "failureClassification": {
+          "primary": "youtubei_failed_precondition",
+          "signals": [
+            "caption_track_fetch_failed",
+            "youtubei_http_403",
+            "youtubei_failed_precondition",
+            "dom_transcript_timeout",
+            "dom_transcript_panel_opened_no_segments",
+            "weak_fallback_only"
+          ]
+        }
+      },
+      "expectations": {
+        "control": {
+          "expected": "transcript-class",
+          "matches": false,
+          "actual": "fallback-text-only"
+        },
+        "defuddle": {
+          "expected": "transcript-class",
+          "matches": false,
+          "actual": "fallback-text-only"
+        },
+        "backendControl": {
+          "expected": "transcript-class",
+          "matches": false,
+          "actual": "fallback-text-only"
+        },
+        "backendDefuddle": {
+          "expected": "transcript-class",
+          "matches": false,
+          "actual": "fallback-text-only"
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      },
+      "backendComparison": {
+        "control": {
+          "changed": false,
+          "backendRescue": false
+        },
+        "defuddle": {
+          "changed": false,
+          "backendRescue": false
+        }
+      }
+    },
+    {
+      "id": "37-ifc-films-good-boy-official-traile",
+      "videoId": "q4-CRkd_74g",
+      "label": "IFC Films - Good Boy - Official Trailer | HD | IFC Films",
+      "url": "https://www.youtube.com/watch?v=q4-CRkd_74g",
+      "title": "Good Boy - Official Trailer | HD | IFC Films",
+      "channel": "IFC Films",
+      "durationEstimate": "~2 min",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "missing",
+      "testValue": "Trailers are a good weak-transcript case because availability can be inconsistent across releases.",
+      "category": "trailer",
+      "categories": [
+        "trailer",
+        "missing",
+        "english",
+        "fallback-stress"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "defuddle-fallback-candidate",
+      "expectedKind": "direct-content",
+      "expectedOriginKind": null,
+      "canary": true,
+      "expectedWinnerClass": "direct-content",
+      "expectedLocalBehavior": "weak-fallback-acceptable",
+      "expectedBackendBehavior": "backend-transcript-acceptable",
+      "expectedDefuddleBehavior": "direct-content-upgrade-preferred",
+      "control": {
+        "id": "37-ifc-films-good-boy-official-traile",
+        "ok": true,
+        "latencyMs": 15585,
+        "error": null,
+        "timeout": false,
+        "score": 12,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Good Boy - Official Trailer | HD | IFC Films - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket. Repeated sentence openings appear throughout, including \"by independent film\". Short phrase patterns repeat more than expected, such as \"independent film company\".",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": false,
+          "transcriptTrackCount": 0,
+          "defaultTrackBaseUrl": "",
+          "availableSources": {
+            "transcript": false,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "q4-CRkd_74g",
+            "transcriptParams": false,
+            "captionTrackCount": 0,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773445839671,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "q4-CRkd_74g",
+            "transcriptParams": false,
+            "captionTrackCount": 0,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773445846792,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": []
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_tracks_missing",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 4,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_tracks_missing"
+              ],
+              "errorCode": "caption_tracks_missing"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 514,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_params_missing"
+              ],
+              "errorCode": "youtubei_params_missing"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 4103,
+              "sourceConfidence": null,
+              "warningCodes": [],
+              "errorCode": "timeout"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_tracks_missing",
+              "message": "No caption tracks were exposed by the current YouTube page."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_params_missing",
+              "message": "Transcript params could not be derived for the YouTube transcript endpoint."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "timeout",
+              "message": "timeout"
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        },
+        "failureClassification": {
+          "primary": "dom_transcript_timeout",
+          "signals": [
+            "dom_transcript_timeout",
+            "weak_fallback_only"
+          ]
+        }
+      },
+      "defuddle": {
+        "id": "37-ifc-films-good-boy-official-traile",
+        "ok": true,
+        "latencyMs": 16408,
+        "error": null,
+        "timeout": false,
+        "score": 12,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Good Boy - Official Trailer | HD | IFC Films - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket. Repeated sentence openings appear throughout, including \"by independent film\". Short phrase patterns repeat more than expected, such as \"independent film company\".",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": false,
+          "transcriptTrackCount": 0,
+          "defaultTrackBaseUrl": "",
+          "availableSources": {
+            "transcript": false,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "q4-CRkd_74g",
+            "transcriptParams": false,
+            "captionTrackCount": 0,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773445883650,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "q4-CRkd_74g",
+            "transcriptParams": false,
+            "captionTrackCount": 0,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773445891003,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": []
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_tracks_missing",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 3,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_tracks_missing"
+              ],
+              "errorCode": "caption_tracks_missing"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 290,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_params_missing"
+              ],
+              "errorCode": "youtubei_params_missing"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 4258,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "dom_transcript_unavailable"
+              ],
+              "errorCode": "dom_transcript_unavailable"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_tracks_missing",
+              "message": "No caption tracks were exposed by the current YouTube page."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_params_missing",
+              "message": "Transcript params could not be derived for the YouTube transcript endpoint."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "dom_transcript_unavailable",
+              "message": "No visible transcript panel text was found after opening the transcript UI."
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        },
+        "failureClassification": {
+          "primary": "weak_fallback_only",
+          "signals": [
+            "weak_fallback_only"
+          ]
+        }
+      },
+      "backendControl": {
+        "id": "37-ifc-films-good-boy-official-traile",
+        "ok": true,
+        "latencyMs": 24384,
+        "error": null,
+        "timeout": false,
+        "score": 12,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Good Boy - Official Trailer | HD | IFC Films - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket. Repeated sentence openings appear throughout, including \"by independent film\". Short phrase patterns repeat more than expected, such as \"independent film company\".",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": false,
+          "transcriptTrackCount": 0,
+          "defaultTrackBaseUrl": "",
+          "availableSources": {
+            "transcript": false,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "q4-CRkd_74g",
+            "transcriptParams": false,
+            "captionTrackCount": 0,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773445935910,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "q4-CRkd_74g",
+            "transcriptParams": false,
+            "captionTrackCount": 0,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773445951929,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": []
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_tracks_missing",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 3,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_tracks_missing"
+              ],
+              "errorCode": "caption_tracks_missing"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 484,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_params_missing"
+              ],
+              "errorCode": "youtubei_params_missing"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 4192,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "dom_transcript_unavailable"
+              ],
+              "errorCode": "dom_transcript_unavailable"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 7303,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_tracks_missing",
+                "youtubei_params_missing",
+                "yt_dlp_not_configured",
+                "backend_headless_panel_failed",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 7303,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_tracks_missing",
+                "youtubei_params_missing",
+                "yt_dlp_not_configured",
+                "backend_headless_panel_failed",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_tracks_missing",
+              "message": "No caption tracks were exposed by the current YouTube page."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_params_missing",
+              "message": "Transcript params could not be derived for the YouTube transcript endpoint."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "dom_transcript_unavailable",
+              "message": "No visible transcript panel text was found after opening the transcript UI."
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript",
+            "backendResolver:backend-transcript",
+            "backendResolver:backend-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        },
+        "failureClassification": {
+          "primary": "weak_fallback_only",
+          "signals": [
+            "weak_fallback_only"
+          ]
+        }
+      },
+      "backendDefuddle": {
+        "id": "37-ifc-films-good-boy-official-traile",
+        "ok": true,
+        "latencyMs": 14270,
+        "error": null,
+        "timeout": false,
+        "score": 12,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Good Boy - Official Trailer | HD | IFC Films - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket. Repeated sentence openings appear throughout, including \"by independent film\". Short phrase patterns repeat more than expected, such as \"independent film company\".",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": false,
+          "transcriptTrackCount": 0,
+          "defaultTrackBaseUrl": "",
+          "availableSources": {
+            "transcript": false,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "q4-CRkd_74g",
+            "transcriptParams": false,
+            "captionTrackCount": 0,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773445981688,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "q4-CRkd_74g",
+            "transcriptParams": false,
+            "captionTrackCount": 0,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773445989368,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": []
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_tracks_missing",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 1,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_tracks_missing"
+              ],
+              "errorCode": "caption_tracks_missing"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 462,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_params_missing"
+              ],
+              "errorCode": "youtubei_params_missing"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 4085,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "dom_transcript_unavailable"
+              ],
+              "errorCode": "dom_transcript_unavailable"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 10,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_tracks_missing",
+                "youtubei_params_missing",
+                "yt_dlp_not_configured",
+                "backend_headless_panel_failed",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 10,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_tracks_missing",
+                "youtubei_params_missing",
+                "yt_dlp_not_configured",
+                "backend_headless_panel_failed",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_tracks_missing",
+              "message": "No caption tracks were exposed by the current YouTube page."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_params_missing",
+              "message": "Transcript params could not be derived for the YouTube transcript endpoint."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "dom_transcript_unavailable",
+              "message": "No visible transcript panel text was found after opening the transcript UI."
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript",
+            "backendResolver:backend-transcript",
+            "backendResolver:backend-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        },
+        "failureClassification": {
+          "primary": "weak_fallback_only",
+          "signals": [
+            "weak_fallback_only"
+          ]
+        }
+      },
+      "expectations": {
+        "control": {
+          "expected": "direct-or-fallback",
+          "matches": true,
+          "actual": "fallback-text-only"
+        },
+        "defuddle": {
+          "expected": "direct-or-fallback",
+          "matches": true,
+          "actual": "fallback-text-only"
+        },
+        "backendControl": {
+          "expected": "transcript-or-direct-or-fallback",
+          "matches": true,
+          "actual": "fallback-text-only"
+        },
+        "backendDefuddle": {
+          "expected": "transcript-or-direct-or-fallback",
+          "matches": true,
+          "actual": "fallback-text-only"
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      },
+      "backendComparison": {
+        "control": {
+          "changed": false,
+          "backendRescue": false
+        },
+        "defuddle": {
+          "changed": false,
+          "backendRescue": false
+        }
+      }
+    }
+  ]
+}

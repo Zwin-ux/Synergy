@@ -19,11 +19,57 @@ test.describe("ScriptLens backend HTTP server", () => {
       expect(health.version).toMatch(/^\d+\.\d+\.\d+/);
       expect(health.contractVersion).toBe("2026-03-11");
       expect(health.asrEnabled).toBeFalsy();
+      expect(health.capabilities).toBeTruthy();
+      expect(health.capabilities).toHaveProperty("ytDlp");
+      expect(health.capabilities).toHaveProperty("asr");
+      expect(health.capabilities).toHaveProperty("auth");
 
       expect(version.service).toBe("scriptlens-backend");
       expect(version.version).toBe(health.version);
       expect(version.contractVersion).toBe("2026-03-11");
       expect(version.asrEnabled).toBeFalsy();
+      expect(version.capabilities).toEqual(health.capabilities);
+    } finally {
+      await closeServer(server);
+    }
+  });
+
+  test("reports capability metadata for configured backend helpers", async () => {
+    const server = createBackendServer({
+      enableAutomaticAsr: true,
+      ytDlpCommand: [process.execPath, "-e", "process.exit(0)", "--"],
+      asrCommand: [process.execPath, "-e", "process.exit(0)"],
+      policyOverrides: {
+        backend: {
+          auth: {
+            mode: "cookie-file",
+            cookieFilePath: "/var/run/secrets/youtube-cookies.txt",
+            useForYtDlp: true,
+            useForBrowserSession: false
+          }
+        }
+      }
+    });
+
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+
+    try {
+      const version = await fetch(`${baseUrl}/version`).then((response) => response.json());
+
+      expect(version.authenticatedModeEnabled).toBeTruthy();
+      expect(version.asrEnabled).toBeTruthy();
+      expect(version.capabilities.auth.enabled).toBeTruthy();
+      expect(version.capabilities.auth.cookieFileConfigured).toBeTruthy();
+      expect(version.capabilities.ytDlp.available).toBeTruthy();
+      expect(version.capabilities.ytDlp.source).toBe("custom-command");
+      expect(version.capabilities.ytDlp.command).toMatch(/^node(\.exe)?$/);
+      expect(version.capabilities.ytDlp.useCookies).toBeTruthy();
+      expect(version.capabilities.asr.enabled).toBeTruthy();
+      expect(version.capabilities.asr.configured).toBeTruthy();
+      expect(version.capabilities.asr.source).toBe("custom-command");
+      expect(version.capabilities.asr.command).toMatch(/^node(\.exe)?$/);
     } finally {
       await closeServer(server);
     }

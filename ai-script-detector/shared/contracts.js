@@ -62,7 +62,8 @@
   const PACKAGING_ENV_KEYS = Object.freeze({
     backendEndpoint: "SCRIPTLENS_BACKEND_ENDPOINT",
     backendOrigin: "SCRIPTLENS_BACKEND_ORIGIN",
-    publicSiteOrigin: "SCRIPTLENS_PUBLIC_SITE_ORIGIN"
+    publicSiteOrigin: "SCRIPTLENS_PUBLIC_SITE_ORIGIN",
+    enableDefuddleExperiment: "SCRIPTLENS_ENABLE_DEFUDDLE_EXPERIMENT"
   });
 
   const POLICY_FAILURE_CODES = new Set([

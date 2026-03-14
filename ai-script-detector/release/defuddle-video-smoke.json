@@ -1,0 +1,299 @@
+{
+  "generatedAt": "2026-03-13T18:14:43.655Z",
+  "matrixPath": "C:\\Users\\MazenZwin\\Downloads\\Synergy-master\\Synergy-master\\ai-script-detector\\release\\defuddle-video-matrix.json",
+  "request": {
+    "mode": "youtube",
+    "includeSources": [
+      "transcript",
+      "description",
+      "title"
+    ],
+    "trackBaseUrl": "",
+    "transcriptBias": "manual-en",
+    "requireTranscript": false,
+    "allowFallbackText": true
+  },
+  "filters": {
+    "canaryOnly": false,
+    "ids": [
+      "01-ted-your-body-language-may-s",
+      "37-ifc-films-good-boy-official-traile"
+    ],
+    "categories": [],
+    "limit": null
+  },
+  "builds": {
+    "control": {
+      "version": null,
+      "stagingDir": "",
+      "enableDefuddleExperiment": false
+    },
+    "defuddle": {
+      "version": null,
+      "stagingDir": "",
+      "enableDefuddleExperiment": false
+    }
+  },
+  "summary": {
+    "total": 2,
+    "controlSuccess": 2,
+    "defuddleSuccess": 2,
+    "controlTranscriptWins": 2,
+    "defuddleTranscriptWins": 2,
+    "changedOutcomes": 0,
+    "defuddleDirectWins": 0,
+    "transcriptRegressions": 0,
+    "labelingIssues": 0
+  },
+  "matrix": [
+    {
+      "id": "01-ted-your-body-language-may-s",
+      "videoId": "Ks-_Mh1QhMc",
+      "label": "TED - Your Body Language May Shape Who You Are | Amy Cuddy | TED",
+      "url": "https://www.youtube.com/watch?v=Ks-_Mh1QhMc",
+      "title": "Your Body Language May Shape Who You Are | Amy Cuddy | TED",
+      "channel": "TED",
+      "durationEstimate": "~21 min",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "manual",
+      "testValue": "Clean, high-confidence talk audio is useful as a baseline manual-caption case.",
+      "category": "lecture",
+      "categories": [
+        "lecture",
+        "manual",
+        "english"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "transcript-preferred",
+      "expectedKind": "transcript",
+      "expectedOriginKind": "manual_caption_track",
+      "canary": true,
+      "control": {
+        "id": "01-ted-your-body-language-may-s",
+        "ok": true,
+        "latencyMs": 14005,
+        "error": null,
+        "timeout": false,
+        "score": 37,
+        "verdict": "Mixed / possibly assisted",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Your Body Language May Shape Who You Are | Amy Cuddy | TED - Title + description fallback",
+        "explanation": "Repeated sentence openings appear throughout, including \"our nonverbals govern\", \"ted ideas worth\". Short phrase patterns repeat more than expected, such as \"our nonverbals govern\", \"nonverbals govern how\". Sentence rhythm has low burstiness and stays smoother than typical human drafts.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "01-ted-your-body-language-may-s",
+        "ok": true,
+        "latencyMs": 14641,
+        "error": null,
+        "timeout": false,
+        "score": 37,
+        "verdict": "Mixed / possibly assisted",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Your Body Language May Shape Who You Are | Amy Cuddy | TED - Title + description fallback",
+        "explanation": "Repeated sentence openings appear throughout, including \"our nonverbals govern\", \"ted ideas worth\". Short phrase patterns repeat more than expected, such as \"our nonverbals govern\", \"nonverbals govern how\". Sentence rhythm has low burstiness and stays smoother than typical human drafts.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      }
+    },
+    {
+      "id": "37-ifc-films-good-boy-official-traile",
+      "videoId": "q4-CRkd_74g",
+      "label": "IFC Films - Good Boy - Official Trailer | HD | IFC Films",
+      "url": "https://www.youtube.com/watch?v=q4-CRkd_74g",
+      "title": "Good Boy - Official Trailer | HD | IFC Films",
+      "channel": "IFC Films",
+      "durationEstimate": "~2 min",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "missing",
+      "testValue": "Trailers are a good weak-transcript case because availability can be inconsistent across releases.",
+      "category": "trailer",
+      "categories": [
+        "trailer",
+        "missing",
+        "english",
+        "fallback-stress"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "defuddle-fallback-candidate",
+      "expectedKind": "direct-content",
+      "expectedOriginKind": null,
+      "canary": true,
+      "control": {
+        "id": "37-ifc-films-good-boy-official-traile",
+        "ok": true,
+        "latencyMs": 13490,
+        "error": null,
+        "timeout": false,
+        "score": 12,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Good Boy - Official Trailer | HD | IFC Films - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket. Repeated sentence openings appear throughout, including \"by independent film\". Short phrase patterns repeat more than expected, such as \"independent film company\".",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "37-ifc-films-good-boy-official-traile",
+        "ok": true,
+        "latencyMs": 12808,
+        "error": null,
+        "timeout": false,
+        "score": 12,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Good Boy - Official Trailer | HD | IFC Films - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket. Repeated sentence openings appear throughout, including \"by independent film\". Short phrase patterns repeat more than expected, such as \"independent film company\".",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      }
+    }
+  ]
+}

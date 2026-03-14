@@ -47,7 +47,7 @@
       case "extract:selection":
         return extractSelectionPayload();
       case "extract:page":
-        return extractPagePayload();
+        return extractPagePayload(message || {});
       case "youtube:page-adapter":
         return {
           ok: true,
@@ -58,8 +58,10 @@
           ok: true,
           adapter: await openYouTubeTranscriptPanel()
         };
+      case "youtube:fetch-url":
+        return fetchYouTubeUrl(message || {});
       case "page:context":
-        return buildPageContextPayload();
+        return buildPageContextPayload(message || {});
       default:
         return {
           ok: false,
@@ -89,8 +91,8 @@
     };
   }
 
-  function extractPagePayload() {
-    const payload = Dom.extractVisibleDocumentPayload(document);
+  function extractPagePayload(options = {}) {
+    const payload = extractDocumentPayload(options);
     const text = Text.sanitizeInput(payload.text);
     if (!text) {
       return {
@@ -106,8 +108,7 @@
       text,
       meta: {
         sourceType: contentKind,
-        sourceLabel:
-          contentKind === "article-content" ? "Article content" : "Visible page content",
+        sourceLabel: resolvePageSourceLabel(contentKind, payload.metadata?.extractor),
         title: getDisplayTitle(),
         includedSources: [contentKind],
         ...payload.metadata
@@ -115,8 +116,8 @@
     };
   }
 
-  async function buildPageContextPayload() {
-    const pagePayload = Dom.extractVisibleDocumentPayload(document);
+  async function buildPageContextPayload(options = {}) {
+    const pagePayload = extractDocumentPayload(options);
     const adapter = isYouTubeVideoPage() ? await buildYouTubePageAdapter() : null;
     const video = adapter ? buildVideoContextFromAdapter(adapter) : null;
     logger.info("buildPageContextPayload", {
@@ -143,6 +144,29 @@
         video
       }
     };
+  }
+
+  function extractDocumentPayload(options = {}) {
+    if (App.defuddleExtractor?.extractDocumentPayload) {
+      return App.defuddleExtractor.extractDocumentPayload(document, {
+        enableDefuddleExperiment: Boolean(options.enableDefuddleExperiment),
+        url: location.href
+      });
+    }
+
+    return Dom.extractVisibleDocumentPayload(document);
+  }
+
+  function resolvePageSourceLabel(contentKind, extractor) {
+    if (extractor === "defuddle") {
+      return contentKind === "article-content"
+        ? "Extracted article content"
+        : "Extracted page content";
+    }
+
+    return contentKind === "article-content"
+      ? "Article content"
+      : "Visible page content";
   }
 
   async function buildYouTubePageAdapter() {
@@ -344,6 +368,50 @@
     }
 
     return adapter;
+  }
+
+  async function fetchYouTubeUrl(options = {}) {
+    const requestUrl = String(options.url || "").trim();
+    if (!isAllowedYouTubeFetchUrl(requestUrl)) {
+      return {
+        ok: false,
+        error: "Unsupported YouTube fetch URL."
+      };
+    }
+
+    try {
+      const response = await fetch(requestUrl, {
+        credentials: "include"
+      });
+      const text = await response.text();
+      return {
+        ok: response.ok,
+        status: response.status || 0,
+        contentType: response.headers?.get?.("content-type") || "",
+        text
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error?.message || "The YouTube fetch request failed."
+      };
+    }
+  }
+
+  function isAllowedYouTubeFetchUrl(value) {
+    try {
+      const parsed = new URL(value, location.href);
+      const hostname = String(parsed.hostname || "").toLowerCase();
+      if (
+        parsed.protocol !== "https:" ||
+        !["www.youtube.com", "m.youtube.com", "youtube.com"].includes(hostname)
+      ) {
+        return false;
+      }
+      return parsed.pathname === "/api/timedtext";
+    } catch (error) {
+      return false;
+    }
   }
 
   function getYouTubeDescriptionText() {
@@ -1093,4 +1161,6 @@
 
   TestApi.pickDefaultCaptionTrack = pickDefaultCaptionTrack;
   TestApi.buildVideoContextFromAdapter = buildVideoContextFromAdapter;
+  TestApi.extractPagePayload = extractPagePayload;
+  TestApi.buildPageContextPayload = buildPageContextPayload;
 })();

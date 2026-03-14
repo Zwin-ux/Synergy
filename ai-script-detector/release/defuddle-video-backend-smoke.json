@@ -1,0 +1,1917 @@
+{
+  "generatedAt": "2026-03-13T23:35:52.528Z",
+  "matrixPath": "C:\\Users\\MazenZwin\\Downloads\\Synergy-master\\Synergy-master\\ai-script-detector\\release\\defuddle-video-matrix.json",
+  "request": {
+    "mode": "youtube",
+    "includeSources": [
+      "transcript",
+      "description",
+      "title"
+    ],
+    "trackBaseUrl": "",
+    "transcriptBias": "manual-en",
+    "requireTranscript": false,
+    "allowFallbackText": true
+  },
+  "filters": {
+    "canaryOnly": false,
+    "ids": [
+      "01-ted-your-body-language-may-s",
+      "25-storm-chasing-arch-tornado-outbreak-from-ka"
+    ],
+    "categories": [],
+    "limit": null,
+    "includeBackend": true,
+    "backendLocal": true,
+    "backendEndpointConfigured": false
+  },
+  "backend": {
+    "mode": "local",
+    "url": "http://127.0.0.1:63197/transcript/resolve",
+    "port": 63197
+  },
+  "builds": {
+    "control": {
+      "version": "0.1.0",
+      "stagingDir": "C:\\Users\\MazenZwin\\Downloads\\Synergy-master\\Synergy-master\\ai-script-detector\\dist\\defuddle-video-qa\\control",
+      "enableDefuddleExperiment": false
+    },
+    "defuddle": {
+      "version": "0.1.0",
+      "stagingDir": "C:\\Users\\MazenZwin\\Downloads\\Synergy-master\\Synergy-master\\ai-script-detector\\dist\\defuddle-video-qa\\defuddle",
+      "enableDefuddleExperiment": true
+    }
+  },
+  "variants": {
+    "control": {
+      "label": "control",
+      "buildKey": "control",
+      "allowBackendTranscriptFallback": false,
+      "backendTranscriptEndpointConfigured": false
+    },
+    "defuddle": {
+      "label": "defuddle",
+      "buildKey": "defuddle",
+      "allowBackendTranscriptFallback": false,
+      "backendTranscriptEndpointConfigured": false
+    },
+    "backendControl": {
+      "label": "backend-control",
+      "buildKey": "control",
+      "allowBackendTranscriptFallback": true,
+      "backendTranscriptEndpointConfigured": true
+    },
+    "backendDefuddle": {
+      "label": "backend-defuddle",
+      "buildKey": "defuddle",
+      "allowBackendTranscriptFallback": true,
+      "backendTranscriptEndpointConfigured": true
+    }
+  },
+  "summary": {
+    "total": 2,
+    "controlSuccess": 2,
+    "defuddleSuccess": 2,
+    "controlTranscriptWins": 0,
+    "defuddleTranscriptWins": 0,
+    "controlFallbackTextOnly": 2,
+    "defuddleFallbackTextOnly": 1,
+    "controlPreflightTranscriptAvailable": 2,
+    "defuddlePreflightTranscriptAvailable": 2,
+    "changedOutcomes": 1,
+    "defuddleDirectWins": 1,
+    "transcriptRegressions": 0,
+    "labelingIssues": 0,
+    "backendConfigured": true,
+    "backendControlSuccess": 2,
+    "backendDefuddleSuccess": 2,
+    "backendControlTranscriptWins": 0,
+    "backendDefuddleTranscriptWins": 0,
+    "backendControlRescues": 0,
+    "backendDefuddleRescues": 0,
+    "expectationMismatchCounts": {
+      "control": 1,
+      "defuddle": 1,
+      "backendControl": 1,
+      "backendDefuddle": 1
+    }
+  },
+  "matrix": [
+    {
+      "id": "01-ted-your-body-language-may-s",
+      "videoId": "Ks-_Mh1QhMc",
+      "label": "TED - Your Body Language May Shape Who You Are | Amy Cuddy | TED",
+      "url": "https://www.youtube.com/watch?v=Ks-_Mh1QhMc",
+      "title": "Your Body Language May Shape Who You Are | Amy Cuddy | TED",
+      "channel": "TED",
+      "durationEstimate": "~21 min",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "manual",
+      "testValue": "Clean, high-confidence talk audio is useful as a baseline manual-caption case.",
+      "category": "lecture",
+      "categories": [
+        "lecture",
+        "manual",
+        "english"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "transcript-preferred",
+      "expectedKind": "transcript",
+      "expectedOriginKind": "manual_caption_track",
+      "canary": true,
+      "expectedWinnerClass": "transcript-class",
+      "expectedLocalBehavior": "prefer-local-transcript",
+      "expectedBackendBehavior": "backend-only-if-local-misses",
+      "expectedDefuddleBehavior": "no-direct-win-when-transcript-succeeds",
+      "control": {
+        "id": "01-ted-your-body-language-may-s",
+        "ok": true,
+        "latencyMs": 14476,
+        "error": null,
+        "timeout": false,
+        "score": 37,
+        "verdict": "Mixed / possibly assisted",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Your Body Language May Shape Who You Are | Amy Cuddy | TED - Title + description fallback",
+        "explanation": "Repeated sentence openings appear throughout, including \"our nonverbals govern\", \"ted ideas worth\". Short phrase patterns repeat more than expected, such as \"our nonverbals govern\", \"nonverbals govern how\". Sentence rhythm has low burstiness and stays smoother than typical human drafts.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 53,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=Ks-_Mh1QhMc&ei=wZ60aYbNGLiosfIPs5D1kQs&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773470001&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=74A0A5EF06A3EC6E0A0CF19EBCC93A695B4B1CB4.2190B70341402E6E998B04F106E2AAE63182EFF8&key=yt8&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "Ks-_Mh1QhMc",
+            "transcriptParams": true,
+            "captionTrackCount": 53,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773444809216,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "Ks-_Mh1QhMc",
+            "transcriptParams": true,
+            "captionTrackCount": 53,
+            "observedTranscriptRequest": {
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "params": null,
+              "clientName": "1",
+              "clientVersion": "2.20260312.08.00",
+              "responseStatus": 400,
+              "observedAt": 1773444811645
+            },
+            "updatedAt": 1773444815939,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": [
+            {
+              "type": "request",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "method": "POST",
+              "headers": {
+                "content-type": "application/json",
+                "x-youtube-client-name": "1",
+                "x-youtube-client-version": "2.20260312.08.00",
+                "referer": "https://www.youtube.com/watch?v=Ks-_Mh1QhMc"
+              },
+              "postData": ""
+            },
+            {
+              "type": "response",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "status": 400,
+              "ok": false,
+              "headers": {
+                "content-type": "application/json; charset=UTF-8"
+              },
+              "body": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+            }
+          ]
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 356,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed"
+              ],
+              "errorCode": "caption_fetch_failed"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 463,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_request_shape_pending_validation",
+                "youtubei_failed"
+              ],
+              "errorCode": "youtubei_http_403"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 5531,
+              "sourceConfidence": null,
+              "warningCodes": [],
+              "errorCode": "timeout"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_fetch_failed",
+              "message": "Caption tracks were present, but the transcript payload could not be read."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_http_403",
+              "message": "The YouTube transcript endpoint returned 403."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "timeout",
+              "message": "timeout"
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        },
+        "failureClassification": {
+          "primary": "youtubei_failed_precondition",
+          "signals": [
+            "caption_track_fetch_failed",
+            "youtubei_http_403",
+            "youtubei_failed_precondition",
+            "dom_transcript_timeout",
+            "dom_transcript_panel_opened_no_segments",
+            "weak_fallback_only"
+          ]
+        }
+      },
+      "defuddle": {
+        "id": "01-ted-your-body-language-may-s",
+        "ok": true,
+        "latencyMs": 18158,
+        "error": null,
+        "timeout": false,
+        "score": 5,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Your Body Language May Shape Who You Are | Amy Cuddy | TED - Title + description fallback",
+        "explanation": "The passage did not trigger enough strong AI-like heuristics to support a high score.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 53,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=Ks-_Mh1QhMc&ei=4p60acqRMuGoir4PiP_C-AM&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773470034&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=EB257985C1D5217484650C1003E1170D26640809.5BFBDA9459BDFD85990749B9FF454EB2DAFD39E6&key=yt8&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "Ks-_Mh1QhMc",
+            "transcriptParams": true,
+            "captionTrackCount": 53,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773444845357,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "Ks-_Mh1QhMc",
+            "transcriptParams": true,
+            "captionTrackCount": 53,
+            "observedTranscriptRequest": {
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "params": null,
+              "clientName": "1",
+              "clientVersion": "2.20260312.08.00",
+              "responseStatus": 400,
+              "observedAt": 1773444847924
+            },
+            "updatedAt": 1773444852970,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": [
+            {
+              "type": "request",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "method": "POST",
+              "headers": {
+                "content-type": "application/json",
+                "x-youtube-client-name": "1",
+                "x-youtube-client-version": "2.20260312.08.00",
+                "referer": "https://www.youtube.com/watch?v=Ks-_Mh1QhMc"
+              },
+              "postData": ""
+            },
+            {
+              "type": "response",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "status": 400,
+              "ok": false,
+              "headers": {
+                "content-type": "application/json; charset=UTF-8"
+              },
+              "body": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+            }
+          ]
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 311,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed"
+              ],
+              "errorCode": "caption_fetch_failed"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 507,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_request_shape_pending_validation",
+                "youtubei_failed"
+              ],
+              "errorCode": "youtubei_http_403"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 5475,
+              "sourceConfidence": null,
+              "warningCodes": [],
+              "errorCode": "timeout"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_fetch_failed",
+              "message": "Caption tracks were present, but the transcript payload could not be read."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_http_403",
+              "message": "The YouTube transcript endpoint returned 403."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "timeout",
+              "message": "timeout"
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        },
+        "failureClassification": {
+          "primary": "youtubei_failed_precondition",
+          "signals": [
+            "caption_track_fetch_failed",
+            "youtubei_http_403",
+            "youtubei_failed_precondition",
+            "dom_transcript_timeout",
+            "dom_transcript_panel_opened_no_segments",
+            "weak_fallback_only"
+          ]
+        }
+      },
+      "backendControl": {
+        "id": "01-ted-your-body-language-may-s",
+        "ok": true,
+        "latencyMs": 24900,
+        "error": null,
+        "timeout": false,
+        "score": 5,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Your Body Language May Shape Who You Are | Amy Cuddy | TED - Title + description fallback",
+        "explanation": "The passage did not trigger enough strong AI-like heuristics to support a high score.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 53,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=Ks-_Mh1QhMc&ei=CZ-0aeaHB-SYsfIPtsuD-Ao&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773470073&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=2B0138999C808390CED55295C34E7A6E4ADE9E42.DC239614CF3C22D252D9FFE2357B67C2CDA21E6F&key=yt8&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "Ks-_Mh1QhMc",
+            "transcriptParams": true,
+            "captionTrackCount": 53,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773444881344,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "Ks-_Mh1QhMc",
+            "transcriptParams": true,
+            "captionTrackCount": 53,
+            "observedTranscriptRequest": {
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "params": null,
+              "clientName": "1",
+              "clientVersion": "2.20260312.08.00",
+              "responseStatus": 400,
+              "observedAt": 1773444885267
+            },
+            "updatedAt": 1773444898024,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": [
+            {
+              "type": "request",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "method": "POST",
+              "headers": {
+                "content-type": "application/json",
+                "x-youtube-client-name": "1",
+                "x-youtube-client-version": "2.20260312.08.00",
+                "referer": "https://www.youtube.com/watch?v=Ks-_Mh1QhMc"
+              },
+              "postData": ""
+            },
+            {
+              "type": "response",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "status": 400,
+              "ok": false,
+              "headers": {
+                "content-type": "application/json; charset=UTF-8"
+              },
+              "body": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+            }
+          ]
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 378,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed"
+              ],
+              "errorCode": "caption_fetch_failed"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 284,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_request_shape_pending_validation",
+                "youtubei_failed"
+              ],
+              "errorCode": "youtubei_http_403"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 5608,
+              "sourceConfidence": null,
+              "warningCodes": [],
+              "errorCode": "timeout"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 8670,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed",
+                "youtubei_failed",
+                "yt_dlp_not_configured",
+                "backend_headless_transcript_failed_precondition",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 8670,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed",
+                "youtubei_failed",
+                "yt_dlp_not_configured",
+                "backend_headless_transcript_failed_precondition",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_fetch_failed",
+              "message": "Caption tracks were present, but the transcript payload could not be read."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_http_403",
+              "message": "The YouTube transcript endpoint returned 403."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "timeout",
+              "message": "timeout"
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript",
+            "backendResolver:backend-transcript",
+            "backendResolver:backend-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        },
+        "failureClassification": {
+          "primary": "youtubei_failed_precondition",
+          "signals": [
+            "caption_track_fetch_failed",
+            "youtubei_http_403",
+            "youtubei_failed_precondition",
+            "dom_transcript_timeout",
+            "dom_transcript_panel_opened_no_segments",
+            "weak_fallback_only"
+          ]
+        }
+      },
+      "backendDefuddle": {
+        "id": "01-ted-your-body-language-may-s",
+        "ok": true,
+        "latencyMs": 14689,
+        "error": null,
+        "timeout": false,
+        "score": 37,
+        "verdict": "Mixed / possibly assisted",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Your Body Language May Shape Who You Are | Amy Cuddy | TED - Title + description fallback",
+        "explanation": "Repeated sentence openings appear throughout, including \"our nonverbals govern\", \"ted ideas worth\". Short phrase patterns repeat more than expected, such as \"our nonverbals govern\", \"nonverbals govern how\". Sentence rhythm has low burstiness and stays smoother than typical human drafts.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 53,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=Ks-_Mh1QhMc&ei=O5-0aeqDC8j4sfIPir2OyAE&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773470123&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=8FBB107EE111D26B95D4AC2B46394ECFA4556D38.8739B10A75BD6E8786B198A5F5AC91AC6E659B10&key=yt8&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "Ks-_Mh1QhMc",
+            "transcriptParams": true,
+            "captionTrackCount": 53,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773444930715,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "Ks-_Mh1QhMc",
+            "transcriptParams": true,
+            "captionTrackCount": 53,
+            "observedTranscriptRequest": {
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "params": null,
+              "clientName": "1",
+              "clientVersion": "2.20260312.08.00",
+              "responseStatus": 400,
+              "observedAt": 1773444933267
+            },
+            "updatedAt": 1773444937954,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": [
+            {
+              "type": "request",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "method": "POST",
+              "headers": {
+                "content-type": "application/json",
+                "x-youtube-client-name": "1",
+                "x-youtube-client-version": "2.20260312.08.00",
+                "referer": "https://www.youtube.com/watch?v=Ks-_Mh1QhMc"
+              },
+              "postData": ""
+            },
+            {
+              "type": "response",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "status": 400,
+              "ok": false,
+              "headers": {
+                "content-type": "application/json; charset=UTF-8"
+              },
+              "body": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+            }
+          ]
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 382,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed"
+              ],
+              "errorCode": "caption_fetch_failed"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 454,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_request_shape_pending_validation",
+                "youtubei_failed"
+              ],
+              "errorCode": "youtubei_http_403"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 5550,
+              "sourceConfidence": null,
+              "warningCodes": [],
+              "errorCode": "timeout"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 8,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed",
+                "youtubei_failed",
+                "yt_dlp_not_configured",
+                "backend_headless_transcript_failed_precondition",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 8,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed",
+                "youtubei_failed",
+                "yt_dlp_not_configured",
+                "backend_headless_transcript_failed_precondition",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_fetch_failed",
+              "message": "Caption tracks were present, but the transcript payload could not be read."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_http_403",
+              "message": "The YouTube transcript endpoint returned 403."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "timeout",
+              "message": "timeout"
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript",
+            "backendResolver:backend-transcript",
+            "backendResolver:backend-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        },
+        "failureClassification": {
+          "primary": "youtubei_failed_precondition",
+          "signals": [
+            "caption_track_fetch_failed",
+            "youtubei_http_403",
+            "youtubei_failed_precondition",
+            "dom_transcript_timeout",
+            "dom_transcript_panel_opened_no_segments",
+            "weak_fallback_only"
+          ]
+        }
+      },
+      "expectations": {
+        "control": {
+          "expected": "transcript-class",
+          "matches": false,
+          "actual": "fallback-text-only"
+        },
+        "defuddle": {
+          "expected": "transcript-class",
+          "matches": false,
+          "actual": "fallback-text-only"
+        },
+        "backendControl": {
+          "expected": "transcript-class",
+          "matches": false,
+          "actual": "fallback-text-only"
+        },
+        "backendDefuddle": {
+          "expected": "transcript-class",
+          "matches": false,
+          "actual": "fallback-text-only"
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      },
+      "backendComparison": {
+        "control": {
+          "changed": false,
+          "backendRescue": false
+        },
+        "defuddle": {
+          "changed": false,
+          "backendRescue": false
+        }
+      }
+    },
+    {
+      "id": "25-storm-chasing-arch-tornado-outbreak-from-ka",
+      "videoId": "NYsANnAhr6k",
+      "label": "storm-chasing archive channel - Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive",
+      "url": "https://www.youtube.com/watch?v=NYsANnAhr6k",
+      "title": "Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive",
+      "channel": "storm-chasing archive channel",
+      "durationEstimate": "~3-8 hr",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "unclear",
+      "testValue": "Livestream archive structure is useful for fallback handling when transcripts are delayed or inconsistent.",
+      "category": "livestream",
+      "categories": [
+        "livestream",
+        "unclear",
+        "english",
+        "longform",
+        "fallback-stress"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "defuddle-fallback-candidate",
+      "expectedKind": "direct-content",
+      "expectedOriginKind": null,
+      "canary": true,
+      "expectedWinnerClass": "direct-content",
+      "expectedLocalBehavior": "weak-fallback-acceptable",
+      "expectedBackendBehavior": "backend-transcript-acceptable",
+      "expectedDefuddleBehavior": "direct-content-upgrade-preferred",
+      "control": {
+        "id": "25-storm-chasing-arch-tornado-outbreak-from-ka",
+        "ok": true,
+        "latencyMs": 12539,
+        "error": null,
+        "timeout": false,
+        "score": 3,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=NYsANnAhr6k&ei=0J60adD-AsyO2_gPiqS2wAY&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773470016&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=80CDE274933530D43CAF57D290C34CDD096FAF74.539E4E3AA74600742AF3259385EF097D79C2C352&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "NYsANnAhr6k",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773444822161,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "NYsANnAhr6k",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": {
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "params": null,
+              "clientName": "1",
+              "clientVersion": "2.20260312.08.00",
+              "responseStatus": 400,
+              "observedAt": 1773444827901
+            },
+            "updatedAt": 1773444828693,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": [
+            {
+              "type": "request",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "method": "POST",
+              "headers": {
+                "content-type": "application/json",
+                "x-youtube-client-name": "1",
+                "x-youtube-client-version": "2.20260312.08.00",
+                "referer": "https://www.youtube.com/watch?v=NYsANnAhr6k"
+              },
+              "postData": ""
+            },
+            {
+              "type": "response",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "status": 400,
+              "ok": false,
+              "headers": {
+                "content-type": "application/json; charset=UTF-8"
+              },
+              "body": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+            }
+          ]
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 353,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed"
+              ],
+              "errorCode": "caption_fetch_failed"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 424,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_request_shape_pending_validation",
+                "youtubei_failed"
+              ],
+              "errorCode": "youtubei_http_403"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 5553,
+              "sourceConfidence": null,
+              "warningCodes": [],
+              "errorCode": "timeout"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_fetch_failed",
+              "message": "Caption tracks were present, but the transcript payload could not be read."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_http_403",
+              "message": "The YouTube transcript endpoint returned 403."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "timeout",
+              "message": "timeout"
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        },
+        "failureClassification": {
+          "primary": "youtubei_failed_precondition",
+          "signals": [
+            "caption_track_fetch_failed",
+            "youtubei_http_403",
+            "youtubei_failed_precondition",
+            "dom_transcript_timeout",
+            "dom_transcript_panel_opened_no_segments",
+            "weak_fallback_only"
+          ]
+        }
+      },
+      "defuddle": {
+        "id": "25-storm-chasing-arch-tornado-outbreak-from-ka",
+        "ok": true,
+        "latencyMs": 13932,
+        "error": null,
+        "timeout": false,
+        "score": 10,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive - Extracted page content",
+        "explanation": "The passage did not trigger enough strong AI-like heuristics to support a high score.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": null,
+          "recoveryTier": null,
+          "sourceTrustTier": null,
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=NYsANnAhr6k&ei=9Z60ae2HA_WW2_gPkOi6qAE&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773470053&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=1BDD3F54F6C02A641BD36E7DC7458A8A626270EF.608EA5530B1E9A7780602803A618920E60ECA2F5&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "NYsANnAhr6k",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773444859274,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "NYsANnAhr6k",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": {
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "params": null,
+              "clientName": "1",
+              "clientVersion": "2.20260312.08.00",
+              "responseStatus": 400,
+              "observedAt": 1773444866291
+            },
+            "updatedAt": 1773444867080,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": [
+            {
+              "type": "request",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "method": "POST",
+              "headers": {
+                "content-type": "application/json",
+                "x-youtube-client-name": "1",
+                "x-youtube-client-version": "2.20260312.08.00",
+                "referer": "https://www.youtube.com/watch?v=NYsANnAhr6k"
+              },
+              "postData": ""
+            },
+            {
+              "type": "response",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "status": 400,
+              "ok": false,
+              "headers": {
+                "content-type": "application/json; charset=UTF-8"
+              },
+              "body": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+            }
+          ]
+        },
+        "acquisition": {
+          "kind": "page-content",
+          "sourceLabel": "Extracted page content",
+          "providerClass": "local",
+          "strategy": null,
+          "acquisitionState": null,
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": null,
+          "recoveryTier": null,
+          "sourceTrustTier": null,
+          "winnerReason": null,
+          "languageCode": null,
+          "warnings": [
+            "fallback_source",
+            "user_fallback_override",
+            "weak_evidence",
+            "page_capture_noise"
+          ],
+          "coverageRatio": 0.089,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 314,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed"
+              ],
+              "errorCode": "caption_fetch_failed"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 452,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_request_shape_pending_validation",
+                "youtubei_failed"
+              ],
+              "errorCode": "youtubei_http_403"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 5532,
+              "sourceConfidence": null,
+              "warningCodes": [],
+              "errorCode": "timeout"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_fetch_failed",
+              "message": "Caption tracks were present, but the transcript payload could not be read."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_http_403",
+              "message": "The YouTube transcript endpoint returned 403."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "timeout",
+              "message": "timeout"
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript",
+            "directExtractor:defuddle"
+          ]
+        },
+        "direct": {
+          "extractor": "defuddle",
+          "extractorWarnings": [],
+          "extractorDurationMs": 0,
+          "legacyExtractorDurationMs": 0,
+          "defuddleExtractorDurationMs": 21,
+          "defuddleAttempted": true
+        },
+        "failureClassification": {
+          "primary": "youtubei_failed_precondition",
+          "signals": [
+            "caption_track_fetch_failed",
+            "youtubei_http_403",
+            "youtubei_failed_precondition",
+            "dom_transcript_timeout",
+            "dom_transcript_panel_opened_no_segments"
+          ]
+        }
+      },
+      "backendControl": {
+        "id": "25-storm-chasing-arch-tornado-outbreak-from-ka",
+        "ok": true,
+        "latencyMs": 21818,
+        "error": null,
+        "timeout": false,
+        "score": 3,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=NYsANnAhr6k&ei=Ip-0aaGOC_CKsfIP96SCsAw&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773470098&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=2C6B678370A75C988DEB1B588E2E22956405A317.7C2D8F8B97F2FB3E124AB2E98C4AE00464853518&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "NYsANnAhr6k",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773444904097,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "NYsANnAhr6k",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": {
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "params": null,
+              "clientName": "1",
+              "clientVersion": "2.20260312.08.00",
+              "responseStatus": 400,
+              "observedAt": 1773444910448
+            },
+            "updatedAt": 1773444920076,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": [
+            {
+              "type": "request",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "method": "POST",
+              "headers": {
+                "content-type": "application/json",
+                "x-youtube-client-name": "1",
+                "x-youtube-client-version": "2.20260312.08.00",
+                "referer": "https://www.youtube.com/watch?v=NYsANnAhr6k"
+              },
+              "postData": ""
+            },
+            {
+              "type": "response",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "status": 400,
+              "ok": false,
+              "headers": {
+                "content-type": "application/json; charset=UTF-8"
+              },
+              "body": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+            }
+          ]
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 281,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed"
+              ],
+              "errorCode": "caption_fetch_failed"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 507,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_request_shape_pending_validation",
+                "youtubei_failed"
+              ],
+              "errorCode": "youtubei_http_403"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 5460,
+              "sourceConfidence": null,
+              "warningCodes": [],
+              "errorCode": "timeout"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 8514,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed",
+                "youtubei_failed",
+                "yt_dlp_not_configured",
+                "backend_headless_transcript_failed_precondition",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 8514,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed",
+                "youtubei_failed",
+                "yt_dlp_not_configured",
+                "backend_headless_transcript_failed_precondition",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_fetch_failed",
+              "message": "Caption tracks were present, but the transcript payload could not be read."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_http_403",
+              "message": "The YouTube transcript endpoint returned 403."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "timeout",
+              "message": "timeout"
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript",
+            "backendResolver:backend-transcript",
+            "backendResolver:backend-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        },
+        "failureClassification": {
+          "primary": "youtubei_failed_precondition",
+          "signals": [
+            "caption_track_fetch_failed",
+            "youtubei_http_403",
+            "youtubei_failed_precondition",
+            "dom_transcript_timeout",
+            "dom_transcript_panel_opened_no_segments",
+            "weak_fallback_only"
+          ]
+        }
+      },
+      "backendDefuddle": {
+        "id": "25-storm-chasing-arch-tornado-outbreak-from-ka",
+        "ok": true,
+        "latencyMs": 13131,
+        "error": null,
+        "timeout": false,
+        "score": 10,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive - Extracted page content",
+        "explanation": "The passage did not trigger enough strong AI-like heuristics to support a high score.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": null,
+          "recoveryTier": null,
+          "sourceTrustTier": null,
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=NYsANnAhr6k&ei=SZ-0aY-BOrCZsfIPjPCO8QU&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773470138&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=84F25263E1830A9958E17937D0D62C8F4C59488F.9D0862F10ED1A1E3F724E54D476DCBEE1FAC973B&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "pageDebug": {
+          "bootstrapBefore": {
+            "rawAvailable": true,
+            "videoId": "NYsANnAhr6k",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": null,
+            "updatedAt": 1773444944181,
+            "visibleTranscriptSegments": 0
+          },
+          "bootstrapAfter": {
+            "rawAvailable": true,
+            "videoId": "NYsANnAhr6k",
+            "transcriptParams": true,
+            "captionTrackCount": 1,
+            "observedTranscriptRequest": {
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "params": null,
+              "clientName": "1",
+              "clientVersion": "2.20260312.08.00",
+              "responseStatus": 400,
+              "observedAt": 1773444949722
+            },
+            "updatedAt": 1773444951222,
+            "visibleTranscriptSegments": 0
+          },
+          "youtubeiTrace": [
+            {
+              "type": "request",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "method": "POST",
+              "headers": {
+                "content-type": "application/json",
+                "x-youtube-client-name": "1",
+                "x-youtube-client-version": "2.20260312.08.00",
+                "referer": "https://www.youtube.com/watch?v=NYsANnAhr6k"
+              },
+              "postData": ""
+            },
+            {
+              "type": "response",
+              "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+              "status": 400,
+              "ok": false,
+              "headers": {
+                "content-type": "application/json; charset=UTF-8"
+              },
+              "body": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+            }
+          ]
+        },
+        "acquisition": {
+          "kind": "page-content",
+          "sourceLabel": "Extracted page content",
+          "providerClass": "local",
+          "strategy": null,
+          "acquisitionState": null,
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": null,
+          "recoveryTier": null,
+          "sourceTrustTier": null,
+          "winnerReason": null,
+          "languageCode": null,
+          "warnings": [
+            "fallback_source",
+            "user_fallback_override",
+            "weak_evidence",
+            "page_capture_noise"
+          ],
+          "coverageRatio": 0.089,
+          "requestShapeValidation": null,
+          "resolverAttempts": [
+            {
+              "provider": "youtubeResolver",
+              "strategy": "caption-track",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 307,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed"
+              ],
+              "errorCode": "caption_fetch_failed"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "youtubei-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 214,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "youtubei_request_shape_pending_validation",
+                "youtubei_failed"
+              ],
+              "errorCode": "youtubei_http_403"
+            },
+            {
+              "provider": "youtubeResolver",
+              "strategy": "dom-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 5661,
+              "sourceConfidence": null,
+              "warningCodes": [],
+              "errorCode": "timeout"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 12,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed",
+                "youtubei_failed",
+                "yt_dlp_not_configured",
+                "backend_headless_transcript_failed_precondition",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            },
+            {
+              "provider": "backendResolver",
+              "strategy": "backend-transcript",
+              "ok": false,
+              "skipped": false,
+              "durationMs": 12,
+              "sourceConfidence": null,
+              "warningCodes": [
+                "caption_fetch_failed",
+                "youtubei_failed",
+                "yt_dlp_not_configured",
+                "backend_headless_transcript_failed_precondition",
+                "asr_disabled"
+              ],
+              "errorCode": "asr_disabled"
+            }
+          ],
+          "errors": [
+            {
+              "strategy": "caption-track",
+              "code": "caption_fetch_failed",
+              "message": "Caption tracks were present, but the transcript payload could not be read."
+            },
+            {
+              "strategy": "youtubei-transcript",
+              "code": "youtubei_http_403",
+              "message": "The YouTube transcript endpoint returned 403."
+            },
+            {
+              "strategy": "dom-transcript",
+              "code": "timeout",
+              "message": "timeout"
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            },
+            {
+              "strategy": "backend-transcript",
+              "code": "asr_disabled",
+              "message": "Transcript and caption recovery were unavailable, and audio ASR was skipped by policy."
+            }
+          ],
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript",
+            "backendResolver:backend-transcript",
+            "backendResolver:backend-transcript",
+            "directExtractor:defuddle"
+          ]
+        },
+        "direct": {
+          "extractor": "defuddle",
+          "extractorWarnings": [],
+          "extractorDurationMs": 0,
+          "legacyExtractorDurationMs": 0,
+          "defuddleExtractorDurationMs": 32,
+          "defuddleAttempted": true
+        },
+        "failureClassification": {
+          "primary": "youtubei_failed_precondition",
+          "signals": [
+            "caption_track_fetch_failed",
+            "youtubei_http_403",
+            "youtubei_failed_precondition",
+            "dom_transcript_timeout",
+            "dom_transcript_panel_opened_no_segments"
+          ]
+        }
+      },
+      "expectations": {
+        "control": {
+          "expected": "direct-or-fallback",
+          "matches": true,
+          "actual": "fallback-text-only"
+        },
+        "defuddle": {
+          "expected": "direct-or-fallback",
+          "matches": true,
+          "actual": "direct-content"
+        },
+        "backendControl": {
+          "expected": "transcript-or-direct-or-fallback",
+          "matches": true,
+          "actual": "fallback-text-only"
+        },
+        "backendDefuddle": {
+          "expected": "transcript-or-direct-or-fallback",
+          "matches": true,
+          "actual": "direct-content"
+        }
+      },
+      "comparison": {
+        "changed": true,
+        "transcriptRegression": false,
+        "defuddleDirectWin": true,
+        "labelingIssue": false,
+        "summary": "Defuddle direct content replaced the control outcome."
+      },
+      "backendComparison": {
+        "control": {
+          "changed": false,
+          "backendRescue": false
+        },
+        "defuddle": {
+          "changed": false,
+          "backendRescue": false
+        }
+      }
+    }
+  ]
+}

@@ -12,6 +12,7 @@ Promotion rules:
 
 - unlisted Chrome Web Store staging only happens when `fast-checks`, `smoke-e2e`, and the latest canary are green
 - public release only happens after several consecutive healthy canary days and a fresh staged QA pass
+- use `npm run release:readiness` for canary promotion decisions and `npm run release:readiness:public` before public release
 
 ## Authenticated backend dependency
 

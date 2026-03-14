@@ -59,7 +59,13 @@ For Google Cloud Run deployment, use `release/CLOUD_RUN.md`.
 
 For staged consumer QA and daily canary checks, use `release/STAGING_QA.md`.
 
+For the explicit go/no-go evaluator across Defuddle QA, staged QA, and backend capability metadata, use `release/RELEASE_READINESS.md`.
+
 For shared runtime and report contracts, use `release/CONTRACTS.md`.
+
+For the next-phase transcript recovery and Defuddle hardening plan, use `release/TRANSCRIPT_HARDENING_SPEC.md`.
+
+For the detailed engineering review of the next backend recovery slice, use `release/BACKEND_RECOVERY_PLAN_ENG_REVIEW.md`.
 
 For release gates, cookie rotation, and canary promotion rules, use `release/OPERATIONS.md`.
 

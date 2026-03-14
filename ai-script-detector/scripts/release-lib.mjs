@@ -27,7 +27,8 @@ export const RUNTIME_PATHS = [
   "surface",
   "transcript",
   "detector",
-  "utils"
+  "utils",
+  "vendor"
 ];
 
 export function loadManifest(rootDir = ROOT_DIR) {
@@ -175,13 +176,17 @@ export function resolveBuildRuntimeConfig(environment = process.env) {
     "optional"
       ? "optional"
       : "required";
+  const enableDefuddleExperiment = readBooleanEnv(
+    environment.SCRIPTLENS_ENABLE_DEFUDDLE_EXPERIMENT
+  );
 
   return {
     defaultBackendTranscriptEndpoint: endpoint,
     allowBackendTranscriptFallbackByDefault: Boolean(endpoint),
     backendOrigin,
     backendPermissionMode,
-    publicSiteOrigin
+    publicSiteOrigin,
+    enableDefuddleExperiment
   };
 }
 
@@ -226,7 +231,8 @@ function writeRuntimeConfig(targetPath, runtimeConfig) {
     )},
     allowBackendTranscriptFallbackByDefault: ${runtimeConfig.allowBackendTranscriptFallbackByDefault ? "true" : "false"},
     backendPermissionMode: ${JSON.stringify(runtimeConfig.backendPermissionMode)},
-    publicSiteOrigin: ${JSON.stringify(runtimeConfig.publicSiteOrigin || "")}
+    publicSiteOrigin: ${JSON.stringify(runtimeConfig.publicSiteOrigin || "")},
+    enableDefuddleExperiment: ${runtimeConfig.enableDefuddleExperiment ? "true" : "false"}
   };
 })(globalThis);
 `;
@@ -251,4 +257,9 @@ function normalizeOrigin(value) {
 
 function dedupeList(values) {
   return Array.from(new Set((Array.isArray(values) ? values : []).filter(Boolean)));
+}
+
+function readBooleanEnv(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes";
 }

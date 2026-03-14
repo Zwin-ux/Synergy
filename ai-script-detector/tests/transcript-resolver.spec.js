@@ -73,6 +73,9 @@ test.describe("ScriptLens transcript resolver contracts", () => {
     expect(result.strategy).toBeNull();
     expect(result.quality).toBe("strong-transcript");
     expect(result.sourceConfidence).toBe("high");
+    expect(result.recoveryTier).toBeNull();
+    expect(result.originKind).toBeNull();
+    expect(result.sourceTrustTier).toBeNull();
     expect(result.segmentCount).toBe(0);
     expect(result.segments).toEqual([]);
   });
@@ -369,6 +372,55 @@ test.describe("ScriptLens transcript resolver contracts", () => {
 
     expect(result.ok).toBeFalsy();
     expect(result.errorCode).toBe("caption_fetch_failed");
+  });
+
+  test("falls back to page-origin caption fetch when the worker fetch path fails", async () => {
+    const sandbox = loadSandbox({
+      fetch: async () => {
+        throw new Error("worker fetch blocked");
+      }
+    });
+
+    const result = await sandbox.ScriptLens.transcript.strategies.captionTrack.run({
+      adapter: {
+        videoDurationSeconds: 240,
+        bootstrapSnapshot: {
+          captionTracks: [
+            {
+              baseUrl: "https://www.youtube.com/api/timedtext?v=test123&lang=en",
+              languageCode: "en",
+              kind: "",
+              name: { simpleText: "English" }
+            }
+          ]
+        }
+      },
+      pageFetch: async () => ({
+        ok: true,
+        status: 200,
+        contentType: "application/json",
+        text: JSON.stringify({
+          events: [
+            {
+              tStartMs: 0,
+              dDurationMs: 1800,
+              segs: [{ utf8: "First page-fetched caption line with enough words to count." }]
+            },
+            {
+              tStartMs: 1800,
+              dDurationMs: 2200,
+              segs: [{ utf8: "Second page-fetched caption line keeps the payload readable." }]
+            }
+          ]
+        })
+      }),
+      signal: new AbortController().signal
+    });
+
+    expect(result.ok).toBeTruthy();
+    expect(result.strategy).toBe("caption-track");
+    expect(result.text).toContain("First page-fetched caption line");
+    expect(result.segments.length).toBe(2);
   });
 
   test("loads DOM transcript segments through the transcript panel loader", async () => {

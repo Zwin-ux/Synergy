@@ -10,6 +10,7 @@ import {
   formatWorkspaceHandoff,
   isRetryableInlineTransportError
 } from "./staged-consumer-qa-lib.mjs";
+import { fetchBackendMetadata } from "./release-readiness-lib.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -81,9 +82,11 @@ async function main() {
     inline: inlineResults.find((result) => result.id === entry.id) || null
   }));
   const summary = buildSummary(mergedResults);
+  const backendMetadata = await fetchBackendMetadata(backendOrigin);
   const report = {
     generatedAt,
     backendOrigin,
+    backendMetadata,
     backendClientInstanceId,
     inlineClientInstanceId: args.backendOnly ? null : inlineClientInstanceId,
     matrix: mergedResults,

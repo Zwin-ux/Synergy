@@ -13,6 +13,9 @@ test.describe("ScriptLens shared contracts", () => {
     expect(Contracts.PACKAGING_ENV_KEYS.publicSiteOrigin).toBe(
       "SCRIPTLENS_PUBLIC_SITE_ORIGIN"
     );
+    expect(Contracts.PACKAGING_ENV_KEYS.enableDefuddleExperiment).toBe(
+      "SCRIPTLENS_ENABLE_DEFUDDLE_EXPERIMENT"
+    );
   });
 
   test("categorizes failure codes through the shared taxonomy", () => {

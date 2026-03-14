@@ -1,5 +1,9 @@
 const http = require("http");
-const { resolveTranscriptRequest, DEFAULT_TOTAL_TIMEOUT_MS } = require("./resolve");
+const {
+  resolveBackendCapabilitySnapshot,
+  resolveTranscriptRequest,
+  DEFAULT_TOTAL_TIMEOUT_MS
+} = require("./resolve");
 const Contracts = require("../shared/contracts");
 const Policy = require("../transcript/policy");
 const packageManifest = require("../package.json");
@@ -22,7 +26,7 @@ function createBackendServer(options = {}) {
   const runtimeConfig = resolveBackendRuntimeConfig(options);
   const policy = Policy.resolvePolicy(runtimeConfig.policyOverrides || {});
   const backendState = options.backendState || createBackendState(policy);
-  const metadata = createBackendMetadata(runtimeConfig);
+  const metadata = createBackendMetadata(runtimeConfig, options);
 
   return http.createServer(async (request, response) => {
     applyCorsHeaders(response);
@@ -366,13 +370,18 @@ function clampNumber(value, min, max, fallback) {
   return Math.max(min, Math.min(max, number));
 }
 
-function createBackendMetadata(runtimeConfig) {
+function createBackendMetadata(runtimeConfig, options = {}) {
   return {
     service: "scriptlens-backend",
     version: packageManifest.version || "0.0.0",
     contractVersion: Contracts.CONTRACT_VERSION,
     asrEnabled: Boolean(runtimeConfig.enableAutomaticAsr),
-    authenticatedModeEnabled: Boolean(runtimeConfig.authenticatedModeEnabled)
+    authenticatedModeEnabled: Boolean(runtimeConfig.authenticatedModeEnabled),
+    capabilities: resolveBackendCapabilitySnapshot({
+      ...options,
+      policyOverrides: runtimeConfig.policyOverrides,
+      enableAutomaticAsr: runtimeConfig.enableAutomaticAsr
+    })
   };
 }
 
