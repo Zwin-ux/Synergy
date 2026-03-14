@@ -55,31 +55,22 @@
 
     const attemptUrls = buildAttemptUrls(track.baseUrl);
     for (const attemptUrl of attemptUrls) {
-      try {
-        logger.info("run:fetchAttempt", {
-          traceId: context?.traceId || "",
-          attemptUrl
-        });
-        const response = await fetch(attemptUrl, {
-          credentials: "include",
-          signal: context?.signal
-        });
-        logger.info("run:fetchResponse", {
-          traceId: context?.traceId || "",
-          attemptUrl,
-          status: response.status || 0,
-          ok: Boolean(response.ok),
-          contentType: response.headers?.get?.("content-type") || ""
-        });
-        if (!response.ok) {
+      const transports = ["extension"];
+      if (typeof context?.pageFetch === "function") {
+        transports.push("page");
+      }
+
+      for (const transport of transports) {
+        const payloadText = await readCaptionPayload(attemptUrl, context, transport);
+        if (!payloadText) {
           continue;
         }
 
-        const payloadText = await response.text();
         const parsed = parseCaptionPayload(payloadText);
         logger.info("run:parsedPayload", {
           traceId: context?.traceId || "",
           attemptUrl,
+          transport,
           payloadLength: String(payloadText || "").length,
           textLength: String(parsed.text || "").length,
           segmentCount: Array.isArray(parsed.segments) ? parsed.segments.length : 0
@@ -102,16 +93,6 @@
             warnings: track.kind === "asr" ? ["generated_captions"] : []
           };
         }
-      } catch (error) {
-        logger.warn("run:fetchFailed", {
-          traceId: context?.traceId || "",
-          attemptUrl,
-          error: {
-            message: error?.message || "",
-            stack: error?.stack || ""
-          }
-        });
-        continue;
       }
     }
 
@@ -204,6 +185,58 @@
     }
 
     return values;
+  }
+
+  async function readCaptionPayload(attemptUrl, context, transport) {
+    try {
+      logger.info("run:fetchAttempt", {
+        traceId: context?.traceId || "",
+        attemptUrl,
+        transport
+      });
+
+      if (transport === "page" && typeof context?.pageFetch === "function") {
+        const response = await context.pageFetch({
+          url: attemptUrl
+        });
+        logger.info("run:pageFetchResponse", {
+          traceId: context?.traceId || "",
+          attemptUrl,
+          status: response?.status || 0,
+          ok: Boolean(response?.ok),
+          contentType: response?.contentType || "",
+          error: response?.error || ""
+        });
+        return response?.ok ? response.text || "" : "";
+      }
+
+      const response = await fetch(attemptUrl, {
+        credentials: "include",
+        signal: context?.signal
+      });
+      logger.info("run:fetchResponse", {
+        traceId: context?.traceId || "",
+        attemptUrl,
+        status: response.status || 0,
+        ok: Boolean(response.ok),
+        contentType: response.headers?.get?.("content-type") || ""
+      });
+      if (!response.ok) {
+        return "";
+      }
+      return await response.text();
+    } catch (error) {
+      logger.warn("run:fetchFailed", {
+        traceId: context?.traceId || "",
+        attemptUrl,
+        transport,
+        error: {
+          message: error?.message || "",
+          stack: error?.stack || ""
+        }
+      });
+      return "";
+    }
   }
 
   function parseCaptionPayload(payloadText) {

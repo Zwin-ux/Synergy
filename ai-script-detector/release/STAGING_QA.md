@@ -68,6 +68,20 @@ The report includes:
 - compactness check
 - workspace handoff result
 
+After the backend canary or full staged pass finishes, evaluate the combined gate with:
+
+```powershell
+$env:SCRIPTLENS_BACKEND_ORIGIN='https://YOUR_CLOUD_RUN_URL'
+npm.cmd run release:readiness
+```
+
+For public release, use:
+
+```powershell
+$env:SCRIPTLENS_BACKEND_ORIGIN='https://YOUR_CLOUD_RUN_URL'
+npm.cmd run release:readiness:public
+```
+
 ## 4. Cookie and auth-session health
 
 Authenticated acquisition is now a real dependency for production recovery. Treat cookie health as

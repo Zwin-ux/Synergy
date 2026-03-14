@@ -101,4 +101,54 @@ test.describe("ScriptLens service worker report helpers", () => {
     expect(report.verdict).toBe("Not enough spoken text");
     expect(report.scoringSummary).toContain("does not contain enough spoken text");
   });
+
+  test("keeps direct-content report metadata out of transcript recovery taxonomies", () => {
+    const report = Reports.buildAnalysisReport(
+      {
+        acquisition: {
+          kind: "page-content",
+          sourceLabel: "Extracted page content",
+          sourceConfidence: "medium",
+          quality: "partial-transcript",
+          providerClass: "local",
+          coverageRatio: 0.41,
+          warnings: ["fallback_source"]
+        },
+        detection: {
+          aiScore: 34,
+          verdict: "Mixed / possibly assisted",
+          explanation: "The extracted page content was usable but not transcript-derived.",
+          reasons: ["The extracted page content was usable but not transcript-derived."],
+          categoryScores: {},
+          triggeredPatterns: [],
+          flaggedSentences: []
+        },
+        legacyReport: {
+          metadata: {
+            wordCount: 320,
+            sentenceCount: 14
+          }
+        },
+        settings: {
+          sensitivity: "medium"
+        },
+        sourceLabel: "YouTube video - Demo - Extracted page content",
+        directMeta: {
+          sourceType: "youtube"
+        }
+      },
+      {
+        disclaimer: "Example"
+      }
+    );
+
+    const snapshot = Contracts.buildAnalysisContractSnapshot(report);
+
+    expect(report.sourceMeta.recoveryTier).toBeNull();
+    expect(report.sourceMeta.originKind).toBeNull();
+    expect(report.sourceMeta.sourceTrustTier).toBeNull();
+    expect(snapshot.recoveryTier).toBeNull();
+    expect(snapshot.originKind).toBeNull();
+    expect(snapshot.sourceTrustTier).toBeNull();
+  });
 });

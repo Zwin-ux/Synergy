@@ -1,0 +1,230 @@
+{
+  "generatedAt": "2026-03-13T23:10:38.645Z",
+  "url": "https://www.youtube.com/watch?v=aircAruvnKk",
+  "settleMs": 8000,
+  "timeoutMs": 120000,
+  "initial": {
+    "title": "But what is a neural network? | Deep learning chapter 1 - YouTube",
+    "videoId": "aircAruvnKk",
+    "captionTrackCount": 31,
+    "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=aircAruvnKk&ei=XJm0aba6K-SYsfIPgOmF6As&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773468620&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=AD773CE88C366CF098AAB689DA75987E40265F58.8FFA0BFB9AC96B5F344D305D7F0FE510229864BB&key=yt8&lang=ar",
+    "transcriptParamsPresent": true,
+    "apiKeyPresent": true,
+    "clientName": "WEB",
+    "clientVersion": "2.20260312.08.00",
+    "panelVisibility": "ENGAGEMENT_PANEL_VISIBILITY_HIDDEN",
+    "panelHasContinuation": true,
+    "visibleTranscriptSegments": 0
+  },
+  "timedtext": {
+    "ok": true,
+    "baseUrl": "https://www.youtube.com/api/timedtext?v=aircAruvnKk&ei=XJm0aba6K-SYsfIPgOmF6As&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773468620&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=AD773CE88C366CF098AAB689DA75987E40265F58.8FFA0BFB9AC96B5F344D305D7F0FE510229864BB&key=yt8&lang=ar",
+    "outputs": [
+      {
+        "format": "default",
+        "status": 200,
+        "ok": true,
+        "contentType": "text/html; charset=UTF-8",
+        "textLength": 0,
+        "textStart": ""
+      },
+      {
+        "format": "json3",
+        "status": 200,
+        "ok": true,
+        "contentType": "text/html; charset=UTF-8",
+        "textLength": 0,
+        "textStart": ""
+      },
+      {
+        "format": "srv3",
+        "status": 200,
+        "ok": true,
+        "contentType": "text/html; charset=UTF-8",
+        "textLength": 0,
+        "textStart": ""
+      },
+      {
+        "format": "vtt",
+        "status": 200,
+        "ok": true,
+        "contentType": "text/html; charset=UTF-8",
+        "textLength": 0,
+        "textStart": ""
+      }
+    ]
+  },
+  "bootstrapYoutubei": {
+    "ok": false,
+    "status": 400,
+    "paramsLength": 120,
+    "paramsStart": "CgthaXJjQXJ1dm5LaxIOQ2dBU0FtVnVHZ0ElM0QYASozZW5nYWdlbWVudC1wYW5lbC1zZWFyY2hhYmxl",
+    "bodySnippet": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+  },
+  "internalContinuation": {
+    "hadApp": true,
+    "hadShowCommand": true,
+    "hadContinuationEndpoint": true,
+    "panelVisibilityBefore": "ENGAGEMENT_PANEL_VISIBILITY_HIDDEN",
+    "visibleSegmentsBefore": 0,
+    "showResolved": true,
+    "panelVisibilityAfterShow": "ENGAGEMENT_PANEL_VISIBILITY_HIDDEN",
+    "continuationResolved": true,
+    "panelVisibilityAfterContinuation": "ENGAGEMENT_PANEL_VISIBILITY_HIDDEN",
+    "visibleSegmentsAfter": 0
+  },
+  "finalState": {
+    "title": "But what is a neural network? | Deep learning chapter 1 - YouTube",
+    "videoId": "aircAruvnKk",
+    "captionTrackCount": 31,
+    "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=aircAruvnKk&ei=XJm0aba6K-SYsfIPgOmF6As&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773468620&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=AD773CE88C366CF098AAB689DA75987E40265F58.8FFA0BFB9AC96B5F344D305D7F0FE510229864BB&key=yt8&lang=ar",
+    "transcriptParamsPresent": true,
+    "apiKeyPresent": true,
+    "clientName": "WEB",
+    "clientVersion": "2.20260312.08.00",
+    "panelVisibility": "ENGAGEMENT_PANEL_VISIBILITY_EXPANDED",
+    "panelHasContinuation": true,
+    "visibleTranscriptSegments": 0
+  },
+  "transcriptTrace": [
+    {
+      "type": "request",
+      "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false&key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8",
+      "method": "POST",
+      "headers": {
+        "content-type": "application/json",
+        "x-youtube-client-name": "WEB",
+        "x-youtube-client-version": "2.20260312.08.00",
+        "referer": "https://www.youtube.com/watch?v=aircAruvnKk"
+      },
+      "body": {
+        "topLevelKeys": [
+          "context",
+          "params"
+        ],
+        "paramsLength": 120,
+        "paramsStart": "CgthaXJjQXJ1dm5LaxIOQ2dBU0FtVnVHZ0ElM0QYASozZW5nYWdlbWVudC1wYW5lbC1zZWFyY2hhYmxl",
+        "languageCode": null,
+        "externalVideoId": null,
+        "client": {
+          "clientName": "WEB",
+          "clientVersion": "2.20260312.08.00",
+          "originalUrl": "https://www.youtube.com/watch?v=aircAruvnKk",
+          "browserName": "HeadlessChrome",
+          "platform": "DESKTOP",
+          "visitorDataPresent": true,
+          "attestationPresent": false,
+          "clickTrackingPresent": false,
+          "adSignalsCount": 0
+        }
+      }
+    },
+    {
+      "type": "response",
+      "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false&key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8",
+      "status": 400,
+      "ok": false,
+      "headers": {
+        "content-type": "application/json; charset=UTF-8",
+        "content-encoding": "br"
+      },
+      "bodySnippet": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+    },
+    {
+      "type": "request",
+      "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+      "method": "POST",
+      "headers": {
+        "content-type": "application/json",
+        "content-encoding": "gzip",
+        "x-youtube-client-name": "1",
+        "x-youtube-client-version": "2.20260312.08.00",
+        "x-goog-visitor-id": "Cgs5eGN4SzZNeEtJSSjcstLNBjIKCgJVUxIEGgAgUA%3D%3D",
+        "x-youtube-bootstrap-logged-in": "false",
+        "referer": "https://www.youtube.com/watch?v=aircAruvnKk"
+      },
+      "body": {
+        "topLevelKeys": [
+          "context",
+          "params",
+          "languageCode",
+          "externalVideoId"
+        ],
+        "paramsLength": 120,
+        "paramsStart": "CgthaXJjQXJ1dm5LaxIOQ2dBU0FtVnVHZ0ElM0QYASozZW5nYWdlbWVudC1wYW5lbC1zZWFyY2hhYmxl",
+        "languageCode": "en",
+        "externalVideoId": "aircAruvnKk",
+        "client": {
+          "clientName": "WEB",
+          "clientVersion": "2.20260312.08.00",
+          "originalUrl": "https://www.youtube.com/watch?v=aircAruvnKk",
+          "browserName": "HeadlessChrome",
+          "platform": "DESKTOP",
+          "visitorDataPresent": true,
+          "attestationPresent": true,
+          "clickTrackingPresent": false,
+          "adSignalsCount": 0
+        }
+      }
+    },
+    {
+      "type": "response",
+      "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+      "status": 400,
+      "ok": false,
+      "headers": {
+        "content-type": "application/json; charset=UTF-8",
+        "content-encoding": "br"
+      },
+      "bodySnippet": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+    },
+    {
+      "type": "request",
+      "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+      "method": "POST",
+      "headers": {
+        "content-type": "application/json",
+        "content-encoding": "gzip",
+        "x-youtube-client-name": "1",
+        "x-youtube-client-version": "2.20260312.08.00",
+        "x-goog-visitor-id": "Cgs5eGN4SzZNeEtJSSjcstLNBjIKCgJVUxIEGgAgUA%3D%3D",
+        "x-youtube-bootstrap-logged-in": "false",
+        "referer": "https://www.youtube.com/watch?v=aircAruvnKk"
+      },
+      "body": {
+        "topLevelKeys": [
+          "context",
+          "params",
+          "languageCode",
+          "externalVideoId"
+        ],
+        "paramsLength": 120,
+        "paramsStart": "CgthaXJjQXJ1dm5LaxIOQ2dBU0FtVnVHZ0ElM0QYASozZW5nYWdlbWVudC1wYW5lbC1zZWFyY2hhYmxl",
+        "languageCode": "en",
+        "externalVideoId": "aircAruvnKk",
+        "client": {
+          "clientName": "WEB",
+          "clientVersion": "2.20260312.08.00",
+          "originalUrl": "https://www.youtube.com/watch?v=aircAruvnKk",
+          "browserName": "HeadlessChrome",
+          "platform": "DESKTOP",
+          "visitorDataPresent": true,
+          "attestationPresent": true,
+          "clickTrackingPresent": false,
+          "adSignalsCount": 0
+        }
+      }
+    },
+    {
+      "type": "response",
+      "url": "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+      "status": 400,
+      "ok": false,
+      "headers": {
+        "content-type": "application/json; charset=UTF-8",
+        "content-encoding": "br"
+      },
+      "bodySnippet": "{\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Precondition check failed.\",\n    \"errors\": [\n      {\n        \"message\": \"Precondition check failed.\",\n        \"domain\": \"global\",\n        \"reason\": \"failedPrecondition\"\n      }\n    ],\n    \"status\": \"FAILED_PRECONDITION\"\n  }\n}\n"
+    }
+  ]
+}

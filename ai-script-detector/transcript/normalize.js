@@ -330,7 +330,7 @@
       acquisitionState: null,
       transcriptRequiredSatisfied: true,
       failureReason: null,
-      recoveryTier: "local",
+      recoveryTier: null,
       originKind: null,
       sourceTrustTier: null,
       winnerReason: null,

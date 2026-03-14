@@ -30,6 +30,8 @@ test.describe("ScriptLens release packaging", () => {
       expect(entries).toContain("shared/contracts.js");
       expect(entries).toContain("surface/shared.js");
       expect(entries).toContain("icons/icon128.png");
+      expect(entries).toContain("vendor/defuddle.js");
+      expect(entries).toContain("utils/defuddle-extractor.js");
       expect(entries.some((entry) => entry.startsWith("tests/"))).toBeFalsy();
       expect(entries.some((entry) => entry.startsWith("backend/"))).toBeFalsy();
       expect(entries.some((entry) => entry.startsWith("node_modules/"))).toBeFalsy();
@@ -41,6 +43,7 @@ test.describe("ScriptLens release packaging", () => {
       );
       expect(stagedRuntimeConfig).toContain('defaultBackendTranscriptEndpoint: ""');
       expect(stagedRuntimeConfig).toContain("allowBackendTranscriptFallbackByDefault: false");
+      expect(stagedRuntimeConfig).toContain("enableDefuddleExperiment: false");
     } finally {
       delete process.env.SCRIPTLENS_DIST_ROOT;
       fs.rmSync(distRoot, { recursive: true, force: true });
@@ -55,6 +58,7 @@ test.describe("ScriptLens release packaging", () => {
     process.env.SCRIPTLENS_BACKEND_ORIGIN = "https://recovery.scriptlens.test";
     process.env.SCRIPTLENS_BACKEND_PERMISSION_MODE = "optional";
     process.env.SCRIPTLENS_PUBLIC_SITE_ORIGIN = "https://scriptlens.example";
+    process.env.SCRIPTLENS_ENABLE_DEFUDDLE_EXPERIMENT = "true";
 
     try {
       const { buildExtension } = await import(path.join(rootDir, "scripts", "release-lib.mjs"));
@@ -70,6 +74,7 @@ test.describe("ScriptLens release packaging", () => {
       expect(build.runtimeConfig.defaultBackendTranscriptEndpoint).toBe(
         "https://recovery.scriptlens.test/transcript/resolve"
       );
+      expect(build.runtimeConfig.enableDefuddleExperiment).toBeTruthy();
       expect(stagedManifest.host_permissions).toEqual(["https://www.youtube.com/*"]);
       expect(stagedManifest.optional_host_permissions).toEqual([
         "https://recovery.scriptlens.test/*"
@@ -81,12 +86,14 @@ test.describe("ScriptLens release packaging", () => {
       expect(stagedRuntimeConfig).toContain("allowBackendTranscriptFallbackByDefault: true");
       expect(stagedRuntimeConfig).toContain('backendPermissionMode: "optional"');
       expect(stagedRuntimeConfig).toContain('publicSiteOrigin: "https://scriptlens.example"');
+      expect(stagedRuntimeConfig).toContain("enableDefuddleExperiment: true");
     } finally {
       delete process.env.SCRIPTLENS_DIST_ROOT;
       delete process.env.SCRIPTLENS_BACKEND_ENDPOINT;
       delete process.env.SCRIPTLENS_BACKEND_ORIGIN;
       delete process.env.SCRIPTLENS_BACKEND_PERMISSION_MODE;
       delete process.env.SCRIPTLENS_PUBLIC_SITE_ORIGIN;
+      delete process.env.SCRIPTLENS_ENABLE_DEFUDDLE_EXPERIMENT;
       fs.rmSync(distRoot, { recursive: true, force: true });
     }
   });

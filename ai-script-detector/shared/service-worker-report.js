@@ -73,7 +73,10 @@
         acquisitionState: acquisition?.acquisitionState || null,
         transcriptRequiredSatisfied: acquisition?.transcriptRequiredSatisfied ?? true,
         failureReason: acquisition?.failureReason || null,
-        recoveryTier: acquisition?.recoveryTier || "local",
+        recoveryTier:
+          acquisition?.kind === "transcript"
+            ? acquisition?.recoveryTier || "local"
+            : acquisition?.recoveryTier || null,
         originKind: acquisition?.originKind || null,
         sourceTrustTier: acquisition?.sourceTrustTier || null,
         winnerReason: acquisition?.winnerReason || null,
@@ -82,7 +85,15 @@
         segmentCount: acquisition?.segmentCount || 0,
         coverageRatio: acquisition?.coverageRatio ?? null,
         transcriptSpanSeconds: acquisition?.transcriptSpanSeconds ?? null,
-        qualityGate: acquisition?.qualityGate || null
+        qualityGate: acquisition?.qualityGate || null,
+        extractor: input.directMeta?.extractor || null,
+        extractorWarnings: Array.isArray(input.directMeta?.extractorWarnings)
+          ? input.directMeta.extractorWarnings.slice()
+          : [],
+        extractorDurationMs: input.directMeta?.extractorDurationMs ?? null,
+        legacyExtractorDurationMs: input.directMeta?.legacyExtractorDurationMs ?? null,
+        defuddleExtractorDurationMs: input.directMeta?.defuddleExtractorDurationMs ?? null,
+        defuddleAttempted: input.directMeta?.defuddleAttempted === true
       }
     };
   }
@@ -295,7 +306,10 @@
       acquisitionState: acquisition.acquisitionState || null,
       transcriptRequiredSatisfied: acquisition.transcriptRequiredSatisfied ?? true,
       failureReason: acquisition.failureReason || null,
-      recoveryTier: acquisition.recoveryTier || "local",
+      recoveryTier:
+        acquisition.kind === "transcript"
+          ? acquisition.recoveryTier || "local"
+          : acquisition.recoveryTier || null,
       originKind: acquisition.originKind || null,
       sourceTrustTier: acquisition.sourceTrustTier || null,
       winnerReason: acquisition.winnerReason || null,
@@ -354,10 +368,12 @@
       return buildYouTubeSourceLabel(safeTitle || "Untitled video", acquisition);
     }
     if (acquisition.kind === "article-content") {
-      return safeTitle ? `Article content - ${safeTitle}` : "Article content";
+      const label = acquisition.sourceLabel || "Article content";
+      return safeTitle ? `${label} - ${safeTitle}` : label;
     }
     if (acquisition.kind === "page-content") {
-      return safeTitle ? `Visible page content - ${safeTitle}` : "Visible page content";
+      const label = acquisition.sourceLabel || "Visible page content";
+      return safeTitle ? `${label} - ${safeTitle}` : label;
     }
     if (acquisition.kind === "selection") {
       return safeTitle ? `Selected text - ${safeTitle}` : "Selected text";

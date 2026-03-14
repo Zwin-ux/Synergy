@@ -2,6 +2,7 @@
   root.ScriptLensRuntimeConfig = {
     defaultBackendTranscriptEndpoint: "",
     allowBackendTranscriptFallbackByDefault: false,
-    backendPermissionMode: "required"
+    backendPermissionMode: "required",
+    enableDefuddleExperiment: false
   };
 })(globalThis);

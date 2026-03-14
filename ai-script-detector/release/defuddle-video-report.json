@@ -1,0 +1,2299 @@
+{
+  "generatedAt": "2026-03-13T22:48:39.699Z",
+  "matrixPath": "C:\\Users\\MazenZwin\\Downloads\\Synergy-master\\Synergy-master\\ai-script-detector\\release\\defuddle-video-matrix.json",
+  "request": {
+    "mode": "youtube",
+    "includeSources": [
+      "transcript",
+      "description",
+      "title"
+    ],
+    "trackBaseUrl": "",
+    "transcriptBias": "manual-en",
+    "requireTranscript": false,
+    "allowFallbackText": true
+  },
+  "filters": {
+    "canaryOnly": true,
+    "ids": [],
+    "categories": [],
+    "limit": null
+  },
+  "builds": {
+    "control": {
+      "version": null,
+      "stagingDir": "",
+      "enableDefuddleExperiment": false
+    },
+    "defuddle": {
+      "version": null,
+      "stagingDir": "",
+      "enableDefuddleExperiment": false
+    }
+  },
+  "summary": {
+    "total": 13,
+    "controlSuccess": 13,
+    "defuddleSuccess": 13,
+    "controlTranscriptWins": 0,
+    "defuddleTranscriptWins": 0,
+    "controlFallbackTextOnly": 13,
+    "defuddleFallbackTextOnly": 12,
+    "controlPreflightTranscriptAvailable": 12,
+    "defuddlePreflightTranscriptAvailable": 12,
+    "changedOutcomes": 1,
+    "defuddleDirectWins": 1,
+    "transcriptRegressions": 0,
+    "labelingIssues": 0
+  },
+  "matrix": [
+    {
+      "id": "01-ted-your-body-language-may-s",
+      "videoId": "Ks-_Mh1QhMc",
+      "label": "TED - Your Body Language May Shape Who You Are | Amy Cuddy | TED",
+      "url": "https://www.youtube.com/watch?v=Ks-_Mh1QhMc",
+      "title": "Your Body Language May Shape Who You Are | Amy Cuddy | TED",
+      "channel": "TED",
+      "durationEstimate": "~21 min",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "manual",
+      "testValue": "Clean, high-confidence talk audio is useful as a baseline manual-caption case.",
+      "category": "lecture",
+      "categories": [
+        "lecture",
+        "manual",
+        "english"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "transcript-preferred",
+      "expectedKind": "transcript",
+      "expectedOriginKind": "manual_caption_track",
+      "canary": true,
+      "control": {
+        "id": "01-ted-your-body-language-may-s",
+        "ok": true,
+        "latencyMs": 18751,
+        "error": null,
+        "timeout": false,
+        "score": 37,
+        "verdict": "Mixed / possibly assisted",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Your Body Language May Shape Who You Are | Amy Cuddy | TED - Title + description fallback",
+        "explanation": "Repeated sentence openings appear throughout, including \"our nonverbals govern\", \"ted ideas worth\". Short phrase patterns repeat more than expected, such as \"our nonverbals govern\", \"nonverbals govern how\". Sentence rhythm has low burstiness and stays smoother than typical human drafts.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 53,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=Ks-_Mh1QhMc&ei=45K0abzKLMCVsfIP587Q-As&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773466963&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=359C1E01B349A5A46EAB964A82C17229C1067BD8.4D009BA36CA937FF7C3F6654F2B9AD45EA667AFD&key=yt8&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "01-ted-your-body-language-may-s",
+        "ok": true,
+        "latencyMs": 15493,
+        "error": null,
+        "timeout": false,
+        "score": 37,
+        "verdict": "Mixed / possibly assisted",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Your Body Language May Shape Who You Are | Amy Cuddy | TED - Title + description fallback",
+        "explanation": "Repeated sentence openings appear throughout, including \"our nonverbals govern\", \"ted ideas worth\". Short phrase patterns repeat more than expected, such as \"our nonverbals govern\", \"nonverbals govern how\". Sentence rhythm has low burstiness and stays smoother than typical human drafts.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 53,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=Ks-_Mh1QhMc&ei=lZO0aa_RJeeTsfIPn7iz2Qw&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467141&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=AEC4805B425D0BEE4B7601975B6AD0CCA58093AA.16EB7CCF54FC5922E319EC863C9E7C9F04B8668E&key=yt8&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      }
+    },
+    {
+      "id": "03-3blue1brown-but-what-is-a-neural-net",
+      "videoId": "aircAruvnKk",
+      "label": "3Blue1Brown - But what is a neural network? | Deep learning chapter 1",
+      "url": "https://www.youtube.com/watch?v=aircAruvnKk",
+      "title": "But what is a neural network? | Deep learning chapter 1",
+      "channel": "3Blue1Brown",
+      "durationEstimate": "~19 min",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "manual",
+      "testValue": "Narrated educational content with technical vocabulary is strong for caption-text accuracy checks.",
+      "category": "tutorial",
+      "categories": [
+        "tutorial",
+        "manual",
+        "english"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "transcript-preferred",
+      "expectedKind": "transcript",
+      "expectedOriginKind": "manual_caption_track",
+      "canary": true,
+      "control": {
+        "id": "03-3blue1brown-but-what-is-a-neural-net",
+        "ok": true,
+        "latencyMs": 12078,
+        "error": null,
+        "timeout": false,
+        "score": 27,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - But what is a neural network? | Deep learning chapter 1 - Title + description fallback",
+        "explanation": "Sentence rhythm has low burstiness and stays smoother than typical human drafts. Most sentences fall into the same rough size bucket. Repeated sentence openings appear throughout, including \"introduction example\", \"edge detection example\".",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 31,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=aircAruvnKk&ei=9pK0abG5Eq6psfIPlL2uuQI&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773466982&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=5CF3EEFD2BEC2E12215625A45FA4A99260614CA4.2C0F9C72B4199615373954609931418625E33EC6&key=yt8&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "03-3blue1brown-but-what-is-a-neural-net",
+        "ok": true,
+        "latencyMs": 13554,
+        "error": null,
+        "timeout": false,
+        "score": 27,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - But what is a neural network? | Deep learning chapter 1 - Title + description fallback",
+        "explanation": "Sentence rhythm has low burstiness and stays smoother than typical human drafts. Most sentences fall into the same rough size bucket. Repeated sentence openings appear throughout, including \"introduction example\", \"edge detection example\".",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 31,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=aircAruvnKk&ei=pZO0afKlDuqXt7EPh-eb4QE&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467157&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=2699F3F80CE27B520531C3F42595DCCD4A0E03FE.2A04F90AE20461D569B96145D8A472C0F9013F39&key=yt8&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      }
+    },
+    {
+      "id": "04-khan-academy-algebra-linear-equations",
+      "videoId": "bAerID24QJ0",
+      "label": "Khan Academy - Algebra: Linear equations 1 | Linear equations | Algebra I",
+      "url": "https://www.youtube.com/watch?v=bAerID24QJ0",
+      "title": "Algebra: Linear equations 1 | Linear equations | Algebra I",
+      "channel": "Khan Academy",
+      "durationEstimate": "~12 min",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "manual",
+      "testValue": "Classic instructional speech with deliberate pacing is ideal for transcript-first regression tests.",
+      "category": "tutorial",
+      "categories": [
+        "tutorial",
+        "manual",
+        "english"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "transcript-preferred",
+      "expectedKind": "transcript",
+      "expectedOriginKind": "manual_caption_track",
+      "canary": true,
+      "control": {
+        "id": "04-khan-academy-algebra-linear-equations",
+        "ok": true,
+        "latencyMs": 11681,
+        "error": null,
+        "timeout": false,
+        "score": 17,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Algebra: Linear equations 1 | Linear equations | Algebra I | Khan Academy - Title + description fallback",
+        "explanation": "Sentence rhythm has low burstiness and stays smoother than typical human drafts. Most sentences fall into the same rough size bucket. Sentence lengths stay unusually consistent across the passage.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 23,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=bAerID24QJ0&ei=ApO0ac_xKJmQsfIPvpjziQc&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773466994&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=C34C95E2792F11A95499A2176B8471D9E49012EA.EA2A797A902247CB60DFF41D70FB9E885461DAFA&key=yt8&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "04-khan-academy-algebra-linear-equations",
+        "ok": true,
+        "latencyMs": 12324,
+        "error": null,
+        "timeout": false,
+        "score": 17,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Algebra: Linear equations 1 | Linear equations | Algebra I | Khan Academy - Title + description fallback",
+        "explanation": "Sentence rhythm has low burstiness and stays smoother than typical human drafts. Most sentences fall into the same rough size bucket. Sentence lengths stay unusually consistent across the passage.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 23,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=bAerID24QJ0&ei=s5O0afn-BdTWsfIPhaKS0QE&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467171&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=17D354B353AE53C30F190E0821C1B2F38B1889E7.150C3395DD9E1BA5EE0F150B9724227F582AA78B&key=yt8&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      }
+    },
+    {
+      "id": "12-bbc-news-prince-andrew-the-epstei",
+      "videoId": "QtBS8COhhhM",
+      "label": "BBC News - Prince Andrew & the Epstein Scandal: The Newsnight Interview",
+      "url": "https://www.youtube.com/watch?v=QtBS8COhhhM",
+      "title": "Prince Andrew & the Epstein Scandal: The Newsnight Interview",
+      "channel": "BBC News",
+      "durationEstimate": "~49 min",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "manual",
+      "testValue": "Long-form interview structure is useful for speaker-turn and long-duration transcript QA.",
+      "category": "news",
+      "categories": [
+        "news",
+        "manual",
+        "english"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "transcript-preferred",
+      "expectedKind": "transcript",
+      "expectedOriginKind": "manual_caption_track",
+      "canary": true,
+      "control": {
+        "id": "12-bbc-news-prince-andrew-the-epstei",
+        "ok": true,
+        "latencyMs": 13336,
+        "error": null,
+        "timeout": false,
+        "score": 23,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Prince Andrew & the Epstein Scandal: The Newsnight Interview - BBC News - Title + description fallback",
+        "explanation": "Repeated sentence openings appear throughout, including \"what was jeffrey\". Short phrase patterns repeat more than expected, such as \"what was jeffrey\", \"was jeffrey epstein\". Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=QtBS8COhhhM&ei=DpO0acrbHv6ZsfIPrMig8AY&caps=asr&opi=112496729&exp=xpe&xoaf=4&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467006&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=7347EA3140906F788DC9048F943F1B50365B2AAB.1DA7E3C7171CE5683FAA9367083242BF1387EEAC&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "12-bbc-news-prince-andrew-the-epstei",
+        "ok": true,
+        "latencyMs": 13741,
+        "error": null,
+        "timeout": false,
+        "score": 23,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Prince Andrew & the Epstein Scandal: The Newsnight Interview - BBC News - Title + description fallback",
+        "explanation": "Repeated sentence openings appear throughout, including \"what was jeffrey\". Short phrase patterns repeat more than expected, such as \"what was jeffrey\", \"was jeffrey epstein\". Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=QtBS8COhhhM&ei=v5O0aeqiIb-UsfIPmdPG8Qs&caps=asr&opi=112496729&exp=xpe&xoaf=4&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467183&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=5BBE1A0AA132DFF221525C1003C3B94E05185CF1.5E042D9068E094D818EC4F180A7B3C075D16BA30&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      }
+    },
+    {
+      "id": "13-caseyneistat-my-first-vlog",
+      "videoId": "gnHCw87Enq4",
+      "label": "CaseyNeistat - MY FIRST VLOG",
+      "url": "https://www.youtube.com/watch?v=gnHCw87Enq4",
+      "title": "MY FIRST VLOG",
+      "channel": "CaseyNeistat",
+      "durationEstimate": "~8 min",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "auto",
+      "testValue": "Casual vlog speech and movement make it a strong likely-auto-caption baseline.",
+      "category": "vlog",
+      "categories": [
+        "vlog",
+        "auto",
+        "english"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "transcript-preferred",
+      "expectedKind": "transcript",
+      "expectedOriginKind": "automatic_caption_track",
+      "canary": true,
+      "control": {
+        "id": "13-caseyneistat-my-first-vlog",
+        "ok": true,
+        "latencyMs": 13746,
+        "error": null,
+        "timeout": false,
+        "score": null,
+        "verdict": "Not enough spoken text",
+        "scoringStatus": "insufficient-input",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - MY FIRST VLOG - Title + description fallback",
+        "explanation": "ScriptLens recovered a transcript, but this video does not contain enough spoken text for a reliable score.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "insufficient-input",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=gnHCw87Enq4&ei=HJO0aeWcA5iM2_gPuNfyqAs&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467020&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=9DE7BED822C4E627D468400BB9353619B8925505.EBEE7AAD00108184B4218FD6A9F9CD9AEDD1EC40&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override",
+            "insufficient_scoring_input"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "13-caseyneistat-my-first-vlog",
+        "ok": true,
+        "latencyMs": 14177,
+        "error": null,
+        "timeout": false,
+        "score": 5,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - MY FIRST VLOG - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=gnHCw87Enq4&ei=zZO0aZixHb75sfIPvd7DwAs&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467197&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=9B3E7898207D94BDC7849DEB149B23EA5D2511A2.6C25E5ED87CA3A7AA1ABF121EC90D026E5C2D214&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      }
+    },
+    {
+      "id": "19-jacksepticeye-journey-walkthrough-part",
+      "videoId": "lPUqJ0lXT6E",
+      "label": "jacksepticeye - Journey Walkthrough Part 1 - THE JOURNEY BEGINS - Let's Play Gameplay/Commentary",
+      "url": "https://www.youtube.com/watch?v=lPUqJ0lXT6E",
+      "title": "Journey Walkthrough Part 1 - THE JOURNEY BEGINS - Let's Play Gameplay/Commentary",
+      "channel": "jacksepticeye",
+      "durationEstimate": "~31 min",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "auto",
+      "testValue": "Gameplay plus live commentary is a good likely-auto case with background game audio.",
+      "category": "gaming",
+      "categories": [
+        "gaming",
+        "auto",
+        "english"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "transcript-preferred",
+      "expectedKind": "transcript",
+      "expectedOriginKind": "automatic_caption_track",
+      "canary": true,
+      "control": {
+        "id": "19-jacksepticeye-journey-walkthrough-part",
+        "ok": true,
+        "latencyMs": 11689,
+        "error": null,
+        "timeout": false,
+        "score": 9,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Journey Walkthrough Part 1 - THE JOURNEY BEGINS - Let's Play Gameplay/Commentary - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=lPUqJ0lXT6E&ei=KZO0aYy6OJuYsfIPnYrr4As&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467033&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=D0AB1B1933826BE3B50D071C1BF8AFCAAB9326A1.E7C5C928FE2D08A59E70D7314089EC45C85BD72E&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "19-jacksepticeye-journey-walkthrough-part",
+        "ok": true,
+        "latencyMs": 11822,
+        "error": null,
+        "timeout": false,
+        "score": 9,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Journey Walkthrough Part 1 - THE JOURNEY BEGINS - Let's Play Gameplay/Commentary - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=lPUqJ0lXT6E&ei=25O0ac-3OIiXsfIP1_Cr0Qs&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467211&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=47797A84E2DB796C9F1E8D0AA0B6C31850973ED6.423F13967B43CE3766C75E831C9FE4DE9764176C&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      }
+    },
+    {
+      "id": "22-jacksepticeye-surgeon-simulator-2013-i",
+      "videoId": "NWss__7fHfw",
+      "label": "jacksepticeye - Surgeon Simulator 2013 - I BRAIN SURGERY GOOD - Gameplay/Commentary",
+      "url": "https://www.youtube.com/watch?v=NWss__7fHfw",
+      "title": "Surgeon Simulator 2013 - I BRAIN SURGERY GOOD - Gameplay/Commentary",
+      "channel": "jacksepticeye",
+      "durationEstimate": "~14 min",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "auto",
+      "testValue": "Noisy gameplay and comedic delivery are useful for error-rate evaluation.",
+      "category": "gaming",
+      "categories": [
+        "gaming",
+        "auto",
+        "english"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "transcript-preferred",
+      "expectedKind": "transcript",
+      "expectedOriginKind": "automatic_caption_track",
+      "canary": true,
+      "control": {
+        "id": "22-jacksepticeye-surgeon-simulator-2013-i",
+        "ok": true,
+        "latencyMs": 11765,
+        "error": null,
+        "timeout": false,
+        "score": 15,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Surgeon Simulator 2013 - I BRAIN SURGERY GOOD - Gameplay/Commentary/Operating like a boss - Title + description fallback",
+        "explanation": "The passage did not trigger enough strong AI-like heuristics to support a high score.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=NWss__7fHfw&ei=NZO0aejALuGYsfIPno_O-QU&caps=asr&opi=112496729&exp=xpe&xoaf=4&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467045&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=9041DD4E6612CE40F2BC23D6608FC0F49C1912FD.301F4E8BD3D4BB78C4876809F6BCFD763E825873&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "22-jacksepticeye-surgeon-simulator-2013-i",
+        "ok": true,
+        "latencyMs": 12147,
+        "error": null,
+        "timeout": false,
+        "score": 15,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Surgeon Simulator 2013 - I BRAIN SURGERY GOOD - Gameplay/Commentary/Operating like a boss - Title + description fallback",
+        "explanation": "The passage did not trigger enough strong AI-like heuristics to support a high score.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=NWss__7fHfw&ei=55O0aciGO97YsfIP1KjmgAw&caps=asr&opi=112496729&exp=xpe&xoaf=4&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467224&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=746E1E49EA0D81DE6F37DC6D81C30BB90A5C6407.0E57D800648B848144AA7AB5856B79C2E95546A1&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      }
+    },
+    {
+      "id": "25-storm-chasing-arch-tornado-outbreak-from-ka",
+      "videoId": "NYsANnAhr6k",
+      "label": "storm-chasing archive channel - Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive",
+      "url": "https://www.youtube.com/watch?v=NYsANnAhr6k",
+      "title": "Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive",
+      "channel": "storm-chasing archive channel",
+      "durationEstimate": "~3-8 hr",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "unclear",
+      "testValue": "Livestream archive structure is useful for fallback handling when transcripts are delayed or inconsistent.",
+      "category": "livestream",
+      "categories": [
+        "livestream",
+        "unclear",
+        "english",
+        "longform",
+        "fallback-stress"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "defuddle-fallback-candidate",
+      "expectedKind": "direct-content",
+      "expectedOriginKind": null,
+      "canary": true,
+      "control": {
+        "id": "25-storm-chasing-arch-tornado-outbreak-from-ka",
+        "ok": true,
+        "latencyMs": 11992,
+        "error": null,
+        "timeout": false,
+        "score": 3,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=NYsANnAhr6k&ei=QZO0afTaMv-TsfIP8vr0-Ao&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467057&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=278B9F875C2759E4EBA301B72C6580F74F8CA540.67A87AFD3389A6DA4614C1165D9975DC884BE748&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "25-storm-chasing-arch-tornado-outbreak-from-ka",
+        "ok": true,
+        "latencyMs": 12820,
+        "error": null,
+        "timeout": false,
+        "score": 10,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive - Extracted page content",
+        "explanation": "The passage did not trigger enough strong AI-like heuristics to support a high score.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": null,
+          "recoveryTier": null,
+          "sourceTrustTier": null,
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=NYsANnAhr6k&ei=9JO0aeLQG66psfIP97quuQI&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467236&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=D8A8752D80408B8A4A3BD315B5C27E2CCADEB29C.41DAA24FA84AD2A3DD94749BB78BE74B510BEA16&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "page-content",
+          "sourceLabel": "Extracted page content",
+          "providerClass": "local",
+          "strategy": null,
+          "acquisitionState": null,
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": null,
+          "recoveryTier": null,
+          "sourceTrustTier": null,
+          "winnerReason": null,
+          "languageCode": null,
+          "warnings": [
+            "fallback_source",
+            "user_fallback_override",
+            "weak_evidence",
+            "page_capture_noise"
+          ],
+          "coverageRatio": 0.093,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript",
+            "directExtractor:defuddle"
+          ]
+        },
+        "direct": {
+          "extractor": "defuddle",
+          "extractorWarnings": [],
+          "extractorDurationMs": 0,
+          "legacyExtractorDurationMs": 0,
+          "defuddleExtractorDurationMs": 27,
+          "defuddleAttempted": true
+        }
+      },
+      "comparison": {
+        "changed": true,
+        "transcriptRegression": false,
+        "defuddleDirectWin": true,
+        "labelingIssue": false,
+        "summary": "Defuddle direct content replaced the control outcome."
+      }
+    },
+    {
+      "id": "31-spanish-after-hour-learn-spanish-with-this-",
+      "videoId": "3nb_hjv5Y24",
+      "label": "Spanish After Hours - LEARN SPANISH with This VLOG (w/ subtitles!)",
+      "url": "https://www.youtube.com/watch?v=3nb_hjv5Y24",
+      "title": "LEARN SPANISH with This VLOG (w/ subtitles!)",
+      "channel": "Spanish After Hours",
+      "durationEstimate": "~10-20 min",
+      "primaryLanguage": "Spanish",
+      "likelyTranscriptState": "manual",
+      "testValue": "Non-English speech with visible subtitle intent is useful for multilingual transcript QA.",
+      "category": "vlog",
+      "categories": [
+        "vlog",
+        "manual",
+        "spanish",
+        "multilingual"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "transcript-preferred",
+      "expectedKind": "transcript",
+      "expectedOriginKind": "manual_caption_track",
+      "canary": true,
+      "control": {
+        "id": "31-spanish-after-hour-learn-spanish-with-this-",
+        "ok": true,
+        "latencyMs": 12663,
+        "error": null,
+        "timeout": false,
+        "score": 26,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - LEARN SPANISH with This VLOG 🇪🇸 (w/ subtitles!) - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket. Repeated sentence openings appear throughout, including \"by spanish after\". Short phrase patterns repeat more than expected, such as \"spanish after hours\".",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 3,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=3nb_hjv5Y24&ei=TpO0aaiVC7K-sfIPvPqHkA0&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467070&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=C85A8456A8BD4A33C185C67913F6EDD0CDB8C6B4.5AD19A12D2C9434FF432400155D7843DF53F07E6&key=yt8&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "31-spanish-after-hour-learn-spanish-with-this-",
+        "ok": true,
+        "latencyMs": 13618,
+        "error": null,
+        "timeout": false,
+        "score": 26,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - LEARN SPANISH with This VLOG 🇪🇸 (w/ subtitles!) - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket. Repeated sentence openings appear throughout, including \"by spanish after\". Short phrase patterns repeat more than expected, such as \"spanish after hours\".",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 3,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=3nb_hjv5Y24&ei=AZS0adHHHseKsfIPp5PY6Qs&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467249&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=C406E632DB784CF5B87680D4C1E94329E79BC052.4C0517F86BA3544A013C9A57E535F14892B0F3A2&key=yt8&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      }
+    },
+    {
+      "id": "33-lifestyle-creator--speaking-only-spanish-fo",
+      "videoId": "Sp1sMv7NpZw",
+      "label": "lifestyle creator channel - speaking only spanish for a week puerto rico vlog",
+      "url": "https://www.youtube.com/watch?v=Sp1sMv7NpZw",
+      "title": "speaking only spanish for a week puerto rico vlog",
+      "channel": "lifestyle creator channel",
+      "durationEstimate": "~15-25 min",
+      "primaryLanguage": "English / Spanish mixed",
+      "likelyTranscriptState": "auto",
+      "testValue": "Code-switching makes this useful for fallback logic and language-detection edge cases.",
+      "category": "vlog",
+      "categories": [
+        "vlog",
+        "auto",
+        "english-spanish-mixed",
+        "multilingual"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "transcript-preferred",
+      "expectedKind": "transcript",
+      "expectedOriginKind": "automatic_caption_track",
+      "canary": true,
+      "control": {
+        "id": "33-lifestyle-creator--speaking-only-spanish-fo",
+        "ok": true,
+        "latencyMs": 13482,
+        "error": null,
+        "timeout": false,
+        "score": 5,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - speaking only spanish for a week 🌱 puerto rico vlog - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=Sp1sMv7NpZw&ei=WpO0aaDlON6BsfIPytPZ4QU&caps=asr&opi=112496729&exp=xpe&xoaf=4&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467082&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=D9A46C80E31DD4ABDAAFDA2FFF95BC5CE80BBB5A.5E379A929F456549D15A5A7843AAB5192B27345E&key=yt8&kind=asr&lang=es",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override",
+            "language_requested_mismatch"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "33-lifestyle-creator--speaking-only-spanish-fo",
+        "ok": true,
+        "latencyMs": 14342,
+        "error": null,
+        "timeout": false,
+        "score": 5,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - speaking only spanish for a week 🌱 puerto rico vlog - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=Sp1sMv7NpZw&ei=D5S0afSLErmVt7EP-_jV0QY&caps=asr&opi=112496729&exp=xpe&xoaf=4&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467263&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=EF3F4EFD9D8958083711E6322B56D586C602F5DA.24945F2ED1E8177C76DFF3CB3F1D784032BBE22F&key=yt8&kind=asr&lang=es",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override",
+            "language_requested_mismatch"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      }
+    },
+    {
+      "id": "37-ifc-films-good-boy-official-traile",
+      "videoId": "q4-CRkd_74g",
+      "label": "IFC Films - Good Boy - Official Trailer | HD | IFC Films",
+      "url": "https://www.youtube.com/watch?v=q4-CRkd_74g",
+      "title": "Good Boy - Official Trailer | HD | IFC Films",
+      "channel": "IFC Films",
+      "durationEstimate": "~2 min",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "missing",
+      "testValue": "Trailers are a good weak-transcript case because availability can be inconsistent across releases.",
+      "category": "trailer",
+      "categories": [
+        "trailer",
+        "missing",
+        "english",
+        "fallback-stress"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "defuddle-fallback-candidate",
+      "expectedKind": "direct-content",
+      "expectedOriginKind": null,
+      "canary": true,
+      "control": {
+        "id": "37-ifc-films-good-boy-official-traile",
+        "ok": true,
+        "latencyMs": 13282,
+        "error": null,
+        "timeout": false,
+        "score": 12,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Good Boy - Official Trailer | HD | IFC Films - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket. Repeated sentence openings appear throughout, including \"by independent film\". Short phrase patterns repeat more than expected, such as \"independent film company\".",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": false,
+          "transcriptTrackCount": 0,
+          "defaultTrackBaseUrl": "",
+          "availableSources": {
+            "transcript": false,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_tracks_missing",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "37-ifc-films-good-boy-official-traile",
+        "ok": true,
+        "latencyMs": 13571,
+        "error": null,
+        "timeout": false,
+        "score": 12,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Good Boy - Official Trailer | HD | IFC Films - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket. Repeated sentence openings appear throughout, including \"by independent film\". Short phrase patterns repeat more than expected, such as \"independent film company\".",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": false,
+          "transcriptTrackCount": 0,
+          "defaultTrackBaseUrl": "",
+          "availableSources": {
+            "transcript": false,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_tracks_missing",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      }
+    },
+    {
+      "id": "39-paramount-pictures-the-naked-gun-official-t",
+      "videoId": "uLguU7WLreA",
+      "label": "Paramount Pictures - The Naked Gun | Official Trailer (2025 Movie) - Liam Neeson, Pamela Anderson",
+      "url": "https://www.youtube.com/watch?v=uLguU7WLreA",
+      "title": "The Naked Gun | Official Trailer (2025 Movie) - Liam Neeson, Pamela Anderson",
+      "channel": "Paramount Pictures",
+      "durationEstimate": "~2-3 min",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "missing",
+      "testValue": "Big-studio trailer pages are useful because transcript presence can be weak despite clear speech.",
+      "category": "trailer",
+      "categories": [
+        "trailer",
+        "missing",
+        "english",
+        "fallback-stress"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "defuddle-fallback-candidate",
+      "expectedKind": "direct-content",
+      "expectedOriginKind": null,
+      "canary": true,
+      "control": {
+        "id": "39-paramount-pictures-the-naked-gun-official-t",
+        "ok": true,
+        "latencyMs": 13156,
+        "error": null,
+        "timeout": false,
+        "score": 12,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - The Naked Gun | Official Trailer (2025 Movie) - Liam Neeson, Pamela Anderson - Title + description fallback",
+        "explanation": "Sentence rhythm has low burstiness and stays smoother than typical human drafts. Most sentences fall into the same rough size bucket. Several consecutive sentences land in nearly the same size range.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=uLguU7WLreA&ei=dpO0adeyCPKVsfIP1YWSgQ0&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467110&sparams=ip,ipbits,expire,v,ei,opi,exp,xoaf&signature=A4385887C419AEF9C5538B8B1E67C9939B2A0C33.9D03D59776D003F63DB834DA409DB95D61581B23&key=yt8&lang=en-US",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "39-paramount-pictures-the-naked-gun-official-t",
+        "ok": true,
+        "latencyMs": 12185,
+        "error": null,
+        "timeout": false,
+        "score": 12,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - The Naked Gun | Official Trailer (2025 Movie) - Liam Neeson, Pamela Anderson - Title + description fallback",
+        "explanation": "Sentence rhythm has low burstiness and stays smoother than typical human drafts. Most sentences fall into the same rough size bucket. Several consecutive sentences land in nearly the same size range.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=uLguU7WLreA&ei=K5S0aejGIImKsfIPyN_BgAI&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467291&sparams=ip,ipbits,expire,v,ei,opi,exp,xoaf&signature=E0FFB71D6CA539DDCAA987256D53EF80ADCAFD32.062D03EC05F743902F5A7875F66472C22D9B8DB5&key=yt8&lang=en-US",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      }
+    },
+    {
+      "id": "40-genius-sub-urban-uh-oh-official",
+      "videoId": "zCuhsf_1H-g",
+      "label": "Genius - Sub Urban \"UH OH!\" Official Lyrics & Meaning | Verified",
+      "url": "https://www.youtube.com/watch?v=zCuhsf_1H-g",
+      "title": "Sub Urban \"UH OH!\" Official Lyrics & Meaning | Verified",
+      "channel": "Genius",
+      "durationEstimate": "~7-10 min",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "manual",
+      "testValue": "Music-adjacent interview content helps test pages near the boundary between spoken and music formats.",
+      "category": "music",
+      "categories": [
+        "music",
+        "manual",
+        "english",
+        "fallback-stress"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "transcript-preferred",
+      "expectedKind": "transcript",
+      "expectedOriginKind": "manual_caption_track",
+      "canary": true,
+      "control": {
+        "id": "40-genius-sub-urban-uh-oh-official",
+        "ok": true,
+        "latencyMs": 13384,
+        "error": null,
+        "timeout": false,
+        "score": 3,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Sub Urban “UH OH!” Official Lyrics & Meaning | Verified - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=zCuhsf_1H-g&ei=g5O0aauYH5WLsfIPmMvb8QY&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467123&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=C513F43B20F170FADC040EB0241CEDF46DEBE479.C2C7F55B5A3141B9E8F8D04EC81049AC6F474235&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "40-genius-sub-urban-uh-oh-official",
+        "ok": true,
+        "latencyMs": 13831,
+        "error": null,
+        "timeout": false,
+        "score": 3,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Sub Urban “UH OH!” Official Lyrics & Meaning | Verified - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=zCuhsf_1H-g&ei=N5S0abayNsGosfIPh-y_-QU&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773467303&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=3E14E1D68B5860EBFD980AB2A16A461EE4C816F5.02EC52D28C33BC776AFBF3BA1ADE3A7083DAA78B&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      }
+    }
+  ]
+}

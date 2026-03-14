@@ -1,0 +1,402 @@
+{
+  "generatedAt": "2026-03-13T22:38:40.959Z",
+  "matrixPath": "C:\\Users\\MazenZwin\\Downloads\\Synergy-master\\Synergy-master\\ai-script-detector\\release\\defuddle-video-matrix.json",
+  "request": {
+    "mode": "youtube",
+    "includeSources": [
+      "transcript",
+      "description",
+      "title"
+    ],
+    "trackBaseUrl": "",
+    "transcriptBias": "manual-en",
+    "requireTranscript": false,
+    "allowFallbackText": true
+  },
+  "filters": {
+    "canaryOnly": false,
+    "ids": [
+      "01-ted-your-body-language-may-s",
+      "25-storm-chasing-arch-tornado-outbreak-from-ka"
+    ],
+    "categories": [],
+    "limit": null
+  },
+  "builds": {
+    "control": {
+      "version": null,
+      "stagingDir": "",
+      "enableDefuddleExperiment": false
+    },
+    "defuddle": {
+      "version": null,
+      "stagingDir": "",
+      "enableDefuddleExperiment": false
+    }
+  },
+  "summary": {
+    "total": 2,
+    "controlSuccess": 2,
+    "defuddleSuccess": 2,
+    "controlTranscriptWins": 0,
+    "defuddleTranscriptWins": 0,
+    "controlFallbackTextOnly": 2,
+    "defuddleFallbackTextOnly": 1,
+    "controlPreflightTranscriptAvailable": 2,
+    "defuddlePreflightTranscriptAvailable": 2,
+    "changedOutcomes": 1,
+    "defuddleDirectWins": 1,
+    "transcriptRegressions": 0,
+    "labelingIssues": 0
+  },
+  "matrix": [
+    {
+      "id": "01-ted-your-body-language-may-s",
+      "videoId": "Ks-_Mh1QhMc",
+      "label": "TED - Your Body Language May Shape Who You Are | Amy Cuddy | TED",
+      "url": "https://www.youtube.com/watch?v=Ks-_Mh1QhMc",
+      "title": "Your Body Language May Shape Who You Are | Amy Cuddy | TED",
+      "channel": "TED",
+      "durationEstimate": "~21 min",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "manual",
+      "testValue": "Clean, high-confidence talk audio is useful as a baseline manual-caption case.",
+      "category": "lecture",
+      "categories": [
+        "lecture",
+        "manual",
+        "english"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "transcript-preferred",
+      "expectedKind": "transcript",
+      "expectedOriginKind": "manual_caption_track",
+      "canary": true,
+      "control": {
+        "id": "01-ted-your-body-language-may-s",
+        "ok": true,
+        "latencyMs": 17353,
+        "error": null,
+        "timeout": false,
+        "score": 37,
+        "verdict": "Mixed / possibly assisted",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Your Body Language May Shape Who You Are | Amy Cuddy | TED - Title + description fallback",
+        "explanation": "Repeated sentence openings appear throughout, including \"our nonverbals govern\", \"ted ideas worth\". Short phrase patterns repeat more than expected, such as \"our nonverbals govern\", \"nonverbals govern how\". Sentence rhythm has low burstiness and stays smoother than typical human drafts.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 53,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=Ks-_Mh1QhMc&ei=pZG0aYirCcjasfIPm6PL2AU&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773466645&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=128F8748F7EB2BA70A3011EA4E62F343C658EE0D.B3D75B7F4D0C3FE218967C3226C0E74D6FAD1880&key=yt8&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "01-ted-your-body-language-may-s",
+        "ok": true,
+        "latencyMs": 19850,
+        "error": null,
+        "timeout": false,
+        "score": 37,
+        "verdict": "Mixed / possibly assisted",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Your Body Language May Shape Who You Are | Amy Cuddy | TED - Title + description fallback",
+        "explanation": "Repeated sentence openings appear throughout, including \"our nonverbals govern\", \"ted ideas worth\". Short phrase patterns repeat more than expected, such as \"our nonverbals govern\", \"nonverbals govern how\". Sentence rhythm has low burstiness and stays smoother than typical human drafts.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 53,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=Ks-_Mh1QhMc&ei=y5G0afPUJPWTsfIPtLrV8Qs&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773466683&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=D713A379B444D55886215E73F10B7FE1E1245772.03AE63AEF7B9EA297D9F863B1E8660B427BA9B11&key=yt8&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "comparison": {
+        "changed": false,
+        "transcriptRegression": false,
+        "defuddleDirectWin": false,
+        "labelingIssue": false,
+        "summary": "No material change."
+      }
+    },
+    {
+      "id": "25-storm-chasing-arch-tornado-outbreak-from-ka",
+      "videoId": "NYsANnAhr6k",
+      "label": "storm-chasing archive channel - Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive",
+      "url": "https://www.youtube.com/watch?v=NYsANnAhr6k",
+      "title": "Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive",
+      "channel": "storm-chasing archive channel",
+      "durationEstimate": "~3-8 hr",
+      "primaryLanguage": "English",
+      "likelyTranscriptState": "unclear",
+      "testValue": "Livestream archive structure is useful for fallback handling when transcripts are delayed or inconsistent.",
+      "category": "livestream",
+      "categories": [
+        "livestream",
+        "unclear",
+        "english",
+        "longform",
+        "fallback-stress"
+      ],
+      "requestProfile": "youtube-transcript-fallback",
+      "expectedStrategy": "defuddle-fallback-candidate",
+      "expectedKind": "direct-content",
+      "expectedOriginKind": null,
+      "canary": true,
+      "control": {
+        "id": "25-storm-chasing-arch-tornado-outbreak-from-ka",
+        "ok": true,
+        "latencyMs": 13635,
+        "error": null,
+        "timeout": false,
+        "score": 3,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive - Title + description fallback",
+        "explanation": "Most sentences fall into the same rough size bucket.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=NYsANnAhr6k&ei=tpG0acfkIpmpsfIP8Zqy4QY&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773466662&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=B00313C82026003F208D0E3AB4161AEB81845145.B3B353532873274F210E93E772F95D0EDC082F0A&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "transcript",
+          "sourceLabel": "Title + description fallback",
+          "providerClass": "local",
+          "strategy": "title-description",
+          "acquisitionState": "fallback-text-only",
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": "fallback_text",
+          "recoveryTier": "local",
+          "sourceTrustTier": "fallback-text",
+          "winnerReason": null,
+          "languageCode": "en",
+          "warnings": [
+            "fallback_source",
+            "weak_evidence",
+            "user_fallback_override"
+          ],
+          "coverageRatio": null,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript"
+          ]
+        },
+        "direct": {
+          "extractor": null,
+          "extractorWarnings": [],
+          "extractorDurationMs": null,
+          "legacyExtractorDurationMs": null,
+          "defuddleExtractorDurationMs": null,
+          "defuddleAttempted": false
+        }
+      },
+      "defuddle": {
+        "id": "25-storm-chasing-arch-tornado-outbreak-from-ka",
+        "ok": true,
+        "latencyMs": 15202,
+        "error": null,
+        "timeout": false,
+        "score": 10,
+        "verdict": "Likely human / unclear",
+        "scoringStatus": "scored",
+        "inputQualityLabel": "Weak input",
+        "source": "YouTube video - Tornado Outbreak from Kankakee, IL to Northern Indiana | Live Stream Archive - Extracted page content",
+        "explanation": "The passage did not trigger enough strong AI-like heuristics to support a high score.",
+        "contract": {
+          "contractVersion": "2026-03-11",
+          "analysisMode": "generic-text",
+          "scoringStatus": "scored",
+          "failureCategory": "transcript-source",
+          "originKind": null,
+          "recoveryTier": null,
+          "sourceTrustTier": null,
+          "winnerReason": null,
+          "qualityGate": null
+        },
+        "preflight": {
+          "ok": true,
+          "supported": true,
+          "isYouTubeVideo": true,
+          "transcriptAvailable": true,
+          "transcriptTrackCount": 1,
+          "defaultTrackBaseUrl": "https://www.youtube.com/api/timedtext?v=NYsANnAhr6k&ei=35G0aYHKHLv9sfIPppyk-As&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773466703&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=640A83B3CF286685EB73DE3D38BACB7DC1C03C45.A30E0D8BEA641AA9511304792B5D1015677203FD&key=yt8&kind=asr&lang=en",
+          "availableSources": {
+            "transcript": true,
+            "description": true,
+            "title": true
+          },
+          "error": null
+        },
+        "acquisition": {
+          "kind": "page-content",
+          "sourceLabel": "Extracted page content",
+          "providerClass": "local",
+          "strategy": null,
+          "acquisitionState": null,
+          "quality": "weak-fallback",
+          "failureReason": "caption_fetch_failed",
+          "originKind": null,
+          "recoveryTier": null,
+          "sourceTrustTier": null,
+          "winnerReason": null,
+          "languageCode": null,
+          "warnings": [
+            "fallback_source",
+            "user_fallback_override",
+            "weak_evidence",
+            "page_capture_noise"
+          ],
+          "coverageRatio": 0.09,
+          "resolverPath": [
+            "youtubeResolver:caption-track",
+            "youtubeResolver:youtubei-transcript",
+            "youtubeResolver:dom-transcript",
+            "directExtractor:defuddle"
+          ]
+        },
+        "direct": {
+          "extractor": "defuddle",
+          "extractorWarnings": [],
+          "extractorDurationMs": 0,
+          "legacyExtractorDurationMs": 0,
+          "defuddleExtractorDurationMs": 35,
+          "defuddleAttempted": true
+        }
+      },
+      "comparison": {
+        "changed": true,
+        "transcriptRegression": false,
+        "defuddleDirectWin": true,
+        "labelingIssue": false,
+        "summary": "Defuddle direct content replaced the control outcome."
+      }
+    }
+  ]
+}

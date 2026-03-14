@@ -75,16 +75,20 @@
         : "Local content";
     const acquisitionStateNote =
       notScored
-        ? "ScriptLens recovered a real transcript, but there was not enough spoken text to score safely."
+        ? acquisition.kind === "transcript"
+          ? "ScriptLens recovered a real transcript, but there was not enough spoken text to score safely."
+          : "ScriptLens extracted page content, but there was not enough clean text to score safely."
         : acquisition.kind === "transcript"
-        ? acquisition.acquisitionState === "transcript-acquired"
-          ? "ScriptLens analyzed a real transcript source."
-          : acquisition.acquisitionState === "partial-transcript"
-            ? "ScriptLens analyzed a real transcript source, but coverage or transcript quality was still limited."
-            : acquisition.acquisitionState === "fallback-text-only"
-              ? "This score came from title and description fallback, not the spoken transcript."
-              : "ScriptLens could not retrieve a usable transcript before this analysis finished."
-        : "";
+          ? acquisition.acquisitionState === "transcript-acquired"
+            ? "ScriptLens analyzed a real transcript source."
+            : acquisition.acquisitionState === "partial-transcript"
+              ? "ScriptLens analyzed a real transcript source, but coverage or transcript quality was still limited."
+              : acquisition.acquisitionState === "fallback-text-only"
+                ? "This score came from title and description fallback, not the spoken transcript."
+                : "ScriptLens could not retrieve a usable transcript before this analysis finished."
+          : acquisition.quality === "enhanced-extraction-unavailable"
+            ? "ScriptLens could not retrieve reliable page content from this video page."
+            : "ScriptLens analyzed extracted page content because a usable transcript was not available.";
     const sourceMeta = acquisition.kind === "transcript"
       ? [
           providerLabel,
@@ -159,12 +163,16 @@
         : capitalize(detection.detectorConfidence || "low"),
       detectorConfidenceMeta:
         notScored
-          ? "ScriptLens intentionally skipped scoring because the recovered transcript was too short or sentence-poor for a reliable heuristic read."
+          ? acquisition.kind === "transcript"
+            ? "ScriptLens intentionally skipped scoring because the recovered transcript was too short or sentence-poor for a reliable heuristic read."
+            : "ScriptLens intentionally skipped scoring because the extracted content sample was too short or sparse for a reliable heuristic read."
           : acquisition.sourceTrustTier === "audio-derived"
-          ? "Detector confidence is capped because the source was reconstructed from audio."
-          : acquisition.quality === "weak-fallback"
-          ? "Detector confidence is capped because this score comes from title and description fallback."
-          : "Detector confidence is capped by source confidence and sample size.",
+            ? "Detector confidence is capped because the source was reconstructed from audio."
+            : acquisition.kind !== "transcript"
+              ? "Detector confidence is capped by extraction cleanliness and sample size."
+              : acquisition.quality === "weak-fallback"
+                ? "Detector confidence is capped because this score comes from title and description fallback."
+                : "Detector confidence is capped by source confidence and sample size.",
       inputSummary: report.inputQuality?.summary || report.quality?.summary || "",
       interpretationMeans: report.interpretation?.means || "",
       interpretationNotMeans: report.interpretation?.notMeans || report.disclaimer || "",
@@ -204,7 +212,11 @@
     const verdict = detection.verdict || report.verdict || (notScored ? "Not scored" : "Unavailable");
     const scoreClass = notScored ? "mid" : getVerdictClass(score);
     const sourceLabel = getConsumerSourceLabel(acquisition);
-    const qualityLabel = notScored ? "Short transcript" : getConsumerQualityLabel(acquisition);
+    const qualityLabel = notScored
+      ? acquisition.kind === "transcript"
+        ? "Short transcript"
+        : "Short sample"
+      : getConsumerQualityLabel(acquisition);
     const confidenceLabel = notScored
       ? "Short sample"
       : capitalize(acquisition.sourceConfidence || "low");
@@ -212,7 +224,9 @@
       (notScored && (report.scoringSummary || detection.scoringSummary)) ||
       detection.explanation ||
       report.explanation ||
-      "ScriptLens reviewed the available transcript material for this video.";
+      (acquisition.kind === "transcript"
+        ? "ScriptLens reviewed the available transcript material for this video."
+        : "ScriptLens reviewed extracted page content from this video page because a usable transcript was not available.");
     const detailSummary =
       (notScored && (report.scoringSummary || detection.scoringSummary)) ||
       report.inputQuality?.summary ||
@@ -417,7 +431,7 @@
 
   function getConsumerSourceLabel(acquisition) {
     if (acquisition.kind !== "transcript") {
-      return "Fallback video text";
+      return acquisition.sourceLabel || formatSourceKind(acquisition.kind);
     }
     if (acquisition.sourceTrustTier === "audio-derived") {
       return "Recovered transcript";
@@ -435,6 +449,21 @@
   }
 
   function getConsumerQualityLabel(acquisition) {
+    if (acquisition.kind !== "transcript") {
+      if (acquisition.quality === "strong-transcript") {
+        return "Strong input";
+      }
+      if (acquisition.quality === "partial-transcript") {
+        return "Useful input";
+      }
+      if (acquisition.quality === "weak-fallback") {
+        return "Weak input";
+      }
+      if (acquisition.quality === "enhanced-extraction-unavailable") {
+        return "Source unavailable";
+      }
+      return "Direct input";
+    }
     if (acquisition.acquisitionState === "transcript-acquired") {
       return "Strong transcript";
     }
