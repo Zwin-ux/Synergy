@@ -40,6 +40,11 @@ const server = http.createServer((request, response) => {
 
   fs.stat(filePath, (statError, stat) => {
     if (statError || !stat.isFile()) {
+      if (path.extname(filePath)) {
+        respondText(response, 404, "Not Found");
+        return;
+      }
+
       const notFoundPath = path.join(SITE_ROOT, "index.html");
       fs.readFile(notFoundPath, (readError, contents) => {
         if (readError) {
