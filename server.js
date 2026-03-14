@@ -75,7 +75,9 @@ server.listen(PORT, HOST, () => {
 
 function resolveRequestPath(requestPathname) {
   const normalizedPath = decodeURIComponent(requestPathname || "/");
-  const relativePath = normalizedPath === "/" ? "index.html" : normalizedPath.replace(/^\/+/, "");
+  const relativePath = normalizedPath === "/"
+    ? "index.html"
+    : normalizedPath.replace(/^\/+|\/+$/g, "");
   const candidatePath = path.resolve(SITE_ROOT, relativePath);
 
   if (!candidatePath.startsWith(path.resolve(SITE_ROOT))) {
@@ -84,6 +86,11 @@ function resolveRequestPath(requestPathname) {
 
   if (path.extname(candidatePath)) {
     return candidatePath;
+  }
+
+  const directHtmlPath = `${candidatePath}.html`;
+  if (fs.existsSync(directHtmlPath)) {
+    return directHtmlPath;
   }
 
   return path.join(candidatePath, "index.html");
