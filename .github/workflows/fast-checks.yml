@@ -29,7 +29,9 @@ jobs:
           tests/inline-state.spec.js
           tests/service-worker-report.spec.js
           tests/backend-module.spec.js
+          tests/staged-consumer-qa.spec.js
           tests/release-build.spec.js
+          tests/release-readiness.spec.js
           tests/shared-surface.spec.js
           tests/service-worker.inline.spec.js
           tests/backend-server.spec.js
