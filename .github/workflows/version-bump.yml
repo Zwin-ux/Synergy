@@ -1,0 +1,58 @@
+name: version-bump
+
+# Triggers when a PR is merged into main.
+# Label the PR with release:major, release:minor, or release:patch
+# to control which version segment is incremented.
+# If no label is applied, the action defaults to "patch".
+#
+# Required labels (create these once in the repo):
+#   release:major  — breaking change
+#   release:minor  — new feature, backward-compatible
+#   release:patch  — bug-fix / maintenance (default)
+#
+# Optional Chrome Web Store upload — set the following secrets:
+#   EXTENSION_ID         — Chrome Web Store extension ID
+#   CLIENT_ID            — Google OAuth client ID
+#   CLIENT_SECRET        — Google OAuth client secret
+#   REFRESH_TOKEN        — Google OAuth refresh token
+#   ref: https://github.com/fregante/chrome-webstore-upload/blob/main/How%20to%20generate%20Google%20API%20keys.md
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  version-bump:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Use a PAT when available so the version-bump commit can
+          # itself trigger status checks; fall back to GITHUB_TOKEN.
+          token: ${{ secrets.VERSION_BUMP_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Bump version and (optionally) publish to Chrome Web Store
+        uses: mmrakt/update-chrome-extension-version-action@v0.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Path to manifest relative to the repo root
+          manifest_file_path: "ai-script-detector/manifest.json"
+          # Chrome Web Store upload — set to true and configure the four
+          # secrets below (EXTENSION_ID, CLIENT_ID, CLIENT_SECRET,
+          # REFRESH_TOKEN) to enable automatic CWS publishing on every merge.
+          upload_chrome_web_store: false
+          chrome_extension_id: ${{ secrets.EXTENSION_ID }}
+          google_client_id: ${{ secrets.CLIENT_ID }}
+          google_client_secret: ${{ secrets.CLIENT_SECRET }}
+          refresh_token: ${{ secrets.REFRESH_TOKEN }}
+          # Zip produced by the action; mirrors the existing package:extension output
+          zip_file_name: "scriptlens"
+          out_dir: "ai-script-detector/dist"
+          create_release_note: true
