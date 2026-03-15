@@ -281,6 +281,16 @@
 
     if (hedgePhraseHits.length) {
       reasons.push("The text leans on broad hedging language rather than direct claims.");
+      hedgePhraseHits.forEach((entry) => {
+        triggers.push({
+          category: "genericity",
+          label: "Hedge phrase",
+          evidence: `"${entry.value}" appears ${entry.count} times.`,
+          count: entry.count,
+          weight: 8 + entry.count * 2,
+          examples: [entry.value]
+        });
+      });
     }
 
     context.sentenceRecords.forEach((record) => {
@@ -800,7 +810,17 @@
   }
 
   function countTermHits(text, terms) {
-    return terms.reduce((sum, term) => sum + countOccurrences(text, term), 0);
+    // Use pre-compiled word-boundary regexes to avoid substring false-positives
+    // (e.g. "value" matching inside "valuable" or "devalue") and to keep the
+    // reduce loop efficient.
+    const regexes = terms.map((term) => {
+      const escaped = term.replace(/[.*+?^${}()|[\]\\-]/g, "\\$&");
+      return new RegExp(`\\b${escaped}\\b`, "g");
+    });
+    return regexes.reduce((sum, re) => {
+      const matches = text.match(re);
+      return sum + (matches ? matches.length : 0);
+    }, 0);
   }
 
   function collectSentencePhraseHits(records, phrases) {
@@ -941,7 +961,11 @@
       counts.set(key, (counts.get(key) || 0) + 1);
     });
 
-    return counts.size / sentenceRecords.length;
+    // Normalize against the realistic maximum number of distinct punctuation
+    // types (.  !  ?  ...) rather than sentence count — longer transcripts were
+    // always producing near-zero variety scores which inverted the metric.
+    const MAX_PUNCT_TYPES = 4;
+    return counts.size / MAX_PUNCT_TYPES;
   }
 
   function findLongestMonotonyRun(lengths) {
