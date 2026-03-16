@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ScriptLens Privacy Policy</title>
+    <meta
+      name="description"
+      content="Privacy policy for the ScriptLens YouTube-only Chrome extension."
+    >
+    <link rel="stylesheet" href="base.css">
+  </head>
+  <body>
+    <div class="site-shell">
+      <nav class="site-nav">
+        <div class="brand">
+          <img src="assets/icon.svg" alt="ScriptLens" class="brand-mark">
+          <div class="brand-label">
+            <span class="eyebrow">Privacy policy</span>
+            <strong>ScriptLens Privacy</strong>
+          </div>
+        </div>
+        <div class="nav-links">
+          <a href="./index.html">Overview</a>
+          <a href="./support.html">Support</a>
+          <a href="https://github.com/Zwin-ux/Synergy">GitHub</a>
+          <a href="https://github.com/Zwin-ux/Synergy/issues">GitHub Issues</a>
+        </div>
+      </nav>
+
+      <section class="content-section">
+        <article class="content-card">
+          <span class="eyebrow">Effective March 8, 2026</span>
+          <h2>ScriptLens processes YouTube analysis locally by default.</h2>
+          <p>
+            ScriptLens is a YouTube-only Chrome extension. Its job is to analyze the writing style of YouTube transcripts, titles, and descriptions for AI-like patterns. Scoring happens inside the extension, on your device.
+          </p>
+
+          <h3>What ScriptLens accesses</h3>
+          <ul>
+            <li>Desktop YouTube watch pages on <code>https://www.youtube.com/*</code></li>
+            <li>Transcript metadata, transcript text, video title, and video description when those sources are available on the page</li>
+            <li>Local extension settings and compact recent-report summaries stored with Chrome extension storage</li>
+          </ul>
+
+          <h3>What ScriptLens stores locally</h3>
+          <ul>
+            <li>Your extension settings, such as sensitivity and whether optional transcript recovery is enabled</li>
+            <li>A short recent-report history so the popup and workspace can show past results</li>
+            <li>Optional debug summaries when debug mode is enabled</li>
+          </ul>
+          <p>
+            Recent reports store compact metadata and summaries. ScriptLens does not intentionally keep full transcript text in recent-report storage.
+          </p>
+
+          <h3>What ScriptLens does not do by default</h3>
+          <ul>
+            <li>It does not send transcript text to a remote ScriptLens server for scoring</li>
+            <li>It does not collect account identifiers, browsing history outside supported YouTube pages, or advertising identifiers</li>
+            <li>It does not require an account or cloud login</li>
+          </ul>
+
+          <h3>Optional transcript recovery service</h3>
+          <p>
+            Some ScriptLens builds can use a configured ScriptLens-hosted or self-hosted recovery backend when local YouTube transcript paths do not return enough usable text. When this recovery path is enabled and used, ScriptLens sends only:
+          </p>
+          <ul>
+            <li>the YouTube video ID</li>
+            <li>the requested language, if one is selected</li>
+          </ul>
+          <p>
+            The recovery backend may then fetch caption metadata, transcript metadata, or audio when required by its recovery policy. Scoring still runs inside the extension. The backend is optional, is not bundled into the Chrome Web Store package, and may be provided by ScriptLens or self-hosted by advanced users.
+          </p>
+
+          <h3>Permissions</h3>
+          <ul>
+            <li><code>storage</code> to save settings and recent report summaries</li>
+            <li><code>sidePanel</code> to open the advanced workspace view</li>
+            <li>YouTube host access on <code>https://www.youtube.com/*</code> so the extension can read supported watch-page content</li>
+          </ul>
+
+          <h3>Support and questions</h3>
+          <p>
+            The public support channel for ScriptLens is <a href="https://github.com/Zwin-ux/Synergy/issues">GitHub Issues</a>. If extension behavior changes in a future version, this privacy page will be updated to match the shipped build and its configured recovery behavior.
+          </p>
+        </article>
+      </section>
+
+      <footer class="footer">
+        <div class="footer-row">
+          <p>Need help using the extension or its recovery options?</p>
+          <div class="footer-links">
+            <a href="./support.html">Support</a>
+            <a href="https://github.com/Zwin-ux/Synergy/issues">Report an issue</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>
