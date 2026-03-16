@@ -16,6 +16,10 @@ test.describe("ScriptLens shared contracts", () => {
     expect(Contracts.PACKAGING_ENV_KEYS.enableDefuddleExperiment).toBe(
       "SCRIPTLENS_ENABLE_DEFUDDLE_EXPERIMENT"
     );
+    expect(Contracts.FAILURE_CATEGORIES.tooling).toBe("tooling");
+    expect(Contracts.TOOLING_FAILURE_CODES).toBeInstanceOf(Set);
+    expect(Contracts.TOOLING_FAILURE_CODES.has("yt_dlp_not_configured")).toBeTruthy();
+    expect(Contracts.TOOLING_FAILURE_CODES.has("yt_dlp_failed")).toBeTruthy();
   });
 
   test("categorizes failure codes through the shared taxonomy", () => {
@@ -29,6 +33,10 @@ test.describe("ScriptLens shared contracts", () => {
     expect(Contracts.categorizeFailureCode("caption_tracks_missing")).toBe(
       "transcript-source"
     );
+    expect(Contracts.categorizeFailureCode("yt_dlp_not_configured")).toBe("tooling");
+    expect(Contracts.categorizeFailureCode("yt_dlp_failed")).toBe("tooling");
+    expect(Contracts.categorizeFailureCode("asr_not_configured")).toBe("tooling");
+    expect(Contracts.categorizeFailureCode("asr_runtime_unavailable")).toBe("tooling");
   });
 
   test("builds stable report snapshots for drift tests", () => {

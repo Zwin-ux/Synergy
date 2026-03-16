@@ -48,6 +48,7 @@
     transport: "transport",
     authSession: "auth-session",
     transcriptSource: "transcript-source",
+    tooling: "tooling",
     request: "request",
     server: "server",
     unknown: "unknown"
@@ -106,6 +107,17 @@
     "backend_stage_failed"
   ]);
 
+  // Failures caused by missing or misconfigured backend tooling.
+  // Distinct from transcript-source failures: these indicate a capability gap
+  // on the server side (yt-dlp not installed, ASR runtime missing, etc.) rather
+  // than a YouTube-side or network-side failure.
+  const TOOLING_FAILURE_CODES = new Set([
+    "yt_dlp_not_configured",
+    "yt_dlp_failed",
+    "asr_not_configured",
+    "asr_runtime_unavailable"
+  ]);
+
   const TRANSCRIPT_SOURCE_FAILURE_CODES = new Set([
     "caption_tracks_missing",
     "caption_track_unavailable",
@@ -141,6 +153,9 @@
     }
     if (SERVER_FAILURE_CODES.has(code)) {
       return FAILURE_CATEGORIES.server;
+    }
+    if (TOOLING_FAILURE_CODES.has(code)) {
+      return FAILURE_CATEGORIES.tooling;
     }
     if (TRANSCRIPT_SOURCE_FAILURE_CODES.has(code)) {
       return FAILURE_CATEGORIES.transcriptSource;
@@ -201,6 +216,7 @@
     SOURCE_TRUST_TIERS,
     SCORING_STATUSES,
     FAILURE_CATEGORIES,
+    TOOLING_FAILURE_CODES,
     RUNTIME_MESSAGE_TYPES,
     PACKAGING_ENV_KEYS,
     categorizeFailureCode,

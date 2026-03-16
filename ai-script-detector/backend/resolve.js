@@ -2293,6 +2293,7 @@ function resolveYtDlpCommandConfig(options) {
     return {
       command: autoDetected.command,
       prefixArgs: autoDetected.prefixArgs,
+      source: autoDetected.source,
       env: process.env,
       authenticatedModeEnabled: authConfig.enabled,
       useCookies: authConfig.enabled && authConfig.useForYtDlp,
@@ -2808,6 +2809,20 @@ function resolveBackendCapabilitySnapshot(options = {}) {
       ? String(asrConfig.prefixArgs[0] || "").trim()
       : "";
 
+  const chromiumLauncher = options.chromiumLauncher || chromium;
+  let headlessExecutablePresent = false;
+  try {
+    const executablePath =
+      typeof chromiumLauncher.executablePath === "function"
+        ? chromiumLauncher.executablePath()
+        : null;
+    headlessExecutablePresent = executablePath
+      ? fsSync.existsSync(executablePath)
+      : false;
+  } catch {
+    headlessExecutablePresent = false;
+  }
+
   return {
     auth: {
       mode: authConfig.mode,
@@ -2823,6 +2838,9 @@ function resolveBackendCapabilitySnapshot(options = {}) {
       prefixArgs: summarizePrefixArgs(ytDlpConfig?.prefixArgs),
       authenticatedModeEnabled: ytDlpConfig?.authenticatedModeEnabled === true,
       useCookies: ytDlpConfig?.useCookies === true
+    },
+    headless: {
+      executablePresent: headlessExecutablePresent
     },
     asr: {
       enabled: options.enableAutomaticAsr === true,
