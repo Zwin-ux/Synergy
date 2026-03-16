@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ScriptLens Support</title>
+    <meta
+      name="description"
+      content="Support resources for the ScriptLens YouTube-only Chrome extension."
+    >
+    <link rel="stylesheet" href="base.css">
+  </head>
+  <body>
+    <div class="site-shell">
+      <nav class="site-nav">
+        <div class="brand">
+          <img src="assets/icon.svg" alt="ScriptLens" class="brand-mark">
+          <div class="brand-label">
+            <span class="eyebrow">Extension support</span>
+            <strong>ScriptLens</strong>
+          </div>
+        </div>
+        <div class="nav-links">
+          <a href="./index.html">Overview</a>
+          <a href="./privacy.html">Privacy</a>
+          <a href="https://github.com/Zwin-ux/Synergy">GitHub</a>
+          <a href="https://github.com/Zwin-ux/Synergy/issues">GitHub Issues</a>
+        </div>
+      </nav>
+
+      <section class="content-section">
+        <article class="content-card">
+          <span class="eyebrow">Support channel</span>
+          <h2>Use GitHub Issues for bug reports and support requests.</h2>
+          <p>
+            ScriptLens uses <a href="https://github.com/Zwin-ux/Synergy/issues">GitHub Issues</a> as the public support route. Include the extension version, Chrome version, and the YouTube video URL when you report a bug.
+          </p>
+
+          <h3>Before filing an issue</h3>
+          <ul>
+            <li>Reload the extension from <code>chrome://extensions</code> and refresh the YouTube tab</li>
+            <li>Confirm you are on a desktop YouTube watch page, not Shorts or <code>m.youtube.com</code></li>
+            <li>Try the inline button first, then use the workspace if you need more detail</li>
+            <li>If the issue involves transcript recovery, confirm whether this build has a recovery service configured and enabled</li>
+          </ul>
+
+          <h3>Common questions</h3>
+          <h3>Why does the extension say the transcript is unavailable?</h3>
+          <p>
+            Some videos expose limited transcript data or block transcript text on the page. ScriptLens keeps the inline experience transcript-first. If local transcript recovery fails, the extension can use a configured recovery backend before it reports that the transcript is unavailable.
+          </p>
+
+          <h3>Does ScriptLens work outside YouTube?</h3>
+          <p>
+            Not in this Chrome Web Store release. The extension is intentionally scoped to desktop <code>youtube.com/watch</code> pages.
+          </p>
+
+          <h3>What should I include in a support report?</h3>
+          <ul>
+            <li>The exact YouTube URL</li>
+            <li>Whether the issue appears in the inline widget, popup, or side panel</li>
+            <li>Whether transcript recovery service was enabled for this build</li>
+            <li>Any visible error text from ScriptLens</li>
+          </ul>
+
+          <h3>Optional recovery backend</h3>
+          <p>
+            The recovery backend is optional and is not part of the store package. ScriptLens can use a compatible hosted or self-hosted backend for stronger transcript recovery on harder videos. See the backend notes in the repository if you want to run your own service.
+          </p>
+        </article>
+      </section>
+
+      <footer class="footer">
+        <div class="footer-row">
+          <p>Still blocked?</p>
+          <div class="footer-links">
+            <a href="https://github.com/Zwin-ux/Synergy/issues">Open an issue</a>
+            <a href="./privacy.html">Privacy policy</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>
