@@ -75,6 +75,25 @@ test.describe("ScriptLens backend HTTP server", () => {
     }
   });
 
+  test("reports headless capability in health and version responses", async () => {
+    const server = createBackendServer();
+
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+
+    try {
+      const health = await fetch(`${baseUrl}/healthz`).then((response) => response.json());
+      const version = await fetch(`${baseUrl}/version`).then((response) => response.json());
+
+      expect(health.capabilities).toHaveProperty("headless");
+      expect(typeof health.capabilities.headless.executablePresent).toBe("boolean");
+      expect(version.capabilities.headless).toEqual(health.capabilities.headless);
+    } finally {
+      await closeServer(server);
+    }
+  });
+
   test("serves transcript requests without aborting normal clients", async () => {
     const html = buildWatchHtml({
       playerResponse: {
