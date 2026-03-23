@@ -42,15 +42,11 @@ ScriptLens processes scoring locally by default. If a configured transcript reco
 
 ## Support URL
 
-Set this to your Railway public site URL before submission, for example:
-
-https://your-scriptlens-site.example/support.html
+https://synergy-production-b7bd.up.railway.app/support
 
 ## Privacy URL
 
-Set this to your Railway public site URL before submission, for example:
-
-https://your-scriptlens-site.example/privacy.html
+https://synergy-production-b7bd.up.railway.app/privacy
 
 ## Public support route
 
